@@ -18,6 +18,10 @@ REFERENCE_STRAIN="SK1"
 # Where are we?
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
+# Where should temp files go?
+export TMPDIR="${WORKDIR}/tmp"
+mkdir -p "${TMPDIR}"
+
 barrier() {
     for PID in $(jobs -p) ; do
         wait
