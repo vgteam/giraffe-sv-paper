@@ -1,22 +1,39 @@
-printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tscore\n" > report.tsv
-printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
+#!/usr/bin/env bash
+
+set -e
+
+printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_minimap2.tsv
+printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_bwa_mem.tsv
+printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_bowtie2.tsv
+printf "correct\tmq\tscore\taligner\n" > roc_stats_minimap2.tsv
+printf "correct\tmq\tscore\taligner\n" > roc_stats_bwa_mem.tsv
+printf "correct\tmq\tscore\taligner\n" > roc_stats_bowtie2.tsv
 
 THREADS=16
 
+#Get reference genomes
 aws s3 cp  s3://vg-k8s/profiling/data/hs37d5.fa ./1kg.fa
 aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz ./hgsvc.fa.gz
 gunzip hgsvc.fa.gz
+
+#Fix chromosome names for hgsvc so that they match the graph
 sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
 
+#Get xgsj
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
 
+
+#Index genomes
 bwa index 1kg.fa
 bwa index hgsvc.fa
-bowtie2-build --large-index 1kg.fna 1kg_bowtie2
-bowtie2-build --large-index hgsvc.fna hgsvc_bowtie2
 
-aws s3 cp 
+bowtie2-build --large-index 1kg.fa 1kg_bowtie2
+bowtie2-build --large-index hgsvc.fa hgsvc_bowtie2
+
+minimap2 -x sr -d 1kg.mmi 1kg.fa
+minimap2 -x sr -d hgsvc.mmi hgsvc.fa
+
 
 for GRAPH in hgsvc 1kg ; do
     for READS in novaseq6000 hiseqxten hiseq2500; do
@@ -59,7 +76,7 @@ for GRAPH in hgsvc 1kg ; do
                 vg inject -x ${graph}.xg mapped.secondary.bam > mapped.secondary.gam
     
                 if [[ ${PAIRING} == "paired" ]] ; then
-                    vg view -aj mapped.primary.gam | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -aGJ - | vg annotate -m -x ${graph}.xg -a - | vg gamcompare -r 100 -s -sim.gam 2> count | vg view -aj - > compared.primary.json
+                    vg view -aj mapped.primary.gam | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -aGJ - | vg annotate -m -x ${graph}.xg -a - | vg gamcompare -r 100 -s - sim.gam 2> count | vg view -aj - > compared.primary.json
                     vg view -aj mapped.secondary.gam | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -aGJ - | vg annotate -m -x ${graph}.xg -a - | vg gamcompare -r 100 - sim.gam| vg view -aj - > compared.secondary.json
                 elif [[ ${PAIRING} == "single" ]] ; then 
                      vg annotate -m -x ${graph}.xg -a mapped.primary.gam | vg gamcompare -s -r 100 - sim.gam 2> count | vg view -aj - > compared.primary.json
@@ -74,14 +91,14 @@ for GRAPH in hgsvc 1kg ; do
                 MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
                 IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
                 echo ${GRAPH} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${SCORE}
-                printf "${GRAPH}\t${ALGORITHM}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${SCORE}\n" >> report.tsv
+                printf "${GRAPH}\t${ALGORITHM}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report_${ALGORITHM}.tsv
     
-                jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}_${GRAPH}${READS}${PAIRING}/" >> roc_stats.tsv
+                jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}_${GRAPH}${READS}${PAIRING}/" >> roc_stats_${ALGORITHM}.tsv
 
             done
         done
     done
 done
-sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
-aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_linear.tsv
-aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_linear.tsv
+sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_minimap2.tsv
+sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_bwa_mem.tsv
+sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_bowtie2.tsv
