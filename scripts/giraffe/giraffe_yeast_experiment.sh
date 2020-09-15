@@ -68,7 +68,7 @@ if [ ! -e ${WORKDIR}/subset_contigs.txt ] ; then
 fi
 
 # Get a reference strain FASTA with Cactus-style names
-cat "${IN_REFERENCE_FASTA}" | sed "s/>/>${REFERENCE_STRAIN}/g" > ${WORKDIR}/yeast_reference.fa
+cat "${IN_REFERENCE_FASTA}" | sed "s/>/>${REFERENCE_STRAIN}./g" > ${WORKDIR}/yeast_reference.fa
 # Make linear graph for the reference strain
 vg construct -p -r ${WORKDIR}/yeast_reference.fa  | vg convert -p - >${WORKDIR}/yeast_reference.vg
 
