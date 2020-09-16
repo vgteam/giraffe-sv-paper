@@ -1,7 +1,7 @@
 import io
 import json
 import argparse
-parser = argparse.ArgumentParser(help='combine alignments by marking a read in primary_file as correct if it is mapped correctly in secondary_file')
+parser = argparse.ArgumentParser(description='combine alignments by marking a read in primary_file as correct if it is mapped correctly in secondary_file')
 parser.add_argument('primary_file', help='json of primary alignments')
 parser.add_argument('secondary_file', help='json of secondary alignments')
 parser.add_argument('out_file', help='output json')
