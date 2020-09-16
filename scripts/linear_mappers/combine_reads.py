@@ -12,7 +12,7 @@ primary_file =   open(args.accumulate(args.primary_file), "r")
 
 secondary_reads = dict()
 
-with open(args.accumulate(args.secondary_file), "r") as secondary_file:
+with open(args.secondary_file, "r") as secondary_file:
     for line in secondary_file.readlines():
         read_dict = json.loads(line)
         name = read_dict["name"]
@@ -20,7 +20,7 @@ with open(args.accumulate(args.secondary_file), "r") as secondary_file:
         secondary_reads[name] = secondary_reads.get(name, False) or correct
 
 
-with open(args.accumulate(args.out_file), "w") as out_file:
+with open(args.out_file, "w") as out_file:
     for line in primary_file.readlines():
         read_dict = json.loads(line)
         name = read_dict["name"]
