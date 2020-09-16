@@ -8,7 +8,7 @@ parser.add_argument('out_file', help='output json')
 
 args = parser.parse_args()
 
-primary_file =   open(args.accumulate(args.primary_file), "r")
+primary_file =   open(args.primary_file, "r")
 
 secondary_reads = dict()
 
