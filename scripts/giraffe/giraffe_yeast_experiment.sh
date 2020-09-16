@@ -114,6 +114,11 @@ index_graph ${WORKDIR}/yeast_reference
 # Index the pangenome graph we're mapping to
 index_graph ${WORKDIR}/yeast_subset
 
+# Index for BWA
+if [ ! -e ${WORKDIR}/yeast_reference.fa.amb  ] ; then
+    bwa index ${WORKDIR}/yeast_reference.fa
+fi
+
 for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
     # Prepare reads
     if [ ! -e  "${WORKDIR}/sim-${STRAIN}.gam" ] ; then
@@ -152,11 +157,11 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
     if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam" ] ; then
         # Inject and annotate and also hack read names while we go through JSON.
         # TODO: make inject do this??? Or do it at the SAM stage?
-        samtools view -F 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${graph}.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam" &
+        samtools view -F 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_reference.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam" &
     fi
     if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam" ] ; then
         # Also bring along supplementary alignments
-        samtools view -f 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${graph}.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam" &
+        samtools view -f 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_reference.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam" &
     fi
     
     barrier
