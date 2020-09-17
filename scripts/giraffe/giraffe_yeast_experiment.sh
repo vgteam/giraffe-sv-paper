@@ -74,10 +74,10 @@ index_graph() {
 
 # Import graphs from HAL, excluding wandering components
 if [ ! -e ${WORKDIR}/yeast_subset.vg ] ; then
-    hal2vg "${IN_SUBSET_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_subset.vg
+    hal2vg "${IN_SUBSET_HAL}" --inMemory --noAncestors --chop 32 --progress | vg ids -s - | vg convert -p - > ${WORKDIR}/yeast_subset.vg
 fi
 if [ ! -e ${WORKDIR}/yeast_all.vg ] ; then
-    hal2vg "${IN_ALL_STRAINS_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_all.vg
+    hal2vg "${IN_ALL_STRAINS_HAL}" --inMemory --noAncestors --chop 32 --progress | vg ids -s - | vg convert -p - > ${WORKDIR}/yeast_all.vg
 fi
 
 # Find the contig names in the full and some-held-out graphs
