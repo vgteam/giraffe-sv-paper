@@ -4,10 +4,10 @@ set -ex
 set -o pipefail
 
 # Where should intermediate and output files go? No whitespace!
-WORKDIR="${HOME}/build/vg/trash/yeast"
+WORKDIR="${HOME}/build/vg/trash/yeast2"
 # Where should input graphs come from?
-IN_ALL_STRAINS="/public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_all/yeast.chop32.vg"
-IN_SUBSET="/public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_four/yeast.chop32.vg"
+IN_ALL_STRAINS_HAL="/public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_all/cactusoutput.hal"
+IN_SUBSET_HAL="/public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_four/cactusoutput.hal"
 # What training FASTQ should be used for simulating reads?
 IN_TRAINING_FASTQ="/public/groups/cgl/users/daheller/yeast_graph/illumina_reads/SRR4074257.fastq.gz"
 # Where's the input reference FASTA for the linear control?
@@ -17,6 +17,8 @@ REFERENCE_STRAIN="SK1"
 
 # Where are we?
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+
+mkdir -p "${WORKDIR}"
 
 # Where should temp files go?
 export TMPDIR="${WORKDIR}/tmp"
@@ -70,14 +72,12 @@ index_graph() {
     fi
 }
 
-mkdir -p "${WORKDIR}"
-
-# Import graphs to modern formats
+# Import graphs from HAL, excluding wandering components
 if [ ! -e ${WORKDIR}/yeast_subset.vg ] ; then
-    vg convert -p "${IN_SUBSET}" > ${WORKDIR}/yeast_subset.vg
+    hal2vg "${IN_SUBSET_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_subset.vg
 fi
 if [ ! -e ${WORKDIR}/yeast_all.vg ] ; then
-    vg convert -p "${IN_ALL_STRAINS}" > ${WORKDIR}/yeast_all.vg
+    hal2vg "${IN_ALL_STRAINS_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_all.vg
 fi
 
 # Find the contig names in the full and some-held-out graphs
@@ -114,6 +114,9 @@ index_graph ${WORKDIR}/yeast_reference
 # Index the pangenome graph we're mapping to
 index_graph ${WORKDIR}/yeast_subset
 
+# Index the source graph to map back to for positive control
+index_graph ${WORKDIR}/yeast_all
+
 # Index for BWA
 if [ ! -e ${WORKDIR}/yeast_reference.fa.amb  ] ; then
     bwa index ${WORKDIR}/yeast_reference.fa
@@ -130,62 +133,81 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
         vg view -i -X "${WORKDIR}/sim-${STRAIN}.gam" | sed 's/_1$//g' | sed 's/_2$//g' > "${WORKDIR}/sim-${STRAIN}.fq"
     fi
     
-    # Do mapping
-    if [ ! -e "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.gam" ] ; then
-        echo "Mapping strain ${STRAIN} to graph with Giraffe"
-        vg giraffe -x ${WORKDIR}/yeast_subset.xg -g ${WORKDIR}/yeast_subset.gg -H ${WORKDIR}/yeast_subset.gbwt -m ${WORKDIR}/yeast_subset.min -d ${WORKDIR}/yeast_subset.dist -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_subset.xg > "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-giraffe-${STRAIN}.gam" ] ; then
-        echo "Mapping strain ${STRAIN} to linear reference with Giraffe"
-        vg giraffe -x ${WORKDIR}/yeast_reference.xg -g ${WORKDIR}/yeast_reference.gg -H ${WORKDIR}/yeast_reference.gbwt -m ${WORKDIR}/yeast_reference.min -d ${WORKDIR}/yeast_reference.dist -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_reference.xg > "${WORKDIR}/mapped-reference-giraffe-${STRAIN}.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-subset-map-${STRAIN}.gam" ] ; then
-        echo "Mapping strain ${STRAIN} to graph with map"
-        vg map -x ${WORKDIR}/yeast_subset.xg -g ${WORKDIR}/yeast_subset.gcsa -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_subset.xg > "${WORKDIR}/mapped-subset-map-${STRAIN}.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-map-${STRAIN}.gam" ] ; then
-        echo "Mapping strain ${STRAIN} to linear reference with map"
-        vg map -x ${WORKDIR}/yeast_reference.xg -g ${WORKDIR}/yeast_reference.gcsa -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_reference.xg > "${WORKDIR}/mapped-reference-map-${STRAIN}.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" ] ; then
-        # Drop supplementary alignments and convert to BAM
-        bwa mem ${WORKDIR}/yeast_reference.fa -p "${WORKDIR}/sim-${STRAIN}.fq" | samtools view -b /dev/stdin > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" &
-    fi
+    # Map reads
+    for GRAPH in reference subset all ; do
+        for MAPPER in map giraffe bwa ; do
+            if [ ! -e "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam" ] ; then
+                if [ "${MAPPER}" == giraffe ] ; then
+                     vg giraffe -x ${WORKDIR}/yeast_${GRAPH}.xg -g ${WORKDIR}/yeast_${GRAPH}.gg -H ${WORKDIR}/yeast_${GRAPH}.gbwt -m ${WORKDIR}/yeast_${GRAPH}.min -d ${WORKDIR}/yeast_${GRAPH}.dist -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_${GRAPH}.xg > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam" &
+                elif [ "${MAPPER}" == map ] ; then
+                    vg map -x ${WORKDIR}/yeast_${GRAPH}.xg -g ${WORKDIR}/yeast_${GRAPH}.gcsa -i -G "${WORKDIR}/sim-${STRAIN}.gam" | vg annotate -m -a - -x ${WORKDIR}/yeast_${GRAPH}.xg > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam" &
+                elif [ "${MAPPER}" == bwa ] && [ "${GRAPH}" == reference ] ; then
+                    # Run the BWA mapping and injecting all as one backgorund job.
+                    # Inject and annotate and also hack read names while we go through JSON.
+                    # TODO: make inject do this??? Or do it at the SAM stage?
+                    ((bwa mem ${WORKDIR}/yeast_${GRAPH}.fa -p "${WORKDIR}/sim-${STRAIN}.fq" | samtools view -b /dev/stdin > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.bam") && \
+                    (samtools view -f 2048 -b "${WORKDIR}/mapped--${GRAPH}-${MAPPER}-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_${GRAPH}.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_${GRAPH}.xg -a - > "${WORKDIR}/mapped--${GRAPH}-${MAPPER}-${STRAIN}.sup.gam") && \
+                    (samtools view -F 2048 -b "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_${GRAPH}.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_${GRAPH}.xg -a - > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam")) &
+                fi
+            fi
+        done
+    done
     
     barrier
     
-    if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam" ] ; then
-        # Inject and annotate and also hack read names while we go through JSON.
-        # TODO: make inject do this??? Or do it at the SAM stage?
-        samtools view -F 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_reference.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam" ] ; then
-        # Also bring along supplementary alignments
-        samtools view -f 2048 -b "${WORKDIR}/mapped-reference-bwa-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_reference.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_reference.xg -a - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam" &
-    fi
+    # Compare reads
+    for GRAPH in reference subset all ; do
+        for MAPPER in map giraffe bwa ; do
+            if [ ! -e "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.gam" ] ; then
+                if [ "${MAPPER}" == bwa ] ; then
+                    if [ "${GRAPH}" == reference ] ; then
+                        # We need to do two gamcompares and combine for linear mappers.
+                        python3 "${SCRIPT_DIR}/../linear_mappers/combine_reads.py" <(vg gamcompare -s -r 100 ${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam "${WORKDIR}/sim-${STRAIN}.gam" | vg view -aj -) <(vg gamcompare -s -r 100 ${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam "${WORKDIR}/sim-${STRAIN}.gam" | vg view -aj -) /dev/stdout | vg view -JGa - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.compared.gam" &
+                    fi
+                else
+                    # Do it the normal way
+                    vg gamcompare -s -r 100 "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.compared.gam" &
+                fi
+            fi
+        done
+    done
     
     barrier
     
-    # Do all the comparisons
-    if [ ! -e "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.compared.gam" ] ; then
-        vg gamcompare -s -r 100 "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.compared.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-giraffe-${STRAIN}.compared.gam" ] ; then
-        vg gamcompare -s -r 100 "${WORKDIR}/mapped-reference-giraffe-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-reference-giraffe-${STRAIN}.compared.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-subset-map-${STRAIN}.compared.gam" ] ; then
-        vg gamcompare -s -r 100 "${WORKDIR}/mapped-subset-map-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-subset-map-${STRAIN}.compared.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-map-${STRAIN}.compared.gam" ] ; then
-        vg gamcompare -s -r 100 "${WORKDIR}/mapped-reference-map-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-reference-map-${STRAIN}.compared.gam" &
-    fi
-    if [ ! -e "${WORKDIR}/mapped-reference-bwa-${STRAIN}.compared.gam" ] ; then
-        # We need to do two gamcompares and combine for linear mappers.
-        python3 "${SCRIPT_DIR}/../linear_mappers/combine_reads.py" <(vg gamcompare -s -r 100 ${WORKDIR}/mapped-reference-bwa-${STRAIN}.gam "${WORKDIR}/sim-${STRAIN}.gam" | vg view -aj -) <(vg gamcompare -s -r 100 ${WORKDIR}/mapped-reference-bwa-${STRAIN}.sup.gam "${WORKDIR}/sim-${STRAIN}.gam" | vg view -aj -) /dev/stdout | vg view -JGa - > "${WORKDIR}/mapped-reference-bwa-${STRAIN}.compared.gam" &
-    fi
+    # Dump to JSON
+    for GRAPH in reference subset all ; do
+        for MAPPER in map giraffe bwa ; do
+            if [ "${MAPPER}" == bwa ] && [ "${GRAPH}" != reference ] ; then
+                # BWA only works on reference
+                continue
+            fi
+            if [ ! -e "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" ] ; then
+                vg view -aj "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.gam" > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" &
+            fi
+        done
+    done
     
     barrier
     
+    for GRAPH in reference subset all ; do
+        for MAPPER in map giraffe bwa ; do
+            if [ "${MAPPER}" == bwa ] && [ "${GRAPH}" != reference ] ; then
+                # BWA only works on reference
+                continue
+            fi
+            if [ ! -e "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv" ] ; then
+                MAPPED_COUNT="$(grep path compared.json | wc -l)"
+                CORRECT_COUNT="$(grep correctly_mapped compared.json | wc -l)"
+                MAPQ60_TOTAL="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                MAPQ60_WRONG="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                MEAN_IDENTITY="$(jq '.identity \\ 0' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                printf "${GRAPH}\t${MAPPER}\t${STRAIN}\t${MAPPED_COUNT}\t${CORRECT_COUNT}\t${MAPQ60_TOTAL}\t${MAPQ60_WRONG}\t${MEAN_IDENTITY}\n" > "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv"
+            fi
+        done
+    done
 done
 
-# TODO: make ROCs and reports
+printf "#GRAPH\tMAPPER\tSTRAIN\tMAPPED_COUNT\tCORRECT_COUNT\tMAPQ60_TOTAL\tMAPQ60_WRONG\tMEAN_IDENTITY\n" > ${WORKDIR}/report.tsv
+cat ${WORKDIR}/report-*.tsv >> ${WORKDIR}/report.tsv
+
+# TODO: make ROCs
