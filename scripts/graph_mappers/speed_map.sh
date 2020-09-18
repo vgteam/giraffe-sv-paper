@@ -4,7 +4,6 @@ set -e
 
 THREAD_COUNT=16
 
-printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > speed_report_map.tsv
 
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
@@ -13,6 +12,7 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
     aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}.fq.gz ${STRAIN}.fq.gz
 done
 
+printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > speed_report_map.tsv
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
