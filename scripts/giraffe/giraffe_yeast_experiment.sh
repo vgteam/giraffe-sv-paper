@@ -74,10 +74,17 @@ index_graph() {
 
 # Import graphs from HAL, excluding wandering components
 if [ ! -e ${WORKDIR}/yeast_subset.vg ] ; then
-    hal2vg "${IN_SUBSET_HAL}" --inMemory --noAncestors --chop 32 --progress | vg ids -s - | vg convert -p - > ${WORKDIR}/yeast_subset.vg
+    hal2vg "${IN_SUBSET_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_subset.tmp1.vg
+    # This doesn't work when piping in for some reason.
+    vg ids -s ${WORKDIR}/yeast_subset.tmp1.vg > ${WORKDIR}/yeast_subset.tmp2.vg
+    rm ${WORKDIR}/yeast_subset.tmp1.vg
+    mv ${WORKDIR}/yeast_subset.tmp2.vg ${WORKDIR}/yeast_subset.vg
 fi
 if [ ! -e ${WORKDIR}/yeast_all.vg ] ; then
-    hal2vg "${IN_ALL_STRAINS_HAL}" --inMemory --noAncestors --chop 32 --progress | vg ids -s - | vg convert -p - > ${WORKDIR}/yeast_all.vg
+    hal2vg "${IN_ALL_STRAINS_HAL}" --inMemory --noAncestors --chop 32 --progress > ${WORKDIR}/yeast_all.tmp1.vg
+    vg ids -s ${WORKDIR}/yeast_all.tmp1.vg > ${WORKDIR}/yeast_all.tmp2.vg
+    rm ${WORKDIR}/yeast_all.tmp1.vg
+    mv ${WORKDIR}/yeast_all.tmp2.vg ${WORKDIR}/yeast_all.vg
 fi
 
 # Find the contig names in the full and some-held-out graphs
@@ -146,7 +153,7 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
                     # Inject and annotate and also hack read names while we go through JSON.
                     # TODO: make inject do this??? Or do it at the SAM stage?
                     ((bwa mem ${WORKDIR}/yeast_${GRAPH}.fa -p "${WORKDIR}/sim-${STRAIN}.fq" | samtools view -b /dev/stdin > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.bam") && \
-                    (samtools view -f 2048 -b "${WORKDIR}/mapped--${GRAPH}-${MAPPER}-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_${GRAPH}.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_${GRAPH}.xg -a - > "${WORKDIR}/mapped--${GRAPH}-${MAPPER}-${STRAIN}.sup.gam") && \
+                    (samtools view -f 2048 -b "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_${GRAPH}.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_${GRAPH}.xg -a - > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.sup.gam") && \
                     (samtools view -F 2048 -b "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.bam" | vg inject -x ${WORKDIR}/yeast_${GRAPH}.xg - | vg view -aj - | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -JGa - | vg annotate -m -x ${WORKDIR}/yeast_${GRAPH}.xg -a - > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam")) &
                 fi
             fi
@@ -166,7 +173,7 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
                     fi
                 else
                     # Do it the normal way
-                    vg gamcompare -s -r 100 "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-subset-giraffe-${STRAIN}.compared.gam" &
+                    vg gamcompare -s -r 100 "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.gam" "${WORKDIR}/sim-${STRAIN}.gam" > "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.gam" &
                 fi
             fi
         done
@@ -196,11 +203,11 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
                 continue
             fi
             if [ ! -e "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv" ] ; then
-                MAPPED_COUNT="$(grep path compared.json | wc -l)"
-                CORRECT_COUNT="$(grep correctly_mapped compared.json | wc -l)"
-                MAPQ60_TOTAL="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
-                MAPQ60_WRONG="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
-                MEAN_IDENTITY="$(jq '.identity \\ 0' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                MAPPED_COUNT="$(grep path "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | wc -l)"
+                CORRECT_COUNT="$(grep correctly_mapped "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | wc -l)"
+                MAPQ60_TOTAL="$(grep mapping_quality\":\ 60 "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | wc -l)"
+                MAPQ60_WRONG="$(grep -v correctly_mapped "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | grep mapping_quality\":\ 60 | wc -l)"
+                MEAN_IDENTITY="$(jq '.identity \\ 0' "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | awk '{sum+=$1} END {print sum/NR}')"
                 printf "${GRAPH}\t${MAPPER}\t${STRAIN}\t${MAPPED_COUNT}\t${CORRECT_COUNT}\t${MAPQ60_TOTAL}\t${MAPQ60_WRONG}\t${MEAN_IDENTITY}\n" > "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv"
             fi
         done
