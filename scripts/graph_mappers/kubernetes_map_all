@@ -23,12 +23,10 @@ spec:
               yeast)
                   GRAPHS=(SK1 yeast_all yeast_subset)
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
-                  GBWTS=(raw)
                   ;;
               human)
                   GRAPHS=(hgsvc 1kg)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
-                  GBWTS=(full sample cover)
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
