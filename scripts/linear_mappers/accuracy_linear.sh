@@ -19,7 +19,7 @@ gunzip hgsvc.fa.gz
 #Fix chromosome names for hgsvc so that they match the graph
 sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
 
-#Get xgsj
+#Get xgs
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
 
