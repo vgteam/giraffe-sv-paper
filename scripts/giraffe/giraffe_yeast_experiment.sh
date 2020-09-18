@@ -207,14 +207,13 @@ for STRAIN in $(cat ${WORKDIR}/heldout_strains.txt) ; do
                 CORRECT_COUNT="$(grep correctly_mapped "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | wc -l)"
                 MAPQ60_TOTAL="$(grep mapping_quality\":\ 60 "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | wc -l)"
                 MAPQ60_WRONG="$(grep -v correctly_mapped "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | grep mapping_quality\":\ 60 | wc -l)"
-                MEAN_IDENTITY="$(grep -oh '"identity": [^ ,]*' "${WORKDIR}/mapped-${GRAPH}-${MAPPER}-${STRAIN}.compared.json" | sed 's/null/0/g' | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' | awk '{sum+=$1} END {print sum/NR}')"
-                printf "${GRAPH}\t${MAPPER}\t${STRAIN}\t${MAPPED_COUNT}\t${CORRECT_COUNT}\t${MAPQ60_TOTAL}\t${MAPQ60_WRONG}\t${MEAN_IDENTITY}\n" > "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv"
+                printf "${GRAPH}\t${MAPPER}\t${STRAIN}\t${MAPPED_COUNT}\t${CORRECT_COUNT}\t${MAPQ60_TOTAL}\t${MAPQ60_WRONG}\n" > "${WORKDIR}/report-${GRAPH}-${MAPPER}-${STRAIN}.tsv"
             fi
         done
     done
 done
 
-printf "#GRAPH\tMAPPER\tSTRAIN\tMAPPED_COUNT\tCORRECT_COUNT\tMAPQ60_TOTAL\tMAPQ60_WRONG\tMEAN_IDENTITY\n" > ${WORKDIR}/report.tsv
+printf "#GRAPH\tMAPPER\tSTRAIN\tMAPPED_COUNT\tCORRECT_COUNT\tMAPQ60_TOTAL\tMAPQ60_WRONG\n" > ${WORKDIR}/report.tsv
 cat ${WORKDIR}/report-*.tsv >> ${WORKDIR}/report.tsv
 
 # TODO: make ROCs
