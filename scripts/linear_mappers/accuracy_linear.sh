@@ -15,7 +15,7 @@ THREADS=16
 aws s3 cp  s3://vg-k8s/profiling/data/hs37d5.fa ./1kg.fa
 aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz ./hgsvc.fa.gz
 gunzip hgsvc.fa.gz
-aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/SK1/primarySK1.fa ./SK1.fa
+aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa ./S288C.fa
 
 #Fix chromosome names for hgsvc so that they match the graph
 sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
@@ -23,7 +23,7 @@ sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
 #Get xgsj
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
-aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/SK1/primarySK1.xk ./SK1.xg
+aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.xk ./S288C.xg
 
 
 #Index genomes
@@ -39,7 +39,7 @@ minimap2 -x sr -d hgsvc.mmi hgsvc.fa
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        GRAPHS=(SK1)
+        GRAPHS=(S288C)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
@@ -60,7 +60,7 @@ for SPECIES in human yeast ; do
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                 gunzip sim.fq.gz
                 ;;
-            SK1)
+            S288C)
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.fq ./sim.fq
                 ;;

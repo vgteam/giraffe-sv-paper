@@ -9,7 +9,7 @@ printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        GRAPHS=(SK1 yeast_all yeast_subset)
+        GRAPHS=(S288C yeast_all yeast_subset)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         GBWTS=(raw)
         ;;
@@ -30,8 +30,8 @@ for SPECIES in human yeast ; do
                 GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                 ;;
-            SK1)
-                GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/SK1/primarySK1
+            S288C)
+                GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
                 ;;
             yeast_all)

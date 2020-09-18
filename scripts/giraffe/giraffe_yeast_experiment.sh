@@ -11,9 +11,9 @@ IN_SUBSET_HAL="/public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_four/
 # What training FASTQ should be used for simulating reads?
 IN_TRAINING_FASTQ="/public/groups/cgl/users/daheller/yeast_graph/illumina_reads/SRR4074257.fastq.gz"
 # Where's the input reference FASTA for the linear control?
-IN_REFERENCE_FASTA="/public/groups/cgl/users/daheller/yeast_graph/assemblies/assemblies_raw/SK1.genome.fa"
+IN_REFERENCE_FASTA="/public/groups/cgl/users/daheller/yeast_graph/assemblies/assemblies_raw/S288C.genome.fa"
 # What strain is it?
-REFERENCE_STRAIN="SK1"
+REFERENCE_STRAIN="S288C"
 
 # Where are we?
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"

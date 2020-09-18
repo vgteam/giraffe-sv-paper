@@ -35,21 +35,21 @@ aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa 1kg.fa
 aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz hgsvc.fa.gz
 gunzip hgsvc.fa.gz
 sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
-aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/SK1/primarySK1.fa ./SK1.fa
+aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa ./S288C.fa
 
 
 #Build all indexes
 bwa index 1kg.fa
 bwa index hgsvc.fa
-bwa index SK1.fa
+bwa index S288C.fa
 
 bowtie2-build --large-index 1kg.fna 1kg
 bowtie2-build --large-index hgsvc.fna hgsvc
-bowtie2-build --large-index SK1.fna SK1
+bowtie2-build --large-index S288C.fna S288C
 
 minimap2 -x sr -d 1kg.mmi 1kg.fa
 minimap2 -x sr -d hgsvc.mmi hgsvc.fa
-minimap2 -x sr -d SK1.mmi SK1.fa
+minimap2 -x sr -d S288C.mmi S288C.fa
 
 
 
@@ -57,7 +57,7 @@ minimap2 -x sr -d SK1.mmi SK1.fa
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        GRAPHS=(SK1)
+        GRAPHS=(S288C)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)

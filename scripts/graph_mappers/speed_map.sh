@@ -16,7 +16,7 @@ printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > speed_report_map
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        GRAPHS=(SK1)
+        GRAPHS=(S288C)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
@@ -32,8 +32,8 @@ for SPECIES in human yeast ; do
         hgsvc)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
             ;;
-        SK1)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/SK1/primarySK1
+        S288C)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
             ;;
         esac
         aws s3 cp ${GRAPH_BASE}.xg ./${GRAPH}.xg

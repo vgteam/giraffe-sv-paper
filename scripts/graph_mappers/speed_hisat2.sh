@@ -31,7 +31,7 @@ done
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        REFS=(sk1)
+        REFS=(s288c)
         # Yeast graphs aren't VCF-derived so hisat2 can't use them.
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
