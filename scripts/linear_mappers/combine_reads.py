@@ -1,18 +1,18 @@
 import io
 import json
 import argparse
-parser = argparse.ArgumentParser(help='combine alignments by marking a read in primary_file as correct if it is mapped correctly in secondary_file')
+parser = argparse.ArgumentParser(description='combine alignments by marking a read in primary_file as correct if it is mapped correctly in secondary_file')
 parser.add_argument('primary_file', help='json of primary alignments')
 parser.add_argument('secondary_file', help='json of secondary alignments')
 parser.add_argument('out_file', help='output json')
 
 args = parser.parse_args()
 
-primary_file =   open(args.accumulate(args.primary_file), "r")
+primary_file =   open(args.primary_file, "r")
 
 secondary_reads = dict()
 
-with open(args.accumulate(args.secondary_file), "r") as secondary_file:
+with open(args.secondary_file, "r") as secondary_file:
     for line in secondary_file.readlines():
         read_dict = json.loads(line)
         name = read_dict["name"]
@@ -20,7 +20,7 @@ with open(args.accumulate(args.secondary_file), "r") as secondary_file:
         secondary_reads[name] = secondary_reads.get(name, False) or correct
 
 
-with open(args.accumulate(args.out_file), "w") as out_file:
+with open(args.out_file, "w") as out_file:
     for line in primary_file.readlines():
         read_dict = json.loads(line)
         name = read_dict["name"]
