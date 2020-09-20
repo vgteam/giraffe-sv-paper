@@ -18,35 +18,56 @@ spec:
           cd /tmp
           printf "graph\talgorithm\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
-          for GRAPH in hs38d1 hs37d5 ; do
-              for READS in novaseq6000 hiseqxten hiseq2500 ; do
-                 if [[ ${GRAPH} == "hs37d5" ]] ; then
-                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
-                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
-                  elif [[ ${GRAPH} == "hs38d1" ]] ; then
-                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
-                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
-                  fi
-                  aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
-                  aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
-                  aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
-                  for PAIRING in single paired ; do 
-                      if [[ ${PAIRING} == "paired" ]] ; then
-                          PAIRED="-i"
-                      elif [[ ${PAIRING} == "single" ]] ; then 
-                          PAIRED=""
-                      fi
-                      vg map -x graph.xg -g graph.gcsa -G sim.gam ${PAIRED} -t 20 >mapped.gam
-                      vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
-                      CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
-                      SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
-                      MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
-                      MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
-                      IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
-                      echo ${GRAPH} ${map} ${READS} ${PAIRING} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
-                      printf "${GRAPH}\t${map}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${SCORE}\n" >> report.tsv
+          for SPECIES in human yeast ; do
+              case "${SPECIES}" in
+              yeast)
+                  GRAPHS=(S288C)
+                  READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
+                  GBWTS=(raw)
+                  ;;
+              human)
+                  GRAPHS=(hgsvc 1kg)
+                  READSETS=(novaseq6000 hiseqxten hiseq2500)
+                  GBWTS=(paths cover)
+                  ;;
+              esac
+              for GRAPH in ${GRAPHS[@]} ; do
+                  for READS in ${READSETS[@]} ; do
+                      case ${GRAPH} in
+                      1kg)
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
+                          ;;
+                      hgsvc)
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          ;;
+                      S288C)
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
+                          ;;
+                      esac
+                      aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                      aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
+                      aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
+                      for PAIRING in single paired ; do 
+                          if [[ ${PAIRING} == "paired" ]] ; then
+                              PAIRED="-i"
+                          elif [[ ${PAIRING} == "single" ]] ; then 
+                              PAIRED=""
+                          fi
+                          vg map -x graph.xg -g graph.gcsa -G sim.gam ${PAIRED} -t 20 >mapped.gam
+                          vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
+                          CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
+                          SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
+                          MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                          MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                          IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                          echo ${GRAPH} map ${READS} ${PAIRING} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
+                          printf "${GRAPH}\tmap\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${SCORE}\n" >> report.tsv
 
-                      jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tmap_${GRAPH}${map}${READS}${PAIRING}/" >> roc_stats.tsv
+                          jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tmap_${GRAPH}map${READS}${PAIRING}/" >> roc_stats.tsv
+                      done
                   done
               done
           done

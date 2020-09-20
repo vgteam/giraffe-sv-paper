@@ -1,32 +1,36 @@
-(kubectl delete job xhchang-map-all || true) && kubectl apply -f - <<'EOF'
+(kubectl delete job xhchang-giraffe-all || true) && kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xhchang-map-all
+  name: xhchang-giraffe-all
 spec:
   ttlSecondsAfterFinished: 86400
   template:
     spec:
       containers:
-      - name: xhchang-map-all
+      - name: xhchang-giraffe
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.26.1
+        # TODO: need a new fixed release
+        # This one has the Giraffe fixes needed to work on the yeast graphs
+        image: quay.io/vgteam/vg:ci-2336-90284c1e29be1e12b5388776cacaafb1add04236
         command:
         - /bin/bash
         - -c
         - |
           cd /tmp
-          printf "graph\tmapper\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
-          printf "correct\tmq\tscore\taligner\n" > stats.tsv
+          printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
+          printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
           for SPECIES in human yeast ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(S288C yeast_all yeast_subset)
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
+                  GBWTS=(raw)
                   ;;
               human)
                   GRAPHS=(hgsvc 1kg)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
+                  GBWTS=(full sampled cover)
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
@@ -53,35 +57,46 @@ spec:
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
                           ;;
                       esac
-                      for MAPPER in map ; do
-                          aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
-                          aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
-                          aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
-                          for PAIRING in single paired ; do
+                      aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                      aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
+                      for GBWT in ${GBWTS[@]} ; do
+                          rm graph.gbwt
+                          rm graph.gg
+                          rm graph.min
+                          if [[ "${GBWT}" == "raw" ]] ; then
+                              aws s3 cp ${GRAPH_BASE}.gbwt ./graph.gbwt
+                              aws s3 cp ${GRAPH_BASE}.gg ./graph.gg
+                              aws s3 cp ${GRAPH_BASE}.min ./graph.min
+                          else
+                              aws s3 cp ${GRAPH_BASE}.${GBWT}.gbwt ./graph.gbwt
+                              aws s3 cp ${GRAPH_BASE}.${GBWT}.gg ./graph.gg
+                              aws s3 cp ${GRAPH_BASE}.${GBWT}.min ./graph.min
+                          fi
+                          for PAIRING in single paired ; do 
                               if [[ ${PAIRING} == "paired" ]] ; then
                                   PAIRED="-i"
-                              elif [[ ${PAIRING} == "single" ]] ; then
+                              elif [[ ${PAIRING} == "single" ]] ; then 
                                   PAIRED=""
                               fi
-                              vg map -x graph.xg -g graph.gcsa -G sim.gam ${PAIRED} -t 20 >mapped.gam
-                              vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count >compared.gam
+                              vg giraffe -x graph.xg -H graph.gbwt -g graph.gg  -d graph.dist -G sim.gam ${PAIRED} -t 22 > mapped.gam 
+                              vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
+                              aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/giraffe_${GRAPH}_${GBWT}_${READS}_${PAIRING}.json
                               CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
                               SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
-                              vg view -aj compared.gam > compared.json
                               MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
                               MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
                               IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
-                              echo ${GRAPH} ${MAPPER} ${READS} ${PAIRING} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
-                              printf "${GRAPH}\t${MAPPER}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
-                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tmap_${GRAPH}${GBWT}${READS}${PAIRING}/" >> stats.tsv
+                              echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
+                              printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
+                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${GRAPH}${GBWT}${READS}${PAIRING}/" >> roc_stats.tsv
                           done
                       done
                   done
               done
           done
-          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_map.tsv
-          aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_map.tsv
+          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_giraffe.tsv
+          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_giraffe.tsv
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
@@ -91,11 +106,11 @@ spec:
           requests:
             cpu: 24
             memory: "120Gi"
-            ephemeral-storage: "120Gi"
+            ephemeral-storage: "150Gi"
           limits:
             cpu: 24
             memory: "120Gi"
-            ephemeral-storage: "120Gi"
+            ephemeral-storage: "150Gi"
       restartPolicy: Never
       volumes:
       - name: scratch-volume
