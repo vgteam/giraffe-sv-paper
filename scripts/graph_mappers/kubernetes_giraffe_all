@@ -10,9 +10,8 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        # TODO: need a new fixed release
-        # This one has the Giraffe fixes needed to work on the yeast graphs
-        image: quay.io/vgteam/vg:ci-2336-90284c1e29be1e12b5388776cacaafb1add04236
+        # TODO: See if 1.26.1 works right and learns a pair distribution in all cases with S288C as the reference
+        image: quay.io/vgteam/vg:v1.26.1
         command:
         - /bin/bash
         - -c
