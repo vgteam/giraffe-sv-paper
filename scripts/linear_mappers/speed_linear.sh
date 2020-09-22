@@ -4,12 +4,18 @@ set -e
 
 THREAD_COUNT=16
 
-printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > report_speed.tsv
+printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\ttotal_time\tmemory\n" > report_speed.tsv
 
 #get all real read sets
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz
+
+#Get bigger read sets
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-s    huffled-600m.fq.gz novaseq6000.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuf    fled-600m.fq.gz hiseq2500.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shu    ffled-600m.fq.gz hiseqxten.fq.gz
+
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
     aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}.fq.gz ${STRAIN}.fq.gz
 done
@@ -76,16 +82,26 @@ for SPECIES in human yeast ; do
                     PAIRED="-p"
                 fi
 
-                bwa mem -t ${THREAD_COUNT} ${PAIRED} ${GRAPH}.fa ${READS}.fq > mapped.bam 2> log.txt
+                /usr/bin/time -v bash -c "bwa mem -t ${THREAD_COUNT} ${PAIRED} ${GRAPH}.fa ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
 
                 MAPPING_TIME="$(cat "log.txt" | grep "Processed" | sed 's/[^0-9]*\([0-9]*\) reads in .* CPU sec, \([0-9]*\.[0-9]*\) real sec/\1/g' | tr ' ' '\t' | awk '{sum1+=$1} END {print sum1}')"
                 RPS_ALL_THREADS="$(cat "log.txt" | grep "Processed" | sed 's/[^0-9]*\([0-9]*\) reads in .* CPU sec, \([0-9]*\.[0-9]*\) real sec/\1 \2/g' | tr ' ' '\t' | awk '{sum1+=$1; sum2+=$2} END {print sum1/sum2}')"
                 TOTAL_TIME="$(cat "log.txt" | grep "[main] Real time" | sed 's/Real time: \([0-9]*\.[0-9]*\) sec/\1/g')"
                 LOAD_TIME="$(echo "${TOTAL_TIME} - ${MAPPING_TIME}" | bc -l)"
                 RPS_PER_THREAD="$(echo "${RPS_ALL_THREADS} / ${THREAD_COUNT}" | bc -l)"
+
+                #Get time and memory use as reported by /usr/bin/time
+
+                USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User    \ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/Sys    tem\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                TOTAL_TIME="$(echo "${USER_TIME} + ${SYS_TIME}" | bc -l)"
+                MEMORY="$(cat "time-log.txt" | grep "Maximum resident set" | sed     's/Maximum\ resident\ set\ size\ (kbytes):\ \([0-9]*\)/\1/g')"
+
                 
-                printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\n" >> report_speed.tsv 
+                printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${MEMORY}\n" >> report_speed.tsv 
+                printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${MEMORY}\n" >> bwt-log.tsv 
                 cat log.txt >> bwa-log.txt
+                cat time-log.txt >> bwa-log.txt
 
             done
         done
@@ -96,9 +112,9 @@ for SPECIES in human yeast ; do
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
-                    minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt
+                    /usr/bin/time -v bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt" 2> time-log.txt
                 elif [[ ${PAIRING} == "paired" ]] ; then
-                    minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt
+                    /usr/bin/time -v bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
                 fi
 
 
@@ -109,10 +125,20 @@ for SPECIES in human yeast ; do
                 RUNTIME="$(echo "${TOTAL_TIME} - ${INDEX_LOAD_TIME}" | bc -l)"
                 ALL_RPS="$(echo "${MAPPED_COUNT} / ${RUNTIME}" | bc -l)"
                 RPS_PER_THREAD="$(echo "${ALL_RPS} / ${THREAD_COUNT}" | bc -l)"
-                MEMORY="$(cat log.txt | grep "Peak RSS" | sed 's/.*Peak RSS:\ \([0-9]*\.[0-9]*]\)\ GB/\1/g')"
+                REPORTED_MEMORY="$(cat log.txt | grep "Peak RSS" | sed 's/.*Peak RSS:\ \([0-9]*\.[0-9]*\)\ GB/\1/g')"
                 
-                printf "${GRAPH}\tminimap2\t${READS}\t${PAIRING}\t${INDEX_LOAD_TIME}\t${RPS_PER_THREAD}\t${MEMORY}\n" >> report_speed.tsv 
+
+                #Get time and memory use as reported by /usr/bin/time
+
+                USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User    \ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/Sys    tem\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                TOTAL_TIME="$(echo "${USER_TIME} + ${SYS_TIME}" | bc -l)"
+                MEMORY="$(cat "time-log.txt" | grep "Maximum resident set" | sed     's/Maximum\ resident\ set\ size\ (kbytes):\ \([0-9]*\)/\1/g')"
+
+
+                printf "${GRAPH}\tminimap2\t${READS}\t${PAIRING}\t${INDEX_LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${MEMORY}\t${REPORTED_MEMORY}\n" >> report_speed.tsv 
                 cat log.txt >> minimap2-log.txt
+                cat time-log.txt >> minimap2-log.txt
             done
         done
     done
@@ -142,8 +168,19 @@ for SPECIES in human yeast ; do
                 fi
 
                 
-                printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\n" >> report_speed.tsv 
+                #Get time and memory use as reported by /usr/bin/time
+
+                USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User    \ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/Sys    tem\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                TOTAL_TIME="$(echo "${USER_TIME} + ${SYS_TIME}" | bc -l)"
+                MEMORY="$(cat "time-log.txt" | grep "Maximum resident set" | sed     's/Maximum\ resident\ set\ size\ (kbytes):\ \([0-9]*\)/\1/g')"
+
+
+                printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${MEMORY}\n" >> report_speed.tsv 
+
+                printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${MEMORY}\n" >> bowtie2-log.tsv 
                 cat log.txt >> bowtie2-log.txt
+                cat time-log >> bowtie2-log.txt
 
             done
         done
