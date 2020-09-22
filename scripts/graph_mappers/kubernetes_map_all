@@ -15,6 +15,7 @@ spec:
         - /bin/bash
         - -c
         - |
+          set -ex
           cd /tmp
           printf "graph\tmapper\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > stats.tsv
