@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # plot-rocs.sh: plot ROC curves for Giraffe and compared mappers
 
+set -ex
+
 # Where should the ROCs end up
 WORKDIR="$HOME/build/vg/trash/rocs"
 
