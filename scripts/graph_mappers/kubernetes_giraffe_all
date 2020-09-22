@@ -23,7 +23,7 @@ spec:
           for SPECIES in human yeast ; do
               case "${SPECIES}" in
               yeast)
-                  GRAPHS=(S288C yeast_all yeast_subset)
+                  GRAPHS=(yeast_all yeast_subset)
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
                   GBWTS=(raw)
                   ;;
