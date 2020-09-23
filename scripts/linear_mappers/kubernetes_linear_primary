@@ -62,9 +62,11 @@ spec:
           bowtie2-build --large-index hgsvc.fa hgsvc_bowtie2
           bowtie2-build --large-index S288C.fa S288C_bowtie2
           
-          minimap2 -x sr -d 1kg.mmi 1kg.fa
-          minimap2 -x sr -d hgsvc.mmi hgsvc.fa
-          minimap2 -x sr -d S288C.mmi S288C.fa
+          # These fail when they get to mapping because there's nothing to map.
+          # But we only want them for indexing.
+          minimap2 -x sr -d 1kg.mmi 1kg.fa || true
+          minimap2 -x sr -d hgsvc.mmi hgsvc.fa || true
+          minimap2 -x sr -d S288C.mmi S288C.fa || true
 
           for SPECIES in human yeast ; do
               case "${SPECIES}" in
@@ -114,9 +116,9 @@ spec:
 
                               elif [[ ${ALGORITHM} == "bowtie2" ]] ; then
                                   if [[ ${PAIRING} == "paired" ]] ; then
-                                      bowtie2 -t -p ${THREADS} -X 1065 ${GRAPH}_bowtie2 --interleaved sim.paired.fq > mapped.bam
+                                      bowtie2 -t -p ${THREADS} -X 1065 -x ${GRAPH}_bowtie2 --interleaved sim.paired.fq > mapped.bam
                                   elif [[ ${PAIRING} == "single" ]] ; then 
-                                      bowtie2 -t -p ${THREADS} ${GRAPH}_bowtie2 -U sim.paired.fq > mapped.bam
+                                      bowtie2 -t -p ${THREADS} -x ${GRAPH}_bowtie2 -U sim.paired.fq > mapped.bam
                                   fi
                               fi
                               samtools view -F 2048 -b mapped.bam > mapped.primary.bam
