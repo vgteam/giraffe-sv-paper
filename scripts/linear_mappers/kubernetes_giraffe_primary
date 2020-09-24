@@ -10,11 +10,13 @@ spec:
       containers:
       - name: xhchang-giraffe-primary
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.26.1
+        # This is v1.26.1 with a fallback to single-end if it learns a broken paired end distribution
+        image: quay.io/vgteam/vg:ci-2348-1999d696e30ce2c672fb7c0269a90fbba44eee1c
         command:
         - /bin/bash
         - -c
         - |
+          set -ex
           cd /tmp
           printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
@@ -28,7 +30,8 @@ spec:
               human)
                   GRAPHS=(hgsvc 1kg)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
-                  GBWTS=(paths cover)
+                  # We really only need one GBWT because we have no variation
+                  GBWTS=(cover)
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
@@ -68,7 +71,7 @@ spec:
                               elif [[ ${PAIRING} == "single" ]] ; then 
                                   PAIRED=""
                               fi
-                              SPEED="$(vg giraffe -x graph.xg -H graph.gbwt -g graph.gg  -d graph.dist -G sim.gam ${PAIRED} -t 22 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
+                              SPEED="$(vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam ${PAIRED} -t 22 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
                               vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
                               CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
                               SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
@@ -78,7 +81,7 @@ spec:
                               echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
                               printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${SCORE}\n" >> report.tsv
 
-                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${GRAPH}${GBWT}${READS}${PAIRING}/" >> roc_stats.tsv
+                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_primary_${GRAPH}${GBWT}${READS}${PAIRING}/" >> roc_stats.tsv
                           done
                       done
                   done
