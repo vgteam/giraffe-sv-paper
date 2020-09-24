@@ -66,7 +66,7 @@ spec:
                           echo ${GRAPH} map ${READS} ${PAIRING} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
                           printf "${GRAPH}\tmap\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${SCORE}\n" >> report.tsv
 
-                          jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tmap_${GRAPH}map${READS}${PAIRING}/" >> roc_stats.tsv
+                          jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tmap_primary_${GRAPH}${READS}${PAIRING}/" >> roc_stats.tsv
                       done
                   done
               done
