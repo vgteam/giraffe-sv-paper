@@ -10,7 +10,8 @@ spec:
       containers:
       - name: xhchang-giraffe-primary
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.26.1
+        # This is v1.26.1 with a fallback to single-end if it learns a broken paired end distribution
+        image: quay.io/vgteam/vg:ci-2348-1999d696e30ce2c672fb7c0269a90fbba44eee1c
         command:
         - /bin/bash
         - -c
