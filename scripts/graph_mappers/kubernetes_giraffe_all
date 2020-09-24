@@ -78,7 +78,7 @@ spec:
                               elif [[ ${PAIRING} == "single" ]] ; then 
                                   PAIRED=""
                               fi
-                              vg giraffe -x graph.xg -H graph.gbwt -g graph.gg  -d graph.dist -G sim.gam ${PAIRED} -t 22 > mapped.gam 
+                              vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam ${PAIRED} -t 22 > mapped.gam 
                               vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
                               aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/giraffe_${GRAPH}_${GBWT}_${READS}_${PAIRING}.json
                               CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
