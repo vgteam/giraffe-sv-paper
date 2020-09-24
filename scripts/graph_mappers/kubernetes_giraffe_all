@@ -72,23 +72,25 @@ spec:
                               aws s3 cp ${GRAPH_BASE}.${GBWT}.gg ./graph.gg
                               aws s3 cp ${GRAPH_BASE}.${GBWT}.min ./graph.min
                           fi
-                          for PAIRING in single paired ; do 
-                              if [[ ${PAIRING} == "paired" ]] ; then
-                                  PAIRED="-i"
-                              elif [[ ${PAIRING} == "single" ]] ; then 
-                                  PAIRED=""
-                              fi
-                              vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam ${PAIRED} -t 22 > mapped.gam 
-                              vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
-                              aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/giraffe_${GRAPH}_${GBWT}_${READS}_${PAIRING}.json
-                              CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
-                              SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
-                              MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
-                              MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
-                              IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
-                              echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
-                              printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
-                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${GRAPH}${GBWT}${READS}${PAIRING}/" >> roc_stats.tsv
+                          for PARAM_PRESET in default fast ; do
+                              for PAIRING in single paired ; do 
+                                  if [[ ${PAIRING} == "paired" ]] ; then
+                                      PAIRED="-i"
+                                  elif [[ ${PAIRING} == "single" ]] ; then 
+                                      PAIRED=""
+                                  fi
+                                  vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam -b ${PARAM_PRESET} ${PAIRED} -t 22 > mapped.gam 
+                                  vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
+                                  aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/giraffe_${GRAPH}_${GBWT}_${READS}_${PAIRING}.json
+                                  CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
+                                  SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
+                                  MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                                  MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                                  IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                                  echo ${GRAPH} ${GBWT} ${READS} ${PARAM_PRESET}${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
+                                  printf "${GRAPH}\t${GBWT}\t${READS}\t${PARAM_PRESET}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
+                                  jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${PARAM_PRESET}_${GRAPH}${GBWT}${READS}${PAIRING}/" >> roc_stats.tsv
+                              done
                           done
                       done
                   done
