@@ -52,16 +52,19 @@ for SPECIES in human yeast ; do
         fi
         for READS in ${READSETS[@]} ; do
 
-            for PAIRING in single paired ; do 
-                if [[ ${PAIRING} == "single" ]] ; then
-                    PAIRED=""
-                elif [[ ${PAIRING} == "paired" ]] ; then
-                    PAIRED="-i"
-                fi
-                SPEED="$(vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
-                
-                echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED}
-                printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\n" >> speed_report_giraffe.tsv 
+            for PARAM_PRESET in default fast ; do
+
+                for PAIRING in single paired ; do 
+                    if [[ ${PAIRING} == "single" ]] ; then
+                        PAIRED=""
+                    elif [[ ${PAIRING} == "paired" ]] ; then
+                        PAIRED="-i"
+                    fi
+                    SPEED="$(vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz -b ${PARAM_PRESET} ${PAIRED} -t 16 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
+                    
+                    echo ${GRAPH} ${GBWT} ${READS} ${PARAM_PRESET} ${PAIRING} ${SPEED}
+                    printf "${GRAPH}\t${GBWT}\t${READS}\t${PARAM_PRESET}\t${PAIRING}\t${SPEED}\n" >> speed_report_giraffe.tsv 
+                done
             done
         done
     done
