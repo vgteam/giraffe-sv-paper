@@ -96,7 +96,9 @@ spec:
                           ;;
                       S288C)
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.fq ./sim.fq
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.fq.gz ./sim.fq.gz
+                          rm -f sim.fq
+                          gunzip sim.fq.gz
                           ;;
                       esac
                       sed 's/_1$//g' sim.fq | sed 's/_2$//g' > sim.paired.fq
