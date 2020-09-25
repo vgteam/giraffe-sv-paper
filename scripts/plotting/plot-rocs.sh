@@ -14,16 +14,12 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 mkdir -p "${WORKDIR}"
 
-if [ ! -e "${WORKDIR}/stats" ] ; then
-    mkdir -p "${WORKDIR}/stats"
-    aws s3 cp ${STAT_URL}/roc_stats_giraffe.tsv "${WORKDIR}/stats/"
-    aws s3 cp ${STAT_URL}/roc_stats_giraffe_primary.tsv "${WORKDIR}/stats/"
-    aws s3 cp ${STAT_URL}/roc_stats_map.tsv "${WORKDIR}/stats/"
-    aws s3 cp ${STAT_URL}/roc_stats_map_primary.tsv "${WORKDIR}/stats/"
-    aws s3 cp ${STAT_URL}/roc_stats_bowtie2_primary.tsv "${WORKDIR}/stats/"
-    aws s3 cp ${STAT_URL}/roc_stats_minimap2_primary.tsv "${WORKDIR}/stats/" 
-    aws s3 cp ${STAT_URL}/roc_stats_bwa_primary.tsv "${WORKDIR}/stats/"
-fi
+mkdir -p "${WORKDIR}/stats"
+for STAT_FILE in roc_stats_giraffe.tsv roc_stats_giraffe_primary.tsv roc_stats_map.tsv roc_stats_map_primary.tsv roc_stats_bowtie2_primary.tsv roc_stats_minimap2_primary.tsv roc_stats_bwa_primary.tsv ; do
+    if [ ! -e "${WORKDIR}/stats/${STAT_FILE}" ] ; then
+        aws s3 cp "${STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}"
+    fi
+done
 
 for SPECIES in yeast human ; do
     case "${SPECIES}" in
