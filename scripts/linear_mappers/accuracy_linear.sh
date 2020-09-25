@@ -51,8 +51,9 @@ for SPECIES in human yeast ; do
         for READS in ${READSETS[@]} ; do
             case ${GRAPH} in
             1kg)
-                aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.gam ./sim.gam
-                aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.fq.gz ./sim.fq.gz
+                aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
+
+                aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.fq.gz ./sim.fq.gz
                 gunzip sim.fq.gz
                 ;;
             hgsvc)

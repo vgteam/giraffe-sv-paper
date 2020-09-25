@@ -19,8 +19,8 @@ spec:
           cd /tmp
           
           export DEBIAN_FRONTEND=noninteractive
-          # vg ships bwa already but no bowtie2 or minimap2
-          apt-get update -q && apt-get install git build-essential libz-dev libtbb-dev bwa -q -y --force-yes
+          # vg ships bwa already but no bowtie2 or minimap2 or hisat2
+          apt-get update -q && apt-get install git build-essential libz-dev libtbb-dev bwa hisat2 -q -y --force-yes
           git clone https://github.com/lh3/minimap2
           cd minimap2 && git checkout c9874e2dc50e32bbff4ded01cf5ec0e9be0a53dd && make
           cp minimap2 /bin
@@ -88,8 +88,8 @@ spec:
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1kg)
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.fq.gz ./sim.fq.gz
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim..filt1M.fq.gz ./sim.fq.gz
                           rm -f sim.fq
                           gunzip sim.fq.gz
                           ;;
