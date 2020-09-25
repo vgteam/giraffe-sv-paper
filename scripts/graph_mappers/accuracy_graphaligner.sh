@@ -9,6 +9,8 @@ aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filt
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset.xg ./yeast_subset.xg
 
+THREAD_COUNT=16
+
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
@@ -40,7 +42,7 @@ for SPECIES in human yeast ; do
             esac
 
 
-            GraphAligner -g ${GRAPH}.gfa -f sim.fq.gz -a mapped.gam -x vg --seeds-mxm-cache-prefix ${GRAPH}_seeds
+            GraphAligner -g ${GRAPH}.gfa -f sim.fq.gz -a mapped.gam -x vg -t ${THREAD_COUNT} --seeds-mxm-cache-prefix ${GRAPH}_seeds
 
             
             ~/vg annotate -m -x ${GRAPH}.xg -a mapped.gam | ~/vg gamcompare -s -r 100 - sim.gam 2> count | ~/vg view -aj - > compared.json

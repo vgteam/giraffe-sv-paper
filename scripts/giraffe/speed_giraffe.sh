@@ -23,7 +23,7 @@ for SPECIES in human yeast ; do
     human)
         GRAPHS=(hgsvc 1kg)
         READSETS=(novaseq6000 hiseqxten hiseq2500)
-        GBWTS=(full sampled cover)
+        GBWTS=("full" "sampled.64" "cover")
         ;; 
     esac
     for GRAPH in ${GRAPHS[@]} ; do
