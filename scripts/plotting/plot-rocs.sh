@@ -25,7 +25,7 @@ if [ ! -e "${WORKDIR}/stats" ] ; then
     aws s3 cp ${STAT_URL}/roc_stats_bwa_primary.tsv "${WORKDIR}/stats/"
 fi
 
-for SPECIES in human yeast ; do
+for SPECIES in yeast human ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C yeast_all yeast_subset)
@@ -38,15 +38,38 @@ for SPECIES in human yeast ; do
         GBWT="sampled"
         ;;
     esac
-    for GRAPH in ${GRAPHS[@]} ; do
-        for READS in ${READSETS[@]} ; do
+    for READS in ${READSETS[@]} ; do
+        # Do human-designed plots
+        if [ "${SPECIES}" == "yeast" ] ; then
+            for PAIRING in single paired ; do
+                if [ "${PAIRING}" == "paired" ] ; then
+                    PE_OPTS="-- -pe"
+                else
+                    PE_OPTS="-v -- -pe"
+                fi
+                if [ ! -e "${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv" ] ; then
+                    echo "Extracting ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv"
+                    cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C${READS})" | grep ${PE_OPTS} >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                    wc -l ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                fi
+                if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
+                fi
+            done
+        fi
+        
+        # Do boring plots
+        for GRAPH in ${GRAPHS[@]} ; do
             if [ ! -e "${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv" ] ; then
                 echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv"
                 cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(map)?(${READS})" >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
                 wc -l ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
             fi
-            Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png
+            if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png" ] ; then
+                Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png
+            fi
         done
     done
 done
