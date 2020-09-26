@@ -1,0 +1,196 @@
+(kubectl delete job xhchang-linear-primary || true) && kubectl apply -f - <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: xhchang-linear-primary
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+      - name: xhchang-map-primary
+        imagePullPolicy: Always
+        image: quay.io/vgteam/vg:v1.26.1
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -ex
+          cd /tmp
+          
+          export DEBIAN_FRONTEND=noninteractive
+          # vg ships bwa already but no hisat2
+          apt-get update -q && apt-get install hisat2 -q -y --force-yes
+          
+          # Get the read combiner script
+          wget https://raw.githubusercontent.com/vgteam/giraffe-sv-paper/master/scripts/linear_mappers/combine_reads.py
+          
+          printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_hisat2.tsv
+          printf "correct\tmq\tscore\taligner\n" > roc_stats_hisat2.tsv
+
+          THREADS=16
+          
+          #Get xgs
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.xg ./S288C.xg
+
+          for SPECIES in human yeast ; do
+              case "${SPECIES}" in
+              yeast)
+                  # Yeasts lack VCFs so we can only do primary
+                  REFS=(s288c)
+                  READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
+                  ;;
+              human)
+                  REFS=(grch37 grch37_snp grch38 grch38_hgsvc_all)
+                  READSETS=(novaseq6000 hiseqxten hiseq2500)
+                  ;;
+              esac
+              for REF in ${REFS} ; do
+                  for READKIND in ${READSETS[@]} ; do
+                      case ${SPECIES} in
+                      human)
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READKIND}/out_sim/sim.filt1M.gam ./sim.gam
+                          READS="s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READKIND}/out_sim/sim.filt1M.fq.gz"
+                          ;;
+                      yeast)
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READKIND}.gam ./sim.gam
+                          READS="s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.fq.gz"
+                          ;;
+                      esac
+
+
+                      ALGORITHM=hisat2
+                      CPU="${THREADS}"
+                      PARA="def"
+                      
+                      # Reconstruct what our condition would look like to the other scripts
+                      case REF in
+                      s288c)
+                          GRAPH="S288C"
+                          SUFFIX="_linear"
+                          ;;
+                      grch37)
+                          GRAPH="1kg"
+                          SUFFIX="_linear"
+                          ;;
+                      grch37_snp)
+                          GRAPH="1kg"
+                          SUFFIX=""
+                          ;;
+                      grch38)
+                          GRAPH="hgsvc"
+                          SUFFIX="_linear"
+                          ;;
+                      grch38_hgsvc_all)
+                          GRAPH="hgsvc"
+                          SUFFIX=""
+                          ;;
+                      esac
+
+                      # ${CPU} is the number of CPUs
+                      # ${NAME} is just a naming suffix (e.g. "1kg_hiseq2500")
+                      # ${PARA} is the parameter preset and can take "def" (deafult),  "sens" (sensitive) and "vsens" (very-sensitive)
+                      # ${READS} is the absolute path to the interleaved reads on s3 (e.g. "s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/hiseq2500/out_sim/sim.filt1M.fq.gz")
+                      # ${REF} is the graph reference used. Can take the values grch37 (linear) and grch37_snp for 37. And grch38 (linear) and grch38_hgsvc_all for 38.
+                      
+                      # Set file name prefixes
+                      OUT_PREFIX="mapped"
+                      # Download reads
+                      aws s3 cp ${READS} reads.fq.gz --no-progress
+                      # Download index
+                      aws s3 cp s3://vg-k8s/users/jsibbesen/giraffe/paper/hisat2/indexes/${REF}/ . --recursive --no-progress
+                      # De-interleave reads (https://gist.github.com/nathanhaigh/3521724)
+                      /usr/bin/time -v bash -c 'zcat reads.fq.gz | wc -l; zcat reads.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > reads_1.fq) | cut -f 5-8 | tr "\t" "\n" > reads_2.fq; wc -l reads_1.fq; wc -l reads_2.fq'
+                      # Compress reads
+                      /usr/bin/time -v bash -c 'gzip reads_1.fq; gzip reads_2.fq' 
+                      # Use default HISAT2
+                      if [ "${PARA}" = "def" ]; then
+                          # Map single-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -U reads.fq.gz -S ${OUT_PREFIX}_se.sam"
+                          # Map paired-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -1 reads_1.fq.gz -2 reads_2.fq.gz -S ${OUT_PREFIX}_pe.sam"
+                      # Use sensitive HISAT2
+                      elif [ "${PARA}" = "sens" ]; then
+                          # Map single-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -U reads.fq.gz -S ${OUT_PREFIX}_se.sam"
+                          # Map paired-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -1 reads_1.fq.gz -2 reads_2.fq.gz -S ${OUT_PREFIX}_pe.sam"
+                      # Use very sensitive HISAT2
+                      elif [ "${PARA}" = "vsens" ]; then
+                          # Map single-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -U reads.fq.gz -S ${OUT_PREFIX}_se.sam"
+                          # Map paired-end reads
+                          /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -1 reads_1.fq.gz -2 reads_2.fq.gz -S ${OUT_PREFIX}_pe.sam"
+                      fi
+                      # Compress single-end alignments
+                      /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_se.sam > ${OUT_PREFIX}_se.bam"
+                      # Compress paired-end alignments
+                      /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_pe.sam > ${OUT_PREFIX}_pe.bam"
+                      
+                      for PAIRING in single paired ; do 
+                          if [ "${PAIRING}" == "paired" ] ; then
+                              MAPPED_BAM="${OUT_PREFIX}_pe.bam"
+                          else
+                              MAPPED_BAM="${OUT_PREFIX}_se.bam"
+                          fi
+                      
+                          samtools view -F 2048 -b "${MAPPED_BAM}" > mapped.primary.bam
+                          samtools view -f 2048 -b "${MAPPED_BAM}" > mapped.secondary.bam
+
+                          vg inject -x ${GRAPH}.xg mapped.primary.bam > mapped.primary.gam
+                          vg inject -x ${GRAPH}.xg mapped.secondary.bam > mapped.secondary.gam
+              
+                          if [[ ${PAIRING} == "paired" ]] ; then
+                              vg view -aj mapped.primary.gam | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -aGJ - | vg annotate -m -x ${GRAPH}.xg -a - | vg gamcompare -r 100 -s - sim.gam 2> count | vg view -aj - > compared.primary.json
+                              vg view -aj mapped.secondary.gam | sed 's/\/1/_1/g' | sed 's/\/2/_2/g' | vg view -aGJ - | vg annotate -m -x ${GRAPH}.xg -a - | vg gamcompare -r 100 - sim.gam| vg view -aj - > compared.secondary.json
+                          elif [[ ${PAIRING} == "single" ]] ; then 
+                               vg annotate -m -x ${GRAPH}.xg -a mapped.primary.gam | vg gamcompare -s -r 100 - sim.gam 2> count | vg view -aj - > compared.primary.json
+                               vg annotate -m -x ${GRAPH}.xg -a mapped.secondary.gam | vg gamcompare -r 100 - sim.gam | vg view -aj - > compared.secondary.json
+                          fi
+                          python ./combine_reads.py compared.primary.json compared.secondary.json compared.json
+                          sed -i '/^$/d' compared.json
+              
+              
+                          CORRECT_COUNT="$(grep correctly_mapped compared.json | wc -l)"
+                          SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
+                          MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                          MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                          IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                          echo ${GRAPH} ${READKIND} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${SCORE}
+                          printf "${GRAPH}\t${ALGORITHM}${SUFFIX}\t${READKIND}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report_${ALGORITHM}.tsv
+              
+                          jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}${SUFFIX}_${GRAPH}${READKIND}${PAIRING}/" >> roc_stats_${ALGORITHM}.tsv
+                      done
+                  done
+              done
+          done
+          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_hisat2.tsv
+          
+          aws s3 cp report_hisat2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_hisat2_primary.tsv
+          
+          aws s3 cp roc_stats_hisat2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_hisat2_primary.tsv
+        volumeMounts:
+        - mountPath: /tmp
+          name: scratch-volume
+        - mountPath: /root/.aws
+          name: s3-credentials
+        resources:
+          requests:
+            cpu: 24
+            memory: "120Gi"
+            ephemeral-storage: "150Gi"
+          limits:
+            cpu: 24
+            memory: "120Gi"
+            ephemeral-storage: "150Gi"
+      restartPolicy: Never
+      volumes:
+      - name: scratch-volume
+        emptyDir: {}
+      - name: s3-credentials
+        secret:
+          secretName: shared-s3-credentials
+  backoffLimit: 0
+EOF
