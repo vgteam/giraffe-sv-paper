@@ -1,8 +1,8 @@
-(kubectl delete job xhchang-linear-primary || true) && kubectl apply -f - <<'EOF'
+(kubectl delete job xhchang-hisat2-all || true) && kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xhchang-linear-primary
+  name: xhchang-hisat2-all
 spec:
   ttlSecondsAfterFinished: 86400
   template:
@@ -19,8 +19,8 @@ spec:
           cd /tmp
           
           export DEBIAN_FRONTEND=noninteractive
-          # vg ships bwa already but no hisat2
-          apt-get update -q && apt-get install hisat2 -q -y --force-yes
+          # vg ships bwa already but no hisat2 or even /usr/bin/time
+          apt-get update -q && apt-get install time hisat2 -q -y --force-yes
           
           # Get the read combiner script
           wget https://raw.githubusercontent.com/vgteam/giraffe-sv-paper/master/scripts/linear_mappers/combine_reads.py
@@ -35,7 +35,7 @@ spec:
           aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
           aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.xg ./S288C.xg
 
-          for SPECIES in human yeast ; do
+          for SPECIES in yeast human ; do
               case "${SPECIES}" in
               yeast)
                   # Yeasts lack VCFs so we can only do primary
@@ -47,7 +47,8 @@ spec:
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   ;;
               esac
-              for REF in ${REFS} ; do
+              for REF in ${REFS[@]} ; do
+                  rm -f *.ht2
                   for READKIND in ${READSETS[@]} ; do
                       case ${SPECIES} in
                       human)
