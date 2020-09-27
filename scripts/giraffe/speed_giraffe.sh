@@ -4,6 +4,12 @@ set -e
 
 THREAD_COUNT=16
 
+#600million real reads
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz novaseq6000.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-600m.fq.gz hiseq2500.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-600m.fq.gz hiseqxten.fq.gz
+
+#2million real reads
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz
@@ -12,7 +18,7 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
 done
 
 
-printf "graph\talgorithm\treads\tpairing\tspeed\n" > speed_report_giraffe.tsv
+printf "graph\talgorithm\treads\tpairing\tspeed\ttotal_cpu_sec\ttotal_wall_clock_time\tmax_resident_set_size(kbytes)\n" > speed_report_giraffe.tsv
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
@@ -60,10 +66,21 @@ for SPECIES in human yeast ; do
                     elif [[ ${PAIRING} == "paired" ]] ; then
                         PAIRED="-i"
                     fi
-                    SPEED="$(vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz -b ${PARAM_PRESET} ${PAIRED} -t 16 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
-                    
-                    echo ${GRAPH} ${GBWT} ${READS} ${PARAM_PRESET} ${PAIRING} ${SPEED}
-                    printf "${GRAPH}\t${GBWT}\t${READS}\t${PARAM_PRESET}\t${PAIRING}\t${SPEED}\n" >> speed_report_giraffe.tsv 
+                    /usr/bin/time -v bash -c "vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz -b ${PARAM_PRESET} ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt 
+                    SPEED="$(cat log.txt | grep speed | sed 's/[^0-9\.]//g')"
+                    USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                    SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/System\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
+                    TOTAL_TIME="$(echo "${USER_TIME} + ${SYS_TIME}" | bc -l)"
+                    CLOCK_TIME="$(cat "time-log.txt" | grep "Elapsed (wall clock) time" | sed 's/.*\ \([0-9,:]*\)/\1/g')"
+                    MEMORY="$(cat "time-log.txt" | grep "Maximum resident set" | sed 's/Maximum\ resident\ set\ size\ (kbytes):\ \([0-9]*\)/\1/g')"
+
+
+                    echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED} ${TOTAL_TIME} ${CLOCK_TIME} ${MEMORY}
+                    printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> giraffe_speed_log.txt
+                    cat tim-log.txt >> giraffe_speed_log.txt
+                    cat logtxt >> giraffe_speed_log.txt
+                    printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\r${CLOCK_TIME}\t${MEMORY}\n" >> speed_report_giraffe.tsv
+
                 done
             done
         done
