@@ -57,7 +57,7 @@ spec:
                           ;;
                       yeast)
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READKIND}.gam ./sim.gam
-                          READS="s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.fq.gz"
+                          READS="s3://vg-k8s/profiling/reads/sim/yeast/sim-${READKIND}.fq.gz"
                           ;;
                       esac
 
