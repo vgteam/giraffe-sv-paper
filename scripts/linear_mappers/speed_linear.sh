@@ -49,9 +49,9 @@ bwa index 1kg.fa
 bwa index hgsvc.fa
 bwa index S288C.fa
 
-bowtie2-build --large-index 1kg.fna 1kg
-bowtie2-build --large-index hgsvc.fna hgsvc
-bowtie2-build --large-index S288C.fna S288C
+bowtie2-build --large-index 1kg.fa 1kg
+bowtie2-build --large-index hgsvc.fa hgsvc
+bowtie2-build --large-index S288C.fa S288C
 
 minimap2 -x sr -d 1kg.mmi 1kg.fa
 minimap2 -x sr -d hgsvc.mmi hgsvc.fa
