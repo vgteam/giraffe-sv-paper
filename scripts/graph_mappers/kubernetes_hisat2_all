@@ -1,3 +1,5 @@
+# TODO: this script doesn't work!
+# hisat2 seems to run, but vg inject segfaulted last time I tried to run it.
 (kubectl delete job xhchang-hisat2-all || true) && kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
@@ -39,7 +41,7 @@ spec:
               case "${SPECIES}" in
               yeast)
                   # Yeasts lack VCFs so we can only do primary
-                  REFS=(s288c)
+                  REFS=(yeast_s288c)
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
                   ;;
               human)
@@ -67,26 +69,31 @@ spec:
                       PARA="def"
                       
                       # Reconstruct what our condition would look like to the other scripts
-                      case REF in
-                      s288c)
+                      case ${REF} in
+                      yeast_s288c)
                           GRAPH="S288C"
                           SUFFIX="_linear"
+                          REFPATH="s288c"
                           ;;
                       grch37)
                           GRAPH="1kg"
                           SUFFIX="_linear"
+                          REFPATH="${REF}"
                           ;;
                       grch37_snp)
                           GRAPH="1kg"
                           SUFFIX=""
+                          REFPATH="${REF}"
                           ;;
                       grch38)
                           GRAPH="hgsvc"
                           SUFFIX="_linear"
+                          REFPATH="${REF}"
                           ;;
                       grch38_hgsvc_all)
                           GRAPH="hgsvc"
                           SUFFIX=""
+                          REFPATH="${REF}"
                           ;;
                       esac
 
@@ -101,7 +108,7 @@ spec:
                       # Download reads
                       aws s3 cp ${READS} reads.fq.gz --no-progress
                       # Download index
-                      aws s3 cp s3://vg-k8s/users/jsibbesen/giraffe/paper/hisat2/indexes/${REF}/ . --recursive --no-progress
+                      aws s3 cp s3://vg-k8s/users/jsibbesen/giraffe/paper/hisat2/indexes/${REFPATH}/ . --recursive --no-progress
                       # De-interleave reads (https://gist.github.com/nathanhaigh/3521724)
                       /usr/bin/time -v bash -c 'zcat reads.fq.gz | wc -l; zcat reads.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > reads_1.fq) | cut -f 5-8 | tr "\t" "\n" > reads_2.fq; wc -l reads_1.fq; wc -l reads_2.fq'
                       # Compress reads
