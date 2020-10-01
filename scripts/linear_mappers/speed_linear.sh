@@ -4,7 +4,7 @@ set -e
 
 THREAD_COUNT=16
 
-printf "graph\talgorithm\treads\tpairing\tspeed\ttotal_cpu_sec\ttotal_wall_clock_time\tmax_resident_set_size(kbytes)\n" > speed_report_giraffe.tsv
+printf "graph\talgorithm\treads\tpairing\tspeed\ttotal_cpu_sec\ttotal_wall_clock_time\tmax_resident_set_size(kbytes)\n" > report_speed.tsv
 
 #get all real read sets
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
@@ -36,31 +36,30 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
 done
 
 
-#Get the reference genomes
+Get the reference genomes
 aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa 1kg.fa
 aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz hgsvc.fa.gz
 gunzip hgsvc.fa.gz
-sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa ./S288C.fa
 
 
 #Build all indexes
-bwa index 1kg.fa
-bwa index hgsvc.fa
+#bwa index 1kg.fa
+#bwa index hgsvc.fa
 bwa index S288C.fa
 
-bowtie2-build --large-index 1kg.fa 1kg
-bowtie2-build --large-index hgsvc.fa hgsvc
-bowtie2-build --large-index S288C.fa S288C
+#bowtie2-build --large-index 1kg.fa 1kg
+#bowtie2-build --large-index hgsvc.fa hgsvc
+bowtie2-build --large-index S288C.fna S288C
 
-minimap2 -x sr -d 1kg.mmi 1kg.fa
-minimap2 -x sr -d hgsvc.mmi hgsvc.fa
+#minimap2 -x sr -d 1kg.mmi 1kg.fa
+#minimap2 -x sr -d hgsvc.mmi hgsvc.fa
 minimap2 -x sr -d S288C.mmi S288C.fa
 
 
 
 
-for SPECIES in human yeast ; do
+for SPECIES in human ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C)
@@ -68,10 +67,23 @@ for SPECIES in human yeast ; do
         ;;
     human)
         GRAPHS=(hgsvc 1kg)
-        READSETS=(novaseq6000 hiseqxten hiseq2500)
+        READSETS=(novaseq6000)
         ;;
     esac
-    
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.amb 1kg.fa.amb
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.ann 1kg.fa.ann
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.bwt 1kg.fa.bwt
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.fai 1kg.fa.fai
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.pac 1kg.fa.pac
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.sa 1kg.fa.sa
+
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.amb hgsvc.fa.amb
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.ann hgsvc.fa.ann
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.bwt hgsvc.fa.bwt
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.fai hgsvc.fa.fai
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.pac hgsvc.fa.pac
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.sa hgsvc.fa.sa
+
     #run all bwa mem for species
     for GRAPH in ${GRAPHS[@]} ; do
         for READS in ${READSETS[@]} ; do
@@ -107,7 +119,21 @@ for SPECIES in human yeast ; do
             done
         done
     done
+    rm 1kg.fa.amb
+    rm 1kg.fa.ann
+    rm 1kg.fa.bwt
+    rm 1kg.fa.fai
+    rm 1kg.fa.pac
+    rm 1kg.fa.sa
+    rm hgsvc.fa.amb
+    rm hgsvc.fa.ann
+    rm hgsvc.fa.bwt
+    rm hgsvc.fa.fai
+    rm hgsvc.fa.pac
+    rm hgsvc.fa.sa
 
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.mmi 1kg.mmi
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.mmi hgsvc.mmi
     #Run all minimap2 for species
     for GRAPH in ${GRAPHS[@]} ; do
         for READS in ${READSETS[@]} ; do
@@ -145,9 +171,23 @@ for SPECIES in human yeast ; do
             done
         done
     done
+    rm 1kg.mmi
+    rm hgsvc.mmi
 
 
 
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.1.bt2l 1kg.1.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.2.bt2l 1kg.2.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.3.bt2l 1kg.3.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.4.bt2l 1kg.4.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.rev.1.bt2l 1kg.rev.1.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.rev.2.bt2l 1kg.rev.2.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.1.bt2l hgsvc.1.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.2.bt2l hgsvc.2.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.3.bt2l hgsvc.3.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.4.bt2l hgsvc.4.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.rev.1.bt2l hgsvc.rev.1.bt2l
+    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.rev.2.bt2l hgsvc.rev.2.bt2l
     #run all bowtie2 for species
     for GRAPH in ${GRAPHS[@]} ; do
         for READS in ${READSETS[@]} ; do
@@ -158,7 +198,7 @@ for SPECIES in human yeast ; do
                     PAIRED="--interleaved"
                 fi
 
-                bowtie2 -t -p ${THREAD_COUNT} -x ${GRAPH} ${PAIRED} ${READS}.fq > mapped.bam 2> log.txt
+                /usr/bin/time -v bash -c "bowtie2 -t -p ${THREAD_COUNT} -x ${GRAPH} ${PAIRED} ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
 
                 MAPPED_COUNT="$(cat log.txt | grep "reads" | awk '{print$1}')"
                 LOAD_TIME="$(cat log.txt | grep "Time loading" | awk -F: '{print ($2*3600) + ($3*60) + $4}' | awk '{sum+=$1} END {print sum}')"
@@ -192,3 +232,15 @@ for SPECIES in human yeast ; do
 done
 
 
+rm 1kg.1.bt2l
+rm 1kg.2.bt2l
+rm 1kg.3.bt2l
+rm 1kg.4.bt2l
+rm 1kg.rev.1.bt2l
+rm 1kg.rev.2.bt2l
+ rm hgsvc.1.bt2l
+ rm hgsvc.2.bt2l
+ rm hgsvc.3.bt2l
+ rm hgsvc.4.bt2l
+ rm hgsvc.rev.1.bt2l
+ rm hgsvc.rev.2.bt2l
