@@ -10,8 +10,8 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        # TODO: See if 1.26.1 works right and learns a pair distribution in all cases with S288C as the reference
-        image: quay.io/vgteam/vg:v1.26.1
+        # TODO: See if 1.27.1 works right and learns a pair distribution in all cases with S288C as the reference
+        image: quay.io/vgteam/vg:v1.27.1
         command:
         - /bin/bash
         - -c
