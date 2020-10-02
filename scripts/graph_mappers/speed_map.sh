@@ -20,28 +20,40 @@ printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\ttotal_cpu_sec\ttotal
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
-        GRAPHS=(S288C)
+        GRAPHS=(yeast_subset S288C)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        GRAPHS=(hgsvc 1kg)
+        GRAPHS=(hgsvc 1kg hs38d1 hs37d5)
         READSETS=(novaseq6000 hiseqxten hiseq2500)
         ;;
     esac
     for GRAPH in ${GRAPHS[@]} ; do
+        # Find indexes
         case ${GRAPH} in
         1kg)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
             ;;
         hgsvc)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
+            ;;
+        hs37d5)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
+            ;;
+        hs38d1)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
+            ;;
+        yeast_subset)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_all/yeast_subset
             ;;
         S288C)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
             ;;
         esac
-        aws s3 cp ${GRAPH_BASE}.xg ./${GRAPH}.xg
-        aws s3 cp ${GRAPH_BASE}.dist ./${GRAPH}.dist
+        # Download indexes
+        for EXT in xg gcsa gcsa.lcp ; do
+            aws s3 cp ${GRAPH_BASE}.${EXT} ./${GRAPH}.${EXT}
+        done
         for READS in ${READSETS[@]} ; do
 
             for PAIRING in single paired ; do 
@@ -67,5 +79,14 @@ for SPECIES in human yeast ; do
                 cat log.txt >> map_speed_log.txt
             done
         done
+        
+        # Clean up indexes
+        for EXT in xg gcsa gcsa.lcp ; do
+            rm -f ./${GRAPH}.${EXT}
+        done
+        
     done
 done
+
+aws s3 cp speed_report_map.tsv  s3://vg-k8s/users/xhchang/giraffe_experiments/speed/speed_report_map.tsv 
+aws s3 cp map_speed_log.txt s3://vg-k8s/users/xhchang/giraffe_experiments/speed/map_speed_log.txt

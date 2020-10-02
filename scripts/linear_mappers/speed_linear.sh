@@ -36,56 +36,65 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
 done
 
 
-Get the reference genomes
-aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa 1kg.fa
-aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz hgsvc.fa.gz
-gunzip hgsvc.fa.gz
+# Get the reference genomes
+aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa hs37d5.fa
+aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz hs38d1.fa.gz
+gunzip hs38d1.fa.gz
 aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa ./S288C.fa
 
 
 #Build all indexes
-#bwa index 1kg.fa
-#bwa index hgsvc.fa
-bwa index S288C.fa
+#bwa index hs37d5.fa
+#bwa index hs38d1.fa
+#bwa index S288C.fa
 
-#bowtie2-build --large-index 1kg.fa 1kg
-#bowtie2-build --large-index hgsvc.fa hgsvc
+#bowtie2-build --large-index hs37d5.fa hs37d5
+#bowtie2-build --large-index hs38d1.fa hs38d1
 bowtie2-build --large-index S288C.fna S288C
 
-#minimap2 -x sr -d 1kg.mmi 1kg.fa
-#minimap2 -x sr -d hgsvc.mmi hgsvc.fa
+#minimap2 -x sr -d hs37d5.mmi hs37d5.fa
+#minimap2 -x sr -d hs38d1.mmi hs38d1.fa
 minimap2 -x sr -d S288C.mmi S288C.fa
 
-
-
-
-for SPECIES in human ; do
+for SPECIES in yeast human ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C)
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        GRAPHS=(hgsvc 1kg)
+        GRAPHS=(hs38d1 hs37d5)
         READSETS=(novaseq6000)
         ;;
     esac
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.amb 1kg.fa.amb
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.ann 1kg.fa.ann
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.bwt 1kg.fa.bwt
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.fai 1kg.fa.fai
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.pac 1kg.fa.pac
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa.sa 1kg.fa.sa
-
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.amb hgsvc.fa.amb
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.ann hgsvc.fa.ann
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.bwt hgsvc.fa.bwt
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.fai hgsvc.fa.fai
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.pac hgsvc.fa.pac
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.sa hgsvc.fa.sa
-
+    
     #run all bwa mem for species
     for GRAPH in ${GRAPHS[@]} ; do
+        
+        # Determine where the BWA indexes are
+        case "${GRAPH}" in
+        S288C)
+            BWA_INDEX_BASE=s3://vg-k8s/profiling/data/hs37d5.fa
+            ;;
+        hs38d1)
+            BWA_INDEX_BASE=s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna
+            ;;
+        hs37d5)
+            BWA_INDEX_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa
+            ;;
+        esac
+        
+        # Get (or put) the BWA indexes
+        for EXT in amb ann bwt fai pac sa ; do
+            if [ -e ${GRAPH}.fa.${EXT} ] ; then
+                # Upload index made here
+                aws s3 cp ${GRAPH}.fa.${EXT} ${BWA_INDEX_BASE}.${EXT} || true
+            else
+                # Download index
+                aws s3 cp ${BWA_INDEX_BASE}.${EXT} ${GRAPH}.fa.${EXT} || true
+            fi
+        done
+        
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
@@ -112,30 +121,47 @@ for SPECIES in human ; do
 
                 
                 printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> report_speed.tsv 
-                printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> bwt-log.tsv 
+                printf "${GRAPH}\tbwa_mem\t${READS}\t${PAIRING}\t-\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> bwa-log.txt 
                 cat log.txt >> bwa-log.txt
                 cat time-log.txt >> bwa-log.txt
 
             done
         done
+        
+        # Clean up indexes for graph
+        for EXT in amb ann bwt fai pac sa ; do
+            rm -f ${GRAPH}.fa.${EXT}
+        done
+        
     done
-    rm 1kg.fa.amb
-    rm 1kg.fa.ann
-    rm 1kg.fa.bwt
-    rm 1kg.fa.fai
-    rm 1kg.fa.pac
-    rm 1kg.fa.sa
-    rm hgsvc.fa.amb
-    rm hgsvc.fa.ann
-    rm hgsvc.fa.bwt
-    rm hgsvc.fa.fai
-    rm hgsvc.fa.pac
-    rm hgsvc.fa.sa
-
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.mmi 1kg.mmi
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.mmi hgsvc.mmi
+    
+    
     #Run all minimap2 for species
     for GRAPH in ${GRAPHS[@]} ; do
+        
+        case "${GRAPH}" in
+        S288C)
+            MINIMAP2_INDEX_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
+            ;;
+        hs38d1)
+            MINIMAP2_INDEX_BASE=s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic
+            ;;
+        hs37d5)
+            MINIMAP2_INDEX_BASE=s3://vg-k8s/profiling/data/hs37d5
+            ;;
+        esac
+        
+        # Get (or put) the minimap2 indexes
+        for EXT in mmi ; do
+            if [ -e ${GRAPH}.${EXT} ] ; then
+                # Upload index made here
+                aws s3 cp ${GRAPH}.${EXT} ${MINIMAP2_INDEX_BASE}.${EXT} || true
+            else
+                # Download index
+                aws s3 cp ${MINIMAP2_INDEX_BASE}.${EXT} ${GRAPH}.${EXT} || true
+            fi
+        done
+    
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
@@ -170,26 +196,41 @@ for SPECIES in human ; do
                 cat time-log.txt >> minimap2-log.txt
             done
         done
+        
+        # Clean up indexes for graph
+        for EXT in mmi ; do
+            rm -f ${GRAPH}.${EXT}
+        done
     done
-    rm 1kg.mmi
-    rm hgsvc.mmi
+    
 
-
-
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.1.bt2l 1kg.1.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.2.bt2l 1kg.2.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.3.bt2l 1kg.3.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.4.bt2l 1kg.4.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.rev.1.bt2l 1kg.rev.1.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/hs37d5.rev.2.bt2l 1kg.rev.2.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.1.bt2l hgsvc.1.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.2.bt2l hgsvc.2.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.3.bt2l hgsvc.3.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.4.bt2l hgsvc.4.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.rev.1.bt2l hgsvc.rev.1.bt2l
-    aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.rev.2.bt2l hgsvc.rev.2.bt2l
     #run all bowtie2 for species
     for GRAPH in ${GRAPHS[@]} ; do
+    
+        # Determine where the indexes are
+        case "${GRAPH}" in
+        S288C)
+            BOWTIE2_INDEX_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
+            ;;
+        hs38d1)
+            BOWTIE2_INDEX_BASE=s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic
+            ;;
+        hs37d5)
+            BOWTIE2_INDEX_BASE=s3://vg-k8s/profiling/data/hs37d5
+            ;;
+        esac
+        
+        # Get (or put) the bowtie2 indexes
+        for EXT in 1.bt2l 2.bt2l 3.bt2l 4.bt2l rev.1.bt2l rev.2.bt2l ; do
+            if [ -e ${GRAPH}.${EXT} ] ; then
+                # Upload index made here
+                aws s3 cp ${GRAPH}.${EXT} ${BOWTIE2_INDEX_BASE}.${EXT} 
+            else
+                # Download index
+                aws s3 cp ${BOWTIE2_INDEX_BASE}.${EXT} ${GRAPH}.${EXT}
+            fi
+        done
+        
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
@@ -222,25 +263,21 @@ for SPECIES in human ; do
 
                 printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> report_speed.tsv 
 
-                printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> bowtie2-log.tsv 
+                printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> bowtie2-log.txt 
                 cat log.txt >> bowtie2-log.txt
-                cat time-log >> bowtie2-log.txt
+                cat time-log.txt >> bowtie2-log.txt
 
             done
+        done
+        
+        # Clean up indexes for graph
+        for EXT in 1.bt2l 2.bt2l 3.bt2l 4.bt2l rev.1.bt2l rev.2.bt2l ; do
+            rm -f ${GRAPH}.${EXT}
         done
     done
 done
 
-
-rm 1kg.1.bt2l
-rm 1kg.2.bt2l
-rm 1kg.3.bt2l
-rm 1kg.4.bt2l
-rm 1kg.rev.1.bt2l
-rm 1kg.rev.2.bt2l
- rm hgsvc.1.bt2l
- rm hgsvc.2.bt2l
- rm hgsvc.3.bt2l
- rm hgsvc.4.bt2l
- rm hgsvc.rev.1.bt2l
- rm hgsvc.rev.2.bt2l
+aws s3 cp report_speed.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/speed/speed_report_linear.tsv
+aws s3 cp bwa-log.txt s3://vg-k8s/users/xhchang/giraffe_experiments/speed/bwa_speed_log.txt
+aws s3 cp minimap2-log.txt s3://vg-k8s/users/xhchang/giraffe_experiments/speed/minimap2_speed_log.txt
+aws s3 cp bowtie2-log.txt s3://vg-k8s/users/xhchang/giraffe_experiments/speed/bowtie2_speed_log.txt
