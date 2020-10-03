@@ -10,7 +10,7 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.26.1
+        image: quay.io/vgteam/vg:v1.27.1
         command:
         - /bin/bash
         - -c
