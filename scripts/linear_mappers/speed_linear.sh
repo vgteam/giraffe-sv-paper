@@ -224,7 +224,7 @@ for SPECIES in human ; do
 
                 printf "${GRAPH}\tbowtie2\t${READS}\t${PAIRING}\t${LOAD_TIME}\t${RPS_PER_THREAD}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> bowtie2-log.tsv 
                 cat log.txt >> bowtie2-log.txt
-                cat time-log >> bowtie2-log.txt
+                cat time-log.txt >> bowtie2-log.txt
 
             done
         done
