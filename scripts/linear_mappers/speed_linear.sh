@@ -50,7 +50,7 @@ aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa 
 
 #bowtie2-build --large-index hs37d5.fa hs37d5
 #bowtie2-build --large-index hs38d1.fa hs38d1
-bowtie2-build --large-index S288C.fna S288C
+bowtie2-build --large-index S288C.fa S288C
 
 #minimap2 -x sr -d hs37d5.mmi hs37d5.fa
 #minimap2 -x sr -d hs38d1.mmi hs38d1.fa
