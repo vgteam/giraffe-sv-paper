@@ -49,7 +49,7 @@ for SPECIES in human yeast ; do
             GBWTS=("cover")
             ;;
         yeast_subset)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_all/yeast_subset
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset
             GBWTS=(raw)
             ;;
         S288C)
