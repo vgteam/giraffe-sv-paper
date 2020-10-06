@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 THREAD_COUNT=16
 
@@ -49,7 +49,7 @@ for SPECIES in human yeast ; do
             GBWTS=("cover")
             ;;
         yeast_subset)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_all/yeast_subset
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset
             GBWTS=(raw)
             ;;
         S288C)
@@ -79,7 +79,7 @@ for SPECIES in human yeast ; do
                         elif [[ ${PAIRING} == "paired" ]] ; then
                             PAIRED="-i"
                         fi
-                        /usr/bin/time -v bash -c "vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz -b ${PARAM_PRESET} ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt 
+                        /usr/bin/time -v timeout -k1 2h bash -c "vg giraffe -x ${GRAPH}.xg -H ${GRAPH}.${GBWT}.gbwt -g ${GRAPH}.${GBWT}.gg -g ${GRAPH}.${GBWT}.min -d ${GRAPH}.dist -f ${READS}.fq.gz -b ${PARAM_PRESET} ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt || true
                         SPEED="$(cat log.txt | grep speed | sed 's/[^0-9\.]//g')"
                         USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
                         SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/System\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"

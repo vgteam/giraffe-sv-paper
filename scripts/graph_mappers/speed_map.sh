@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 THREAD_COUNT=16
 
@@ -44,7 +44,7 @@ for SPECIES in human yeast ; do
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
             ;;
         yeast_subset)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_all/yeast_subset
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset
             ;;
         S288C)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
@@ -62,7 +62,7 @@ for SPECIES in human yeast ; do
                 elif [[ ${PAIRING} == "paired" ]] ; then
                     PAIRED="-i"
                 fi
-                /usr/bin/time -v bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt
+                /usr/bin/time -v timeout -k1 2h bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt || true
                 LOAD_TIME="$(cat log.txt | grep "Index load time" | sed 's/Index load time:\ \([0-9]*\.[0-9]*\)/\1/g')"
                 SPEED="$(cat log.txt | grep "Mapping speed" | sed 's/Mapping\ speed:\ \([0-9]*\.[0-9]*\)\ reads per second per thread/\1/g')"
 

@@ -39,7 +39,7 @@ for SPECIES in human yeast ; do
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
                 ;;
             yeast_subset)
-                GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_all/yeast_subset
+                GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset
                 aws s3 cp s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}.gam ./sim.gam
                 ;;
             esac
