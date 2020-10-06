@@ -56,7 +56,7 @@ bowtie2-build --large-index S288C.fa S288C
 #minimap2 -x sr -d hs38d1.mmi hs38d1.fa
 minimap2 -x sr -d S288C.mmi S288C.fa
 
-for SPECIES in yeast human ; do
+for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C)
@@ -103,7 +103,7 @@ for SPECIES in yeast human ; do
                     PAIRED="-p"
                 fi
 
-                /usr/bin/time -v bash -c "bwa mem -t ${THREAD_COUNT} ${PAIRED} ${GRAPH}.fa ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
+                /usr/bin/time -v timeout -k1 2h bash -c "bwa mem -t ${THREAD_COUNT} ${PAIRED} ${GRAPH}.fa ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
 
                 MAPPING_TIME="$(cat "log.txt" | grep "Processed" | sed 's/[^0-9]*\([0-9]*\) reads in .* CPU sec, \([0-9]*\.[0-9]*\) real sec/\1/g' | tr ' ' '\t' | awk '{sum1+=$1} END {print sum1}')"
                 RPS_ALL_THREADS="$(cat "log.txt" | grep "Processed" | sed 's/[^0-9]*\([0-9]*\) reads in .* CPU sec, \([0-9]*\.[0-9]*\) real sec/\1 \2/g' | tr ' ' '\t' | awk '{sum1+=$1; sum2+=$2} END {print sum1/sum2}')"
@@ -165,9 +165,9 @@ for SPECIES in yeast human ; do
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
-                    /usr/bin/time -v bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt" 2> time-log.txt
+                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
                 elif [[ ${PAIRING} == "paired" ]] ; then
-                    /usr/bin/time -v bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
+                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
                 fi
 
 
@@ -239,7 +239,7 @@ for SPECIES in yeast human ; do
                     PAIRED="--interleaved"
                 fi
 
-                /usr/bin/time -v bash -c "bowtie2 -t -p ${THREAD_COUNT} -x ${GRAPH} ${PAIRED} ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt
+                /usr/bin/time -v timeout -k1 2h bash -c "bowtie2 -t -p ${THREAD_COUNT} -x ${GRAPH} ${PAIRED} ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
 
                 MAPPED_COUNT="$(cat log.txt | grep "reads" | awk '{print$1}')"
                 LOAD_TIME="$(cat log.txt | grep "Time loading" | awk -F: '{print ($2*3600) + ($3*60) + $4}' | awk '{sum+=$1} END {print sum}')"
