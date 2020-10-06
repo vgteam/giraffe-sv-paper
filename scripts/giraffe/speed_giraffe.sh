@@ -90,8 +90,8 @@ for SPECIES in human yeast ; do
 
                         echo ${GRAPH} ${GBWT} ${READS} ${PAIRING} ${SPEED} ${TOTAL_TIME} ${CLOCK_TIME} ${MEMORY}
                         printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> giraffe_speed_log.txt
-                        cat tim-log.txt >> giraffe_speed_log.txt
-                        cat logtxt >> giraffe_speed_log.txt
+                        cat time-log.txt >> giraffe_speed_log.txt
+                        cat log.txt >> giraffe_speed_log.txt
                         printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\r${CLOCK_TIME}\t${MEMORY}\n" >> speed_report_giraffe.tsv
 
                     done
