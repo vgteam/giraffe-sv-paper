@@ -167,7 +167,7 @@ spec:
           
           aws s3 cp report_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_minimap2_primary.tsv
           aws s3 cp report_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_bwa_primary.tsv
-          aws s3 cp report_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_minimap2_primary.tsv
+          aws s3 cp report_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_bowtie2_primary.tsv
           
           aws s3 cp roc_stats_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_minimap2_primary.tsv
           aws s3 cp roc_stats_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_bwa_primary.tsv
