@@ -108,7 +108,7 @@ spec:
                       esac
                       sed 's/_1$//g' sim.fq | sed 's/_2$//g' > sim.paired.fq
 
-                      for ALGORITHM in minimap2 bwa_mem bowtie2 ; do
+                      for ALGORITHM in bowtie2 minimap2 bwa_mem ; do
                           for PAIRING in single paired ; do 
                               if [[ ${ALGORITHM} == "minimap2" ]] ; then
                                   if [[ ${PAIRING} == "paired" ]] ; then
@@ -130,6 +130,9 @@ spec:
                                       bowtie2 -t -p ${THREADS} -x ${GRAPH}_bowtie2 -U sim.paired.fq > mapped.bam
                                   fi
                               fi
+                              
+                              aws s3 cp mapped.bam s3://vg-k8s/users/xhchang/giraffe_experiments/bams/${ALGORITHM}_${GRAPH}_${READS}_${PAIRING}.bam
+                              
                               samtools view -F 2048 -b mapped.bam > mapped.primary.bam
                               samtools view -f 2048 -b mapped.bam > mapped.secondary.bam
 
@@ -155,6 +158,8 @@ spec:
                               printf "${GRAPH}\t${ALGORITHM}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report_${ALGORITHM}.tsv
                   
                               jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}_${GRAPH}${READS}${PAIRING}/" >> roc_stats_${ALGORITHM}.tsv
+                              
+                              aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/${ALGORITHM}_${GRAPH}_${READS}_${PAIRING}.json
 
                           done
                       done
