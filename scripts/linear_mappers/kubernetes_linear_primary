@@ -127,7 +127,7 @@ spec:
                                   if [[ ${PAIRING} == "paired" ]] ; then
                                       bowtie2 -t -p ${THREADS} -X 1065 -x ${GRAPH}_bowtie2 --interleaved sim.paired.fq > mapped.bam
                                   elif [[ ${PAIRING} == "single" ]] ; then 
-                                      bowtie2 -t -p ${THREADS} -x ${GRAPH}_bowtie2 -U sim.paired.fq > mapped.bam
+                                      bowtie2 -t -p ${THREADS} -x ${GRAPH}_bowtie2 -U sim.fq > mapped.bam
                                   fi
                               fi
                               
