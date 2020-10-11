@@ -1,0 +1,68 @@
+(kubectl delete job xhchang-giraffe-pileup || true) && kubectl apply -f - <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: xhchang-giraffe-pileup
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+      - name: xhchang-pileup
+        imagePullPolicy: Always
+        image: xhchang/vg:master
+        command:
+        - /bin/bash
+        - -c
+        - |
+          cd /tmp
+          aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz ./reads.fq.gz
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./graph.xg
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.dist ./graph.dist
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.sampled.64.gbwt ./graph.gbwt
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.sampled.64.gg ./graph.gg
+
+          #Map reads and save the bam
+          vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -d graph.dist -i -f reads.fq.gz -t 24 -p | vg surject -x graph.xg -b -i -t 24 - > mapped.bam
+          aws s3 cp mapped.bam s3://vg-k8s/users/xhchang/mapped.giraffe.novaseq6000.bam
+
+          samtools sort mapped.bam > mapped.sorted.bam
+          aws s3 cpmapped.sorted.bam s3://vg-k8s/users/xhchang/mapped.giraffe.novaseq6000.sorted.bam 
+          samtools index mapped.sorted.bam
+
+          aws s3 cp s3://vg-k8s/profiling/data/hs37d5.fa .
+
+          #Get the pileup and call, to get the allele depth
+          parallel 'bcftools mpileup -Ou -f hs37d5.fa -E -a DP -a SP -a ADF -a ADR -a AD --region {}  mapped.sorted.bam | bcftools call -mv -o calls.{}.vcf.gz -O z' ::: {1..22} X Y
+          for CHR in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y ; do 
+              bcftools sort calls.${CHR}.vcf.gz -o calls.${CHR}.sorted.vcf.gz -O z
+              bcftools index calls.${CHR}.sorted.vcf.gz
+          done
+
+          bcftools concat *.sorted.vcf.gz -O z -o calls.vcf.gz
+          aws s3 cp calls.vcf.gz s3://vg-k8s/users/xhchang/giraffe_real_600m.vcf.gz
+
+
+        volumeMounts:
+        - mountPath: /tmp
+          name: scratch-volume
+        - mountPath: /root/.aws
+          name: s3-credentials
+        resources:
+          requests:
+            cpu: 25
+            memory: "120Gi"
+            ephemeral-storage: "500Gi"
+          limits:
+            cpu: 25
+            memory: "120Gi"
+            ephemeral-storage: "500Gi"
+      restartPolicy: Never
+      volumes:
+      - name: scratch-volume
+        emptyDir: {}
+      - name: s3-credentials
+        secret:
+          secretName: shared-s3-credentials
+  backoffLimit: 0
+EOF
