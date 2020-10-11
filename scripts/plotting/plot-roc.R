@@ -60,7 +60,10 @@ name.lists <- name.lists[name.order]
 
 # Determine colors for aligners
 bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
-light.colors <- c("#a6cee3","#fb9a99","#b2df8a","#e5ccff","#ffe5cc","#9a7c9b","#76eec6","#b3ee3a","#00eeee")
+#light.colors <- c("#a6cee3","#fb9a99","#b2df8a","#e5ccff","#ffe5cc","#9a7c9b","#76eec6","#b3ee3a","#00eeee")
+#light.colors <- c("#e69f00", "#56b4e9", "#009e73", "#efff42", "#0072b2","#000000", "#dd5c00", "#cc79a7","#332288")
+#light.colors <- c("#88ccee", "#44aa99", "#117733", "#999933", "#ddcc77", "#332288","#cc6677", "#882255","#aa4499")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd")
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1
 
@@ -128,7 +131,8 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     scale_x_log10(limits=c(range.unlogged[1],range.unlogged[length(range.unlogged)]), breaks=range.unlogged, oob=squish) +
     geom_vline(xintercept=1/total.reads) + # vertical line at one wrong read
     theme_bw() + 
-    ggtitle(title)
+    ggtitle(title) + 
+    ylim(0.9,0.98)
     
 if (title != '') {
     # And a title
@@ -136,4 +140,4 @@ if (title != '') {
 }
     
 filename <- commandArgs(TRUE)[2]
-ggsave(filename, height=4, width=12)
+ggsave(filename, height=4, width=8)
