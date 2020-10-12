@@ -132,7 +132,7 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     geom_vline(xintercept=1/total.reads) + # vertical line at one wrong read
     theme_bw() + 
     ggtitle(title) + 
-    coord_cartesian(ylim=c(0.9,0.99)) +
+    coord_cartesian(ylim=c(0.92,1.0)) +
 
     theme(aspect.ratio=1) 
 
