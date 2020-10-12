@@ -23,7 +23,7 @@ done
 
 # Replace all names of mappers with human-readable ones
 function humanize_names() {
-    sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/Giraffe-Fast/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
+    sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*bowtie2[a-zA-Z0-9_]*/Bowtie2/' -e 's/[a-zA-Z0-9_]*minimap2[a-zA-Z0-9_]*/Minimap2/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/GiraffeFast/' -e 's/[a-zA-Z0-9_]*giraffe_primary[a-zA-Z0-9_]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
 }
 
 for SPECIES in yeast ; do
@@ -54,7 +54,7 @@ for SPECIES in yeast ; do
                     echo "Extracting ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv"
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     # Grab all the subset and linear graph reads
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | grep -v "map_linear" | grep ${PE_OPTS} >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | grep -v "map_linear" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     wc -l ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
@@ -95,7 +95,7 @@ for SPECIES in yeast ; do
             if [ ! -e "${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv" ] ; then
                 echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv"
                 cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
                 wc -l ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
             fi
             if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png" ] ; then

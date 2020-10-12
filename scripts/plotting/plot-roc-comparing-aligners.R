@@ -88,7 +88,8 @@ assign_color <- function(name) {
 }
 
 # We want to pre-assign colors to aligners for this experiment, if those aligners show up
-pre.assign <- c("bowtie2", "bwa", "giraffe", "giraffe_fast", "giraffe_primary", "hisat2", "map", "minimap2")
+# Must use humanized names here.
+pre.assign <- c("Bowtie2", "BWA", "Giraffe", "GiraffeFast", "GiraffePrimary", "Hisat2", "Map", "Minimap2")
 for (i in 1:length(pre.assign)) {
     assign_color(pre.assign[[i]])
 }
@@ -115,8 +116,6 @@ for (i in 1:length(name.lists)) {
 
 # Make colors a vector in the same order as the actually-used aligner names
 colors <- colors[aligner.names]
-
-write(colors, stderr())
 
 dat$bin <- cut(dat$mq, c(-Inf,seq(0,60,1),Inf))
 dat.roc <- dat %>%
