@@ -124,7 +124,7 @@ range.log10 <- min.log10 : max.log10
 range.unlogged = 10^range.log10
 
 dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
-    geom_line() + geom_text_repel(data = subset(dat.roc, mq %% 60 == 0), size=3.5, point.padding=unit(0.7, "lines"), segment.alpha=I(1/2.5)) +
+    geom_line() + geom_text_repel(data = subset(dat.roc, mq %% 60 == 0), size=3.5, point.padding=unit(0.7, "lines"), segment.alpha=I(1/2.5), show.legend=FALSE) +
     geom_point(aes(size=Positive+Negative)) +
     scale_color_manual(values=colors, guide=guide_legend(title=NULL, ncol=2)) +
     scale_size_continuous("number", guide=guide_legend(title=NULL, ncol=4)) +
