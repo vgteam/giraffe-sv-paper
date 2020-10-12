@@ -54,16 +54,16 @@ for SPECIES in yeast ; do
                     echo "Extracting ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv"
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     # Grab all the subset and linear graph reads
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | grep ${PE_OPTS} >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | grep -v "map_linear" | grep ${PE_OPTS} >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     wc -l ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
-                    Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
+                    Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
                 fi
             done
         fi
         
-        # Plots of giraffe normal and fast graph, map graph, and bwa linear
+        # Plots of giraffe normal and fast graph, map graph, and common linear mappers
         for PAIRING in single paired ; do
             if [ "${PAIRING}" == "paired" ] ; then
                 PE_OPTS="-- -pe"
@@ -76,12 +76,12 @@ for SPECIES in yeast ; do
                 # Grab linear BWA
                 tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 # Grab giraffe and map non-linear
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(giraffe_default|giraffe_fast|bwa_mem)" | grep "${READS}" | grep -v "_primary" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | grep "${READS}" | grep -v "_primary" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 
                 wc -l ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
             fi
             if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png" ] ; then
-                Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png
+                Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png
             fi
         done
         
@@ -95,11 +95,11 @@ for SPECIES in yeast ; do
             if [ ! -e "${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv" ] ; then
                 echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv"
                 cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
                 wc -l ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
             fi
             if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png" ] ; then
-                Rscript ${SCRIPT_DIR}/plot-roc.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png
+                Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png
             fi
         done
     done
