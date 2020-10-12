@@ -23,7 +23,7 @@ done
 
 # Replace all names of mappers with human-readable ones
 function humanize_names() {
-    sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*bowtie2[a-zA-Z0-9_]*/Bowtie2/' -e 's/[a-zA-Z0-9_]*minimap2[a-zA-Z0-9_]*/Minimap2/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/GiraffeFast/' -e 's/[a-zA-Z0-9_]*giraffe_primary[a-zA-Z0-9_]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
+    sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*bowtie2[a-zA-Z0-9_]*/Bowtie2/' -e 's/[a-zA-Z0-9_]*minimap2[a-zA-Z0-9_]*/Minimap2/' -e 's/[a-zA-Z0-9_]*hisat2[a-zA-Z0-9_]*/Hisat2/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/GiraffeFast/' -e 's/[a-zA-Z0-9_]*giraffe_primary[a-zA-Z0-9_]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
 }
 
 for SPECIES in yeast human ; do
@@ -55,7 +55,6 @@ for SPECIES in yeast human ; do
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     # Grab all the subset and linear graph reads
                     tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep ${PE_OPTS} | grep -v "map_linear" | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
-                    wc -l ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
                     Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
@@ -78,7 +77,6 @@ for SPECIES in yeast human ; do
                 # Grab giraffe and map non-linear
                 tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "${READS}" | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 
-                wc -l ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
             fi
             if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png" ] ; then
                 Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png
@@ -90,15 +88,21 @@ for SPECIES in yeast human ; do
     for READS in ${READSETS[@]} ; do
         # Do boring plots
         for GRAPH in ${GRAPHS[@]} ; do
-            if [ ! -e "${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv" ] ; then
-                echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv"
-                cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-                wc -l ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv
-            fi
-            if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png" ] ; then
-                Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}.png
-            fi
+            for PAIRING in single paired ; do
+                if [ "${PAIRING}" == "paired" ] ; then
+                    PE_OPTS="-- -pe"
+                else
+                    PE_OPTS="-v -- -pe"
+                fi
+                if [ ! -e "${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}.tsv" ] ; then
+                    echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv"
+                    cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep ${PE_OPTS} | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
+                fi
+                if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png
+                fi
+            done
         done
     done
 done

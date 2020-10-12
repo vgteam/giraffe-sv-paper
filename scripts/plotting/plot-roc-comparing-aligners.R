@@ -59,8 +59,8 @@ dat$aligner <- factor(dat$aligner, levels=aligner.names)
 name.lists <- name.lists[name.order]
 
 # Determine colors for aligners
-bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
 light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd")
+bold.colors <- light.colors # Use the same colors for everything
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1
 # This will map from non-pe condition name string to color index.
@@ -89,7 +89,7 @@ assign_color <- function(name) {
 
 # We want to pre-assign colors to aligners for this experiment, if those aligners show up
 # Must use humanized names here.
-pre.assign <- c("Bowtie2", "BWA", "Giraffe", "GiraffeFast", "GiraffePrimary", "Hisat2", "Map", "Minimap2")
+pre.assign <- c("Bowtie2", "BWA", "Giraffe", "GiraffeFast", "GiraffePrimary", "Hisat2", "Map", "Minimap2", "Hisat2")
 for (i in 1:length(pre.assign)) {
     assign_color(pre.assign[[i]])
 }
