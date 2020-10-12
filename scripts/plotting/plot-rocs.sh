@@ -28,7 +28,7 @@ done
 
 # Replace all names of mappers with human-readable ones
 function humanize_names() {
-    sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*bowtie2[a-zA-Z0-9_]*/Bowtie2/' -e 's/[a-zA-Z0-9_]*minimap2[a-zA-Z0-9_]*/Minimap2/' -e 's/[a-zA-Z0-9_]*hisat2[a-zA-Z0-9_]*/Hisat2/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/GiraffeFast/' -e 's/[a-zA-Z0-9_]*giraffe_primary[a-zA-Z0-9_]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
+    sed -e 's/[a-zA-Z0-9_.]*bwa_mem[a-zA-Z0-9_.]*/BWA/' -e 's/[a-zA-Z0-9_.]*bowtie2[a-zA-Z0-9_.]*/Bowtie2/' -e 's/[a-zA-Z0-9_.]*minimap2[a-zA-Z0-9_.]*/Minimap2/' -e 's/[a-zA-Z0-9_.]*hisat2[a-zA-Z0-9_.]*/Hisat2/' -e 's/[a-zA-Z0-9_.]*giraffe_default[a-zA-Z0-9_.]*/Giraffe/' -e 's/[a-zA-Z0-9_.]*giraffe_fast[a-zA-Z0-9_.]*/GiraffeFast/' -e 's/[a-zA-Z0-9_.]*giraffe_primary[a-zA-Z0-9_.]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_.]*map_[a-zA-Z0-9_.]*/Map/'
 }
 
 for SPECIES in yeast human ; do
@@ -46,7 +46,8 @@ for SPECIES in yeast human ; do
         HEADLINE_GRAPHS=(hgsvc 1kg)
         LINEAR_GRAPH="NOTAPPLICABLE"
         READSETS=(novaseq6000 hiseqxten hiseq2500)
-        GBWT="sampled"
+        # Must be in regex form
+        GBWT='sampled\.64'
         ;;
     esac
     for READS in ${READSETS[@]} ; do
@@ -85,7 +86,7 @@ for SPECIES in yeast human ; do
                     # Grab linear BWA
                     tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     # Grab giraffe and map non-linear
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "${READS}" | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png" ] ; then
