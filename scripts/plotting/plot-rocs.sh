@@ -8,6 +8,8 @@ WORKDIR="$HOME/build/vg/trash/rocs"
 
 # Where are the data TSVs from the Kubernetes scripts?
 STAT_URL="s3://vg-k8s/users/adamnovak/giraffe_experiments"
+# If it's not there, look here instead
+BACKUP_STAT_URL="s3://vg-k8s/users/xhchang/giraffe_experiments"
 
 # Where are we?
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
@@ -15,9 +17,9 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 mkdir -p "${WORKDIR}"
 
 mkdir -p "${WORKDIR}/stats"
-for STAT_FILE in roc_stats_giraffe.tsv roc_stats_giraffe_primary.tsv roc_stats_map.tsv roc_stats_map_primary.tsv roc_stats_bowtie2_primary.tsv roc_stats_minimap2_primary.tsv roc_stats_bwa_primary.tsv ; do
+for STAT_FILE in roc_stats_giraffe.tsv roc_stats_giraffe_primary.tsv roc_stats_map.tsv roc_stats_map_primary.tsv roc_stats_bowtie2_primary.tsv roc_stats_minimap2_primary.tsv roc_stats_bwa_primary.tsv roc_stats_hisat2_1kg_novaseq6000.tsv roc_stats_hisat2_hgsvc_novaseq6000.tsv roc_stats_hisat2_1kg_hiseqxten.tsv roc_stats_hisat2_hgsvc_hiseqxten.tsv roc_stats_hisat2_1kg_hiseq2500.tsv roc_stats_hisat2_hgsvc_hiseq2500.tsv ; do
     if [ ! -e "${WORKDIR}/stats/${STAT_FILE}" ] ; then
-        aws s3 cp "${STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}"
+        aws s3 cp "${STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}" || aws s3 cp "${BACKUP_STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}"
     fi
 done
 
@@ -30,12 +32,16 @@ for SPECIES in yeast human ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C yeast_all yeast_subset)
+        HEADLINE_GRAPHS=(yeast_subset)
+        LINEAR_GRAPH="S288C"
         #READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         READSETS=(DBVPG6044)
         GBWT="raw"
         ;;
     human)
         GRAPHS=(hgsvc 1kg)
+        HEADLINE_GRAPHS=(hgsvc 1kg)
+        LINEAR_GRAPH="NOTAPPLICABLE"
         READSETS=(novaseq6000 hiseqxten hiseq2500)
         GBWT="sampled"
         ;;
@@ -63,24 +69,26 @@ for SPECIES in yeast human ; do
         fi
         
         # Plots of giraffe normal and fast graph, map graph, and common linear mappers
-        for PAIRING in single paired ; do
-            if [ "${PAIRING}" == "paired" ] ; then
-                PE_OPTS="-- -pe"
-            else
-                PE_OPTS="-v -- -pe"
-            fi
-            if [ ! -e "${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv" ] ; then
-                echo "Extracting ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv"
-                cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
-                # Grab linear BWA
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
-                # Grab giraffe and map non-linear
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "${READS}" | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
-                
-            fi
-            if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png" ] ; then
-                Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline-${READS}-${PAIRING}.png
-            fi
+        for GRAPH in ${HEADLINE_GRAPHS[@]} ; do
+            for PAIRING in single paired ; do
+                if [ "${PAIRING}" == "paired" ] ; then
+                    PE_OPTS="-- -pe"
+                else
+                    PE_OPTS="-v -- -pe"
+                fi
+                if [ ! -e "${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv" ] ; then
+                    echo "Extracting ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv"
+                    cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    # Grab linear BWA
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    # Grab giraffe and map non-linear
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "${READS}" | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    
+                fi
+                if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png
+                fi
+            done
         done
         
     done
