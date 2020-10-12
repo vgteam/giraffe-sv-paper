@@ -26,7 +26,7 @@ function humanize_names() {
     sed -e 's/[a-zA-Z0-9_]*bwa_mem[a-zA-Z0-9_]*/BWA/' -e 's/[a-zA-Z0-9_]*bowtie2[a-zA-Z0-9_]*/Bowtie2/' -e 's/[a-zA-Z0-9_]*minimap2[a-zA-Z0-9_]*/Minimap2/' -e 's/[a-zA-Z0-9_]*giraffe_default[a-zA-Z0-9_]*/Giraffe/' -e 's/[a-zA-Z0-9_]*giraffe_fast[a-zA-Z0-9_]*/GiraffeFast/' -e 's/[a-zA-Z0-9_]*giraffe_primary[a-zA-Z0-9_]*/GiraffePrimary/' -e 's/[a-zA-Z0-9_]*map_[a-zA-Z0-9_]*/Map/'
 }
 
-for SPECIES in yeast ; do
+for SPECIES in yeast human ; do
     case "${SPECIES}" in
     yeast)
         GRAPHS=(S288C yeast_all yeast_subset)
@@ -54,7 +54,7 @@ for SPECIES in yeast ; do
                     echo "Extracting ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv"
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     # Grab all the subset and linear graph reads
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | grep -v "map_linear" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep ${PE_OPTS} | grep -v "map_linear" | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                     wc -l ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
@@ -74,9 +74,9 @@ for SPECIES in yeast ; do
                 echo "Extracting ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv"
                 cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 # Grab linear BWA
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 # Grab giraffe and map non-linear
-                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | grep "${READS}" | grep -v "_primary" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
+                tail -q -n +2 ${WORKDIR}/stats/roc_stats_*.tsv | grep "${READS}" | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(giraffe_default|giraffe_fast|bwa_mem|minimap2|bowtie2)" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
                 
                 wc -l ${WORKDIR}/toplot-${SPECIES}-headline-${READS}-${PAIRING}.tsv
             fi
@@ -86,8 +86,6 @@ for SPECIES in yeast ; do
         done
         
     done
-    
-    continue
     
     for READS in ${READSETS[@]} ; do
         # Do boring plots
