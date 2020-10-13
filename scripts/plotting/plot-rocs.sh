@@ -97,7 +97,7 @@ for SPECIES in human yeast ; do
                     # Grab linear BWA
                     tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     # Grab giraffe and map and graphaligner non-linear, and other linear mappers
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv ${WORKDIR}/stats/roc_stats_graphaligner.tsv | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv ${WORKDIR}/stats/roc_stats_graphaligner.tsv | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | sed 's/null/0/g' | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     
                     # hisat2 doesn't have proper graph or read set names in its entries; it is split up by file instead
                     if [ -e "${WORKDIR}/stats/roc_stats_hisat2_${GRAPH}_${READS}.tsv" ] ; then
@@ -139,7 +139,7 @@ for SPECIES in human yeast ; do
                     echo "Extracting ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv"
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
                     # Grab everything but map linear and hisat2
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv  ${WORKDIR}/stats/roc_stats_graphaligner.tsv | grep ${PE_OPTS} | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv  ${WORKDIR}/stats/roc_stats_graphaligner.tsv | grep ${PE_OPTS} | grep -P "${GRAPH}(${GBWT})?(${READS})" | grep -v "map_primary" | sed 's/null/0/g' | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
                     
                     # hisat2 doesn't have proper graph or read set names in its entries; it is split up by file instead
                     if [ -e "${WORKDIR}/stats/roc_stats_hisat2_${GRAPH}_${READS}.tsv" ] ; then
