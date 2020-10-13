@@ -17,8 +17,7 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 mkdir -p "${WORKDIR}"
 
 mkdir -p "${WORKDIR}/stats"
-# TODO: Where is roc_stats_hisat2_hgsvc_hiseq2500.tsv ?
-for STAT_FILE in roc_stats_giraffe.tsv roc_stats_giraffe_primary.tsv roc_stats_map.tsv roc_stats_map_primary.tsv roc_stats_bowtie2_primary.tsv roc_stats_minimap2_primary.tsv roc_stats_bwa_primary.tsv roc_stats_hisat2_1kg_novaseq6000.tsv roc_stats_hisat2_hgsvc_novaseq6000.tsv roc_stats_hisat2_1kg_hiseqxten.tsv roc_stats_hisat2_hgsvc_hiseqxten.tsv roc_stats_hisat2_1kg_hiseq2500.tsv ; do
+for STAT_FILE in roc_stats_giraffe.tsv roc_stats_giraffe_primary.tsv roc_stats_map.tsv roc_stats_map_primary.tsv roc_stats_bowtie2_primary.tsv roc_stats_minimap2_primary.tsv roc_stats_bwa_primary.tsv roc_stats_hisat2_1kg_novaseq6000.tsv roc_stats_hisat2_hgsvc_novaseq6000.tsv roc_stats_hisat2_1kg_hiseqxten.tsv roc_stats_hisat2_hgsvc_hiseqxten.tsv roc_stats_hisat2_1kg_hiseq2500.tsv roc_stats_hisat2_hgsvc_hiseq2500.tsv ; do
     if [ ! -e "${WORKDIR}/stats/${STAT_FILE}" ] ; then
         aws s3 cp "${STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}" || \
         aws s3 cp "${BACKUP_STAT_URL}/${STAT_FILE}" "${WORKDIR}/stats/${STAT_FILE}" || \
