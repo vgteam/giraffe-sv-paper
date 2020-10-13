@@ -65,6 +65,9 @@ for SPECIES in human yeast ; do
                     # Grab all the subset and linear graph reads, except map linear and hisat2 which won't exist
                     tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv | grep ${PE_OPTS} | grep -v "map_primary" | grep -P "(yeast_subset(${GBWT})?${READS}|S288C(${GBWT})?${READS})" | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv
                 fi
+                
+                cat ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv | cut -f4 | uniq -c
+                
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
                     Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
                 fi
@@ -94,8 +97,9 @@ for SPECIES in human yeast ; do
                 if [ ! -e "${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv" ] ; then
                     echo "Extracting ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv"
                     cat ${WORKDIR}/stats/roc_stats_*.tsv | head -n1 > ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
-                    # Grab linear BWA
-                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv | grep "bwa" | grep "${READS}" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    # Grab linear BWA for this graph and these reads
+                    tail -q -n +2 ${WORKDIR}/stats/roc_stats_bwa*.tsv | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | grep ${PE_OPTS} | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
+                    
                     # Grab giraffe and map and graphaligner non-linear, and other linear mappers
                     tail -q -n +2 ${WORKDIR}/stats/roc_stats_giraffe*.tsv ${WORKDIR}/stats/roc_stats_bowtie2*.tsv ${WORKDIR}/stats/roc_stats_map.tsv ${WORKDIR}/stats/roc_stats_minimap2*.tsv ${WORKDIR}/stats/roc_stats_graphaligner.tsv | grep ${PE_OPTS} | grep -v "_primary" | grep -P "(${GRAPH}(${GBWT})?${READS}|${LINEAR_GRAPH}(${GBWT})?${READS})" | sed 's/null/0/g' | humanize_names >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     
@@ -104,6 +108,8 @@ for SPECIES in human yeast ; do
                         # Grab it too
                         tail -q -n +2 "${WORKDIR}/stats/roc_stats_hisat2_${GRAPH}_${READS}.tsv" | grep ${PE_OPTS} | grep "${HISAT_COND}" | humanize_names | sed 's/-se//' >> ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv
                     fi
+                    
+                    cat ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv | cut -f4 | uniq -c
                     
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png" ] ; then
@@ -146,6 +152,8 @@ for SPECIES in human yeast ; do
                         # Grab it too
                         tail -q -n +2 "${WORKDIR}/stats/roc_stats_hisat2_${GRAPH}_${READS}.tsv" | grep ${PE_OPTS} | grep "${HISAT_COND}" | humanize_names | sed 's/-se//' >> ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv
                     fi
+                    
+                    cat ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv | cut -f4 | uniq -c
                     
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png" ] ; then
