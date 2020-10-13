@@ -89,7 +89,7 @@ assign_color <- function(name) {
 
 # We want to pre-assign colors to aligners for this experiment, if those aligners show up
 # Must use humanized names here.
-pre.assign <- c("Bowtie2", "BWA", "Giraffe", "GiraffeFast", "GiraffePrimary", "Hisat2", "Map", "Minimap2", "Hisat2")
+pre.assign <- c("Bowtie2", "BWA", "Giraffe", "GiraffeFast", "GiraffePrimary", "GraphAligner", "Hisat2", "Map", "Minimap2")
 for (i in 1:length(pre.assign)) {
     assign_color(pre.assign[[i]])
 }
