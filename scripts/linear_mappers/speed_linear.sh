@@ -28,12 +28,21 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
 done
 
 #rename every other read so that minimap interprets it as single end
-sed '1~8 s/$/_1/g' novaseq6000.fq  > novaseq6000.unpaired.fq
-sed '1~8 s/$/_1/g' hiseq2500.fq  > hiseq2500.unpaired.fq
-sed '1~8 s/$/_1/g' hiseqxten.fq  > hiseqxten.unpaired.fq
+sed '1~8 s/@\(.*\)/@1\1/g' novaseq6000.fq  > novaseq6000.unpaired.fq
+sed '1~8 s/@\(.*\)/@1\1/g' hiseq2500.fq  > hiseq2500.unpaired.fq
+sed '1~8 s/@\(.*\)/@1\1/g' hiseqxten.fq  > hiseqxten.unpaired.fq
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    sed '1~8 s/$/_1/g' ${STRAIN}.fq  > ${STRAIN}.unpaired.fq
+    sed '1~8 s/@\(.*\)/@1\1/g' ${STRAIN}.fq  > ${STRAIN}.unpaired.fq
+    gzip ${STRAIN}.fq
+    gzip ${STRAIN}.unpaired.fq
 done
+gzip novaseq6000.unpaired.fq
+gzip hiseq2500.unpaired.fq
+gzip hiseqxten.unpaired.fq
+gzip novaseq6000.fq
+gzip hiseq2500.fq
+gzip hiseqxten.fq
+
 
 
 # Get the reference genomes
