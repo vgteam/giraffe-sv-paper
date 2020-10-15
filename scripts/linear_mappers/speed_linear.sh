@@ -4,7 +4,7 @@ set -ex
 
 THREAD_COUNT=16
 
-printf "graph\talgorithm\treads\tpairing\tspeed\ttotal_cpu_sec\ttotal_wall_clock_time\tmax_resident_set_size(kbytes)\n" > report_speed.tsv
+printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\ttotal_cpu_sec\ttotal_wall_clock_time\tmax_resident_set_size(kbytes)\n" > report_speed.tsv
 
 #get all real read sets
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
@@ -27,12 +27,12 @@ for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
     gunzip ${STRAIN}.fq.gz
 done
 
-#Take out every other read so that minimap interprets it as single end
-awk 'NR%8==1 || NR%8==2 || NR%8==3 || NR%8==4' novaseq6000.fq  > novaseq6000.unpaired.fq
-awk 'NR%8==1 || NR%8==2 || NR%8==3 || NR%8==4' hiseq2500.fq  > hiseq2500.unpaired.fq
-awk 'NR%8==1 || NR%8==2 || NR%8==3 || NR%8==4' hiseqxten.fq  > hiseqxten.unpaired.fq
+#rename every other read so that minimap interprets it as single end
+sed '1~8 s/$/_1/g' novaseq6000.fq  > novaseq6000.unpaired.fq
+sed '1~8 s/$/_1/g' hiseq2500.fq  > hiseq2500.unpaired.fq
+sed '1~8 s/$/_1/g' hiseqxten.fq  > hiseqxten.unpaired.fq
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    awk 'NR%8==1 || NR%8==2 || NR%8==3 || NR%8==4' ${STRAIN}.fq  > ${STRAIN}.unpaired.fq
+    sed '1~8 s/$/_1/g' ${STRAIN}.fq  > ${STRAIN}.unpaired.fq
 done
 
 
@@ -165,9 +165,9 @@ for SPECIES in human yeast ; do
         for READS in ${READSETS[@]} ; do
             for PAIRING in single paired ; do
                 if [[ ${PAIRING} ==  "single" ]] ; then
-                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
+                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t 2 ${GRAPH}.mmi ${READS}.unpaired.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
                 elif [[ ${PAIRING} == "paired" ]] ; then
-                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t ${THREAD_COUNT} ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
+                    /usr/bin/time -v timeout -k1 2h bash -c "minimap2 -ax sr --secondary=no -t 2 ${GRAPH}.mmi ${READS}.fq > mapped.bam 2> log.txt" 2> time-log.txt || true
                 fi
 
 
@@ -177,7 +177,7 @@ for SPECIES in human yeast ; do
 
                 RUNTIME="$(echo "${TOTAL_TIME} - ${INDEX_LOAD_TIME}" | bc -l)"
                 ALL_RPS="$(echo "${MAPPED_COUNT} / ${RUNTIME}" | bc -l)"
-                RPS_PER_THREAD="$(echo "${ALL_RPS} / ${THREAD_COUNT}" | bc -l)"
+                RPS_PER_THREAD="$(echo "${ALL_RPS} / 2" | bc -l)"
                 REPORTED_MEMORY="$(cat log.txt | grep "Peak RSS" | sed 's/.*Peak RSS:\ \([0-9]*\.[0-9]*\)\ GB/\1/g')"
                 
 
