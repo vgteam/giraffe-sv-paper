@@ -163,3 +163,88 @@ for SPECIES in human yeast ; do
         done
     done
 done
+
+
+#Plot all mappers for human graphs
+#
+#MAPPERS=(bowtie2 bwa giraffe giraffe_fast giraffe_primary graphaligner hisat2 map minimap2)
+#
+#for GRAPH in hgsvc ; do
+#    if [ "${GRAPH}" == "1kg" ] ; then
+#        PRIMARY_GRAPH="hs37d5"
+#        HISAT2_GRAPH="grch37_snp"
+#    elif [ "${GRAPH}" == "hgsvc" ] ; then
+#        PRIMARY_GRAPH="hs38d1"
+#        HISAT2_GRAPH="grch38_hgsvc_all"
+#    fi
+#    for READS in hiseqxten hiseq2500 ; do
+#        for PAIRING in single paired ; do
+#            printf "correct\tmq\tscore\taligner\n" > roc_stats_${GRAPH}_${READS}_${PAIRING}.tsv
+#
+#            if [ "${PAIRING}" == "single" ] ; then
+#                PAIRING_TAG=""
+#                PAIRING_TAG_HISAT="-se"
+#            else
+#                PAIRING_TAG="-pe"
+#                PAIRING_TAG_HISAT="-pe"
+#            fi
+#            for MAPPER in ${MAPPERS[@]} ; do
+#                case "${MAPPER}" in
+#                bowtie2)
+#                    INPUT_FILE="./roc_stats_bowtie2_primary.tsv"
+#                    INPUT_LABEL="${MAPPER}_${GRAPH}${READS}${PAIRING_TAG}"
+#                    ;;
+#                bwa)
+#                    INPUT_FILE="./roc_stats_bwa_primary.tsv"
+#                    INPUT_LABEL="${MAPPER}_${GRAPH}${READS}${PAIRING_TAG}"
+#                    ;;
+#                giraffe)
+#                    INPUT_FILE="../roc_stats_giraffe.tsv"
+#                    if [ "${GRAPH}" == "1kg" ] ; then
+#                        INPUT_LABEL="giraffe_${GRAPH}sampled\.64${READS}${PAIRING_TAG}"
+#                    elif [ "${GRAPH}" == "hgsvc" ] ; then
+#                        INPUT_LABEL="giraffe_${GRAPH}full${READS}${PAIRING_TAG}"
+#                    fi
+#                    ;;
+#                giraffe_fast)
+#                    INPUT_FILE="../roc_stats_giraffe_fast.tsv"
+#                    INPUT_LABEL="giraffe_${GRAPH}sampled\.64fast${READS}${PAIRING_TAG}"
+#                    ;;
+#                giraffe_primary)
+#                    INPUT_FILE="../roc_stats_giraffe_primary.tsv"
+#                    INPUT_LABEL="giraffe_${PRIMARY_GRAPH}full${READS}${PAIRING_TAG}"
+#                    ;;
+#                graphaligner)
+#                    INPUT_FILE="../roc_stats_graphaligner.tsv"
+#                    INPUT_LABEL="${MAPPER}_${GRAPH}${READS}${PAIRING_TAG}"
+#                    ;;
+#                hisat2)
+#                    INPUT_FILE="../hisat2_${GRAPH}_${READS}.txt"
+#                    INPUT_LABEL="${MAPPER}-${HISAT2_GRAPH}-def${PAIRING_TAG_HISAT}"
+#                    ;;
+#                map)
+#                    INPUT_FILE="../roc_stats_map_${READS}.tsv"
+#                    INPUT_LABEL="${MAPPER}_${GRAPH}${READS}${PAIRING_TAG}"
+#                    ;;
+#                minimap2)
+#                    INPUT_FILE="./roc_stats_minimap2_primary.tsv"
+#                    INPUT_LABEL="${MAPPER}_${GRAPH}${READS}${PAIRING_TAG}"
+#                    ;;
+#                esac
+#                echo  ${INPUT_LABEL}  ${INPUT_FILE}
+#                if [ "${PAIRING}" == "single" ] ; then
+#                    grep "${INPUT_LABEL}" ${INPUT_FILE} | grep -v "pe" |  sed "s/${INPUT_LABEL}/${MAPPER}/g" | sed 's/null/0/g' >> roc_stats_${GRAPH}_${READS}_${PAIRING}.tsv
+#                else
+#                    grep "${INPUT_LABEL}" ${INPUT_FILE} | sed "s/${INPUT_LABEL}/${MAPPER}/g" | sed 's/null/0/g' >> roc_stats_${GRAPH}_${READS}_${PAIRING}.tsv
+#                fi
+#            done
+#            if [ "${PAIRING}" == "single" ] ; then
+#                ./plot-roc-single.R roc_stats_${GRAPH}_${READS}_${PAIRING}.tsv plot-roc-${GRAPH}-${READS}-${PAIRING}.svg 
+#            else
+#                ./plot-roc-paired.R roc_stats_${GRAPH}_${READS}_${PAIRING}.tsv plot-roc-${GRAPH}-${READS}-${PAIRING}.svg
+#            fi
+#        done
+#    done
+#done
+    
+
