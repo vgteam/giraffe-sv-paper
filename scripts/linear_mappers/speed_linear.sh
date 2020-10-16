@@ -17,7 +17,7 @@ aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled
 #aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-600m.fq.gz hiseqxten.fq.gz
 
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled-1m.fq.gz ${STRAIN}.fq.gz
+    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled.fq.gz ${STRAIN}.fq.gz
 done
 
 gunzip novaseq6000.fq.gz

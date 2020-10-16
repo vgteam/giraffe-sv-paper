@@ -14,7 +14,7 @@ aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffl
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
 aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled-1m.fq.gz ${STRAIN}.fq.gz
+    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled.fq.gz ${STRAIN}.fq.gz
 done
 
 
