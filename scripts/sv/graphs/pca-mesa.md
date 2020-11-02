@@ -73,6 +73,36 @@ ggp$sv.3.4
 
 ![](pca-mesa_files/figure-gfm/sv-2.png)<!-- -->
 
+## Direct PC comparison
+
+``` r
+ggp$pc1 = ggplot(pc.df, aes(x=PC1.topmed, y=PC1.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc1
+```
+
+![](pca-mesa_files/figure-gfm/pc-1.png)<!-- -->
+
+``` r
+ggp$pc2 = ggplot(pc.df, aes(x=PC2.topmed, y=PC2.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc2
+```
+
+![](pca-mesa_files/figure-gfm/pc-2.png)<!-- -->
+
+``` r
+ggp$pc3 = ggplot(pc.df, aes(x=PC3.topmed, y=PC3.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc3
+```
+
+![](pca-mesa_files/figure-gfm/pc-3.png)<!-- -->
+
+``` r
+ggp$pc4 = ggplot(pc.df, aes(x=PC4.topmed, y=PC4.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc4
+```
+
+![](pca-mesa_files/figure-gfm/pc-4.png)<!-- -->
+
 ## Multi-panel figure
 
 ``` r
@@ -83,29 +113,40 @@ plot_list <- function(ggp.l, gg.names=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
 }
 
-ggp$sv = ggp$sv + guides(color=FALSE)
-ggp$topmed = ggp$topmed + theme(legend.position='top')
-grid.arrange(grobs=plot_list(ggp, c('topmed', 'sv')),
+ggp$sv.f = ggp$sv + guides(color=FALSE)
+ggp$topmed.f = ggp$topmed + theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
+  guides(color=guide_legend(ncol=5))
+grid.arrange(grobs=plot_list(ggp, c('topmed.f', 'sv.f')),
              layout_matrix=matrix(c(1,2),1))
 ```
 
 ![](pca-mesa_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-ggp$sv.3.4 = ggp$sv.3.4 + guides(color=FALSE)
-ggp$topmed.3.4 = ggp$topmed.3.4 + theme(legend.position='top')
-grid.arrange(grobs=plot_list(ggp, c('topmed.3.4', 'sv.3.4')),
+ggp$sv.3.4.f = ggp$sv.3.4 + guides(color=FALSE)
+ggp$topmed.3.4.f = ggp$topmed.3.4 + theme(legend.position=c(.99, .99), legend.justification=c(1,1)) +
+  guides(color=guide_legend(ncol=5))
+grid.arrange(grobs=plot_list(ggp, c('topmed.3.4.f', 'sv.3.4.f')),
              layout_matrix=matrix(c(1,2),1))
 ```
 
 ![](pca-mesa_files/figure-gfm/fig-2.png)<!-- -->
 
 ``` r
-pdf('fig-sv-mesa-pcs.pdf', 9, 5)
-grid.arrange(grobs=plot_list(ggp, c('topmed', 'sv')),
+grid.arrange(grobs=plot_list(ggp, c('pc1', 'pc2', 'pc3')),
+             layout_matrix=matrix(c(1:3),1))
+```
+
+![](pca-mesa_files/figure-gfm/fig-3.png)<!-- -->
+
+``` r
+pdf('fig-sv-mesa-pcs.pdf', 9, 4)
+grid.arrange(grobs=plot_list(ggp, c('topmed.f', 'sv.f')),
              layout_matrix=matrix(c(1,2),1))
-grid.arrange(grobs=plot_list(ggp, c('topmed.3.4', 'sv.3.4')),
+grid.arrange(grobs=plot_list(ggp, c('topmed.3.4.f', 'sv.3.4.f')),
              layout_matrix=matrix(c(1,2),1))
+grid.arrange(grobs=plot_list(ggp, c('pc1', 'pc2', 'pc3')),
+             layout_matrix=matrix(c(1:3),1))
 dev.off()
 ```
 
