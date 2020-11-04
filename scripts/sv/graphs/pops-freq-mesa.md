@@ -177,16 +177,6 @@ pattern, defined as deviating form the median frequency by at least 10%,
 svs = read.table('svs.mesa2k.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 svs = svs %>% group_by(svsite, type) %>% summarize(size=mean(size), .groups='drop')
 
-freq.df %>% group_by(exp) %>% filter(abs(af.med-af)>.1) %>% 
-  merge(svs) %>%
-  mutate(size=ifelse(type=='DEL', -size, size)) %>% 
-  ggplot(aes(x=af.med-af, y=size)) +
-  geom_point(alpha=.5) + theme_bw()
-```
-
-![](pops-freq-mesa_files/figure-gfm/popspec_type_size-1.png)<!-- -->
-
-``` r
 ggp$devtype = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>% 
   merge(svs) %>%
   ggplot(aes(x=winsor(abs(af.med-af), 1), fill=type)) +
@@ -198,7 +188,7 @@ ggp$devtype = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>%
 ggp$devtype
 ```
 
-![](pops-freq-mesa_files/figure-gfm/popspec_type_size-2.png)<!-- -->
+![](pops-freq-mesa_files/figure-gfm/popspec_type_size-1.png)<!-- -->
 
 ``` r
 ggp$devsize = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>% 
@@ -212,7 +202,7 @@ ggp$devsize = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>%
 ggp$devsize
 ```
 
-![](pops-freq-mesa_files/figure-gfm/popspec_type_size-3.png)<!-- -->
+![](pops-freq-mesa_files/figure-gfm/popspec_type_size-2.png)<!-- -->
 
 ## Multi-panel figure
 

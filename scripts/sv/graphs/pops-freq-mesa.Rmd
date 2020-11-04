@@ -138,12 +138,6 @@ The table shows the number of sites with a population-specific frequency pattern
 svs = read.table('svs.mesa2k.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 svs = svs %>% group_by(svsite, type) %>% summarize(size=mean(size), .groups='drop')
 
-freq.df %>% group_by(exp) %>% filter(abs(af.med-af)>.1) %>% 
-  merge(svs) %>%
-  mutate(size=ifelse(type=='DEL', -size, size)) %>% 
-  ggplot(aes(x=af.med-af, y=size)) +
-  geom_point(alpha=.5) + theme_bw()
-
 ggp$devtype = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>% 
   merge(svs) %>%
   ggplot(aes(x=winsor(abs(af.med-af), 1), fill=type)) +
@@ -168,7 +162,7 @@ ggp$devsize
 
 ## Multi-panel figure
 
-```{r fig}
+```{r fig, fig.height=10}
 ## adds a legend title: a), b), etc
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
