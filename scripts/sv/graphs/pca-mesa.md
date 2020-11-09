@@ -5,6 +5,7 @@ Principal component analysis using SV genotypes in the MESA cohort
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(Rtsne)
 ## color palette with clear separation between consecutive groups
 interk <- function(x, k=4){ # Interleaves elements in x
   idx = unlist(lapply(1:k, function(kk) seq(kk, length(x), k)))
@@ -22,6 +23,7 @@ ggp = list()
 ``` r
 ## PCs derived from SV genotypes or TOPMed SNVs/indels
 pc.df = read.table('mesa2k-pcs-svs-topmed.tsv.gz', as.is=TRUE, header=TRUE)
+pc.sdev.df = read.table('mesa2k.svsite80al.ac.pcs.sdev.tsv', as.is=TRUE, header=TRUE)
 ```
 
 ## Color samples based on TOPMed PCs
@@ -35,7 +37,7 @@ pc.df$topmed.cl = cutree(hc.tm, cl.k)
 ggp$topmed = ggplot(pc.df, aes(x=PC1.topmed, y=PC2.topmed, color=factor(topmed.cl))) +
   geom_point(alpha=.8) +
   scale_color_manual(name='cluster', values=pal(cl.k)) + 
-  theme_bw()
+  theme_bw() + coord_fixed()
 ggp$topmed
 ```
 
@@ -45,7 +47,7 @@ ggp$topmed
 ggp$topmed.3.4 = ggplot(pc.df, aes(x=PC3.topmed, y=PC4.topmed, color=factor(topmed.cl))) +
   geom_point(alpha=.8) +
   scale_color_manual(name='cluster', values=pal(cl.k)) + 
-  theme_bw()
+  theme_bw() + coord_fixed()
 ggp$topmed.3.4
 ```
 
@@ -54,50 +56,75 @@ ggp$topmed.3.4
 ## PCs from SV genotypes
 
 ``` r
-ggp$sv = ggplot(pc.df, aes(x=PC1.sv, y=PC2.sv, color=factor(topmed.cl))) +
-  geom_point(alpha=.8) +
-  scale_color_manual(name='cluster', values=pal(cl.k)) + 
-  theme_bw()
-ggp$sv
+pc.sdev.df %>% filter(pc<=20) %>% 
+  ggplot(aes(pc, sdev)) +
+  geom_bar(stat='identity') + 
+  theme_bw() +
+  ylab('standard deviation') + xlab('principal component')
 ```
 
 ![](pca-mesa_files/figure-gfm/sv-1.png)<!-- -->
 
 ``` r
-ggp$sv.3.4 = ggplot(pc.df, aes(x=PC3.sv, y=PC4.sv, color=factor(topmed.cl))) +
+ggp$sv = ggplot(pc.df, aes(x=PC1, y=PC2, color=factor(topmed.cl))) +
   geom_point(alpha=.8) +
   scale_color_manual(name='cluster', values=pal(cl.k)) + 
-  theme_bw()
-ggp$sv.3.4
+  theme_bw() + coord_fixed()
+ggp$sv
 ```
 
 ![](pca-mesa_files/figure-gfm/sv-2.png)<!-- -->
 
+``` r
+ggp$sv.3.4 = ggplot(pc.df, aes(x=PC3, y=PC4, color=factor(topmed.cl))) +
+  geom_point(alpha=.8) +
+  scale_color_manual(name='cluster', values=pal(cl.k)) + 
+  theme_bw() + coord_fixed()
+ggp$sv.3.4
+```
+
+![](pca-mesa_files/figure-gfm/sv-3.png)<!-- -->
+
+## tSNE from SV genotypes
+
+``` r
+tsne.o = Rtsne(pc.df[,2:21])
+
+tsne.df = tibble(sample=pc.df$sample, tsne1=tsne.o$Y[,1], tsne2=tsne.o$Y[,2])
+
+ggp$svtsne = ggplot(tsne.df, aes(x=tsne1, y=tsne2)) +
+  geom_point(alpha=.5) +
+  theme_bw()
+ggp$svtsne
+```
+
+![](pca-mesa_files/figure-gfm/svtsne-1.png)<!-- -->
+
 ## Direct PC comparison
 
 ``` r
-ggp$pc1 = ggplot(pc.df, aes(x=PC1.topmed, y=PC1.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc1 = ggplot(pc.df, aes(x=PC1.topmed, y=PC1)) + geom_point(alpha=.2) + theme_bw()
 ggp$pc1
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-1.png)<!-- -->
 
 ``` r
-ggp$pc2 = ggplot(pc.df, aes(x=PC2.topmed, y=PC2.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc2 = ggplot(pc.df, aes(x=PC2.topmed, y=PC2)) + geom_point(alpha=.2) + theme_bw()
 ggp$pc2
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-2.png)<!-- -->
 
 ``` r
-ggp$pc3 = ggplot(pc.df, aes(x=PC3.topmed, y=PC3.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc3 = ggplot(pc.df, aes(x=PC3.topmed, y=PC3)) + geom_point(alpha=.2) + theme_bw()
 ggp$pc3
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-3.png)<!-- -->
 
 ``` r
-ggp$pc4 = ggplot(pc.df, aes(x=PC4.topmed, y=PC4.sv)) + geom_point(alpha=.2) + theme_bw()
+ggp$pc4 = ggplot(pc.df, aes(x=PC4.topmed, y=PC4)) + geom_point(alpha=.2) + theme_bw()
 ggp$pc4
 ```
 
@@ -114,8 +141,7 @@ plot_list <- function(ggp.l, gg.names=NULL){
 }
 
 ggp$sv.f = ggp$sv + guides(color=FALSE)
-ggp$topmed.f = ggp$topmed + theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
-  guides(color=guide_legend(ncol=5))
+ggp$topmed.f = ggp$topmed
 grid.arrange(grobs=plot_list(ggp, c('topmed.f', 'sv.f')),
              layout_matrix=matrix(c(1,2),1))
 ```

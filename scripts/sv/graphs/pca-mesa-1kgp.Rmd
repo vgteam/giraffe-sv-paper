@@ -1,0 +1,69 @@
+---
+title: Principal component analysis using SV genotypes in both the MESA cohort and 1000 Genomes Project
+output: github_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(Rtsne)
+## color palette with clear separation between consecutive groups
+interk <- function(x, k=4){ # Interleaves elements in x
+  idx = unlist(lapply(1:k, function(kk) seq(kk, length(x), k)))
+  x[idx]
+}
+pal <- function(n){
+  pal = interk(rainbow(n, s=.8), 5)
+}
+## list of figures
+ggp = list()
+```
+
+## Combined PCA with 2000 samples from the MESA cohort
+
+```{r pckgp}
+pc.kgp = read.table('mesa2k.2504kgp.svs.pcs.tsv.gz', as.is=TRUE, header=TRUE)
+```
+
+
+## Read sample information from the 1000 Genomes Project
+
+```{r}
+samps.df = read.table('1kgp-info.tsv', as.is=TRUE, header=TRUE)
+colnames(samps.df)[1] = 'sample'
+sample_n(samps.df, 3)
+samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
+```
+
+## PCs from SV genotypes
+
+```{r svpc}
+pc.kgp = merge(pc.kgp, samps.df, all.x=TRUE) %>%
+  mutate(Superpopulation=ifelse(is.na(Superpopulation), 'MESA', Superpopulation))
+
+ggp$mesa = ggplot(pc.kgp, aes(x=PC1, y=PC2, color=Superpopulation)) +
+  geom_point(alpha=.8) +
+  guides(colour=guide_legend(override.aes=list(alpha=1))) + 
+  theme_bw() + coord_fixed()
+ggp$mesa
+```
+
+## tSNE
+
+```{r svtsne}
+tsne.o = Rtsne(pc.kgp[,2:21])
+
+tsne.df = tibble(sample=pc.kgp$sample, Superpopulation=pc.kgp$Superpopulation,
+                 tsne1=tsne.o$Y[,1], tsne2=tsne.o$Y[,2])
+
+ggp$svtsne = ggplot(tsne.df, aes(x=tsne1, y=tsne2, color=Superpopulation)) +
+  geom_point(alpha=.7) +
+  guides(colour=guide_legend(override.aes=list(alpha=1))) + 
+  theme_bw()
+ggp$svtsne
+```
