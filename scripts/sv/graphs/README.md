@@ -28,4 +28,7 @@ Rscript -e "rmarkdown::render('pops-freq-mesa.Rmd')"
 Rscript -e "rmarkdown::render('summary-sv-stats-1kgp.Rmd')"
 Rscript -e "rmarkdown::render('pca-1kgp.Rmd')"
 Rscript -e "rmarkdown::render('pops-freq-1kgp.Rmd')"
+
+## Joint analysis
+Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
 ```
