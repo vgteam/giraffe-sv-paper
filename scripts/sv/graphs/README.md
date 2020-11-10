@@ -15,6 +15,11 @@ The `.md` files are markdown reports that show the code and the resulting graphs
 - [PCA using the SV allele counts](pca-1kgp.md)
 - [SV frequency between populations](pops-freq-1kgp.md)
 
+## Joint analysis
+
+- [Download and prepare public SV catalogs](prepare-public-catalogs.md)
+- [Compare SVs and frequencies to public SV catalogs](compare-public-catalogs.md)
+
 # To compile the reports
 
 ```sh
@@ -30,5 +35,6 @@ Rscript -e "rmarkdown::render('pca-1kgp.Rmd')"
 Rscript -e "rmarkdown::render('pops-freq-1kgp.Rmd')"
 
 ## Joint analysis
+Rscript -e "rmarkdown::render('prepare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
 ```
