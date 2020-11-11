@@ -238,7 +238,7 @@ grid.arrange(grobs=plot_list(list(ggp$range, ggp$olbar + guides(fill=FALSE))),
 ![](pops-freq-1kgp_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-pdf('fig-pops-freq-kgp.pdf', 8, 8)
+pdf('figs/fig-pops-freq-kgp.pdf', 8, 8)
 grid.arrange(grobs=plot_list(list(ggp$range, ggp$olbar + guides(fill=FALSE))),
              layout_matrix=matrix(1:2, 2))
 dev.off()
@@ -246,3 +246,13 @@ dev.off()
 
     ## png 
     ##   2
+
+## Save SVs with population-specific patterns
+
+``` r
+freq.df %>%
+  filter(exp=='observed', abs(af.med-af)>.1) %>%
+  ungroup %>% 
+  select(-exp) %>% 
+  write.table(file='pops-freq-1kgp-med1.tsv', sep='\t', row.names=FALSE, quote=FALSE)
+```

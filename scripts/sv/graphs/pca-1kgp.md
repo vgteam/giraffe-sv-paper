@@ -66,9 +66,9 @@ sample_n(samps.df, 3)
 ```
 
     ##    sample Population Sex Superpopulation
-    ## 1 HG02629        GWD   2             AFR
-    ## 2 NA19065        JPT   2             EAS
-    ## 3 HG03688        STU   1             SAS
+    ## 1 HG02541        ACB   1             AFR
+    ## 2 HG03064        MSL   2             AFR
+    ## 3 HG00232        GBR   2             EUR
 
 ``` r
 samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
@@ -168,7 +168,7 @@ grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
 ![](pca-1kgp_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-pdf('fig-sv-1kgp-pcs.pdf', 9, 4)
+pdf('figs/fig-sv-1kgp-pcs.pdf', 9, 4)
 grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
              layout_matrix=matrix(c(1,2),1))
 dev.off()

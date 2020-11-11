@@ -248,7 +248,7 @@ ex.l$del.vntr = locs %>% filter(type=='DEL', !clique, loc.n==10, af>.1, size<100
 
 tmp = lapply(ex.l, function(site) subset(svs, svsite==site) %>% plotSVs)
 
-pdf('examples-svsites-mesa.pdf', 8, 6)
+pdf('figs/examples-svsites-mesa.pdf', 8, 6)
 tmp = lapply(ex.l, function(site) subset(svs, svsite==site) %>% plotSVs)
 dev.off()
 ```

@@ -12,6 +12,8 @@ winsor <- function(x, u){
   if(any(x>u)) x[x>u] = u
   x
 }
+## list of graphs
+ggp = list()
 ```
 
 ## Simple repeat annotation
@@ -28,7 +30,7 @@ sr = reduce(GRanges(sr$V2, IRanges(sr$V3, sr$V4)))
 
 ## Public SV catalogs
 
-Prepared using `prepare-public-catalogs.R`
+Prepared by `prepare-public-catalogs.R`
 
 ``` r
 load('public-sv-catalogs.RData', verbose=TRUE)
@@ -144,39 +146,22 @@ kgp.s = kgp %>% arrange(desc(af), desc(size)) %>%
 Variants with at least 1% frequency.
 
 ``` r
-qplot(x=kgp3$af) + theme_bw() +
-  ylab('1000GP phase 3 variants') + xlab('allele frequency') + xlim(.01,1)
+af.df = rbind(
+  tibble(af=kgp3$af, cat='1000GP phase 3'),
+  tibble(af=gnomad$af, cat='gnomAD-SV'),
+  tibble(af=svpop$af, cat='SVPOP'),
+  tibble(af=mesa$af, cat='vg-MESA'),
+  tibble(af=kgp$af, cat='vg-1000GP'))
+
+ggp$afdist = ggplot(af.df, aes(x=af)) + geom_histogram() +
+  ylab('structural variant') + xlab('allele frequency') +
+  theme_bw() +
+  facet_grid(cat~., scales='free') + 
+  xlim(.01,1)
+ggp$afdist
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freq_dist-1.png)<!-- -->
-
-``` r
-qplot(x=gnomad$af) + theme_bw() +
-  ylab('gnomAD-SV variants') + xlab('allele frequency') + xlim(.01,1)
-```
-
-![](compare-public-catalogs_files/figure-gfm/freq_dist-2.png)<!-- -->
-
-``` r
-qplot(x=svpop$af) + theme_bw() +
-  ylab('SVPOP variants') + xlab('allele frequency') + xlim(.01,1)
-```
-
-![](compare-public-catalogs_files/figure-gfm/freq_dist-3.png)<!-- -->
-
-``` r
-qplot(x=mesa.s$af) + theme_bw() +
-  ylab('MESA variants') + xlab('allele frequency') + xlim(.01,1)
-```
-
-![](compare-public-catalogs_files/figure-gfm/freq_dist-4.png)<!-- -->
-
-``` r
-qplot(x=kgp.s$af) + theme_bw() +
-  ylab('vg-1000GP variants') + xlab('allele frequency') + xlim(.01,1)
-```
-
-![](compare-public-catalogs_files/figure-gfm/freq_dist-5.png)<!-- -->
 
 ## Comparison with the 1000 Genomes Project phase 3 catalog
 
@@ -194,8 +179,8 @@ olcatstats = function(sites.gr, cat.gr, min.ol=.1, max.ins.dist=200, use.sr=FALS
 }
 
 rbind(
-  olcatstats(mesa.s, kgp3) %>% mutate(set='MESA vs 1000GP'),
-  olcatstats(subset(mesa.s, af>=.05), subset(kgp3, af>=.05)) %>% mutate(set='MESA freq>=5% vs 1000GP freq>=5%'),
+  olcatstats(mesa.s, kgp3) %>% mutate(set='vg-MESA vs 1000GP'),
+  olcatstats(subset(mesa.s, af>=.05), subset(kgp3, af>=.05)) %>% mutate(set='vg-MESA freq>=5% vs 1000GP freq>=5%'),
   olcatstats(kgp.s, kgp3) %>% mutate(set='vg-1000GP vs 1000GP'),
   olcatstats(subset(kgp.s, af>=.05), subset(kgp3, af>=.05)) %>% mutate(set='vg-1000GP freq>=5% vs 1000GP freq>=5%')
 ) %>% select(set, prop.vgsite, prop.cat) %>% kable(digits=3)
@@ -203,8 +188,8 @@ rbind(
 
 | set                                     | prop.vgsite | prop.cat |
 | :-------------------------------------- | ----------: | -------: |
-| MESA vs 1000GP                          |       0.068 |    0.165 |
-| MESA freq\>=5% vs 1000GP freq\>=5%      |       0.087 |    0.792 |
+| vg-MESA vs 1000GP                       |       0.068 |    0.165 |
+| vg-MESA freq\>=5% vs 1000GP freq\>=5%   |       0.087 |    0.792 |
 | vg-1000GP vs 1000GP                     |       0.068 |    0.166 |
 | vg-1000GP freq\>=5% vs 1000GP freq\>=5% |       0.090 |    0.819 |
 
@@ -215,18 +200,19 @@ freq.mesa.kgp3.df = ol.gr %>% as.data.frame %>%
 
 ggplot(freq.mesa.kgp3.df, aes(x=af, y=cat.af)) +
   geom_point(alpha=.3) +
-  xlab('allele frequency in MESA') + ylab('allele frequency in 1000GP phase 3') + 
+  xlab('allele frequency in vg-MESA') + ylab('allele frequency in 1000GP phase 3') + 
   theme_bw()
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_kgp3-1.png)<!-- -->
 
 ``` r
-ggplot(freq.mesa.kgp3.df, aes(x=af-cat.af)) +
+ggp$mesa_kgp3 = ggplot(freq.mesa.kgp3.df, aes(x=af-cat.af)) +
   geom_histogram() +
-  xlab('frequency difference (MESA - 1000GP phase 3)') +
-  ylab('SV') + 
+  xlab('frequency difference (vg-MESA - 1000GP phase 3)') +
+  ylab('structural variant') + 
   theme_bw()
+ggp$mesa_kgp3
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_kgp3-2.png)<!-- -->
@@ -248,7 +234,7 @@ ggplot(freq.kgp.kgp3.df, aes(x=af, y=cat.af)) +
 ggplot(freq.kgp.kgp3.df, aes(x=af-cat.af)) +
   geom_histogram() +
   xlab('frequency difference (vg-1000GP - 1000GP phase 3)') +
-  ylab('SV') + 
+  ylab('structural variant') + 
   theme_bw()
 ```
 
@@ -258,8 +244,8 @@ ggplot(freq.kgp.kgp3.df, aes(x=af-cat.af)) +
 
 ``` r
 rbind(
-  olcatstats(mesa.s, gnomad) %>% mutate(set='MESA vs gnomAD-SV'),
-  olcatstats(subset(mesa.s, af>=.05), subset(gnomad, af>=.05)) %>% mutate(set='MESA freq>=5% vs gnomAD-SV freq>=5%'),
+  olcatstats(mesa.s, gnomad) %>% mutate(set='vg-MESA vs gnomAD-SV'),
+  olcatstats(subset(mesa.s, af>=.05), subset(gnomad, af>=.05)) %>% mutate(set='vg-MESA freq>=5% vs gnomAD-SV freq>=5%'),
   olcatstats(kgp.s, gnomad) %>% mutate(set='vg-1000GP vs gnomAD-SV'),
   olcatstats(subset(kgp.s, af>=.05), subset(gnomad, af>=.05)) %>% mutate(set='vg-1000GP freq>=5% vs gnomAD-SV freq>=5%')
 ) %>% select(set, prop.vgsite, prop.cat) %>% kable(digits=3)
@@ -267,8 +253,8 @@ rbind(
 
 | set                                        | prop.vgsite | prop.cat |
 | :----------------------------------------- | ----------: | -------: |
-| MESA vs gnomAD-SV                          |       0.283 |    0.092 |
-| MESA freq\>=5% vs gnomAD-SV freq\>=5%      |       0.151 |    0.588 |
+| vg-MESA vs gnomAD-SV                       |       0.283 |    0.092 |
+| vg-MESA freq\>=5% vs gnomAD-SV freq\>=5%   |       0.151 |    0.588 |
 | vg-1000GP vs gnomAD-SV                     |       0.284 |    0.091 |
 | vg-1000GP freq\>=5% vs gnomAD-SV freq\>=5% |       0.154 |    0.599 |
 
@@ -279,18 +265,19 @@ freq.mesa.gnomad.df = ol.gr %>% as.data.frame %>%
 
 ggplot(freq.mesa.gnomad.df, aes(x=af, y=cat.af)) +
   geom_point(alpha=.3) +
-  xlab('allele frequency in MESA') + ylab('allele frequency in gnomAD-SV') + 
+  xlab('allele frequency in vg-MESA') + ylab('allele frequency in gnomAD-SV') + 
   theme_bw()
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_gnomad-1.png)<!-- -->
 
 ``` r
-ggplot(freq.mesa.gnomad.df, aes(x=af-cat.af)) +
+ggp$mesa_gnomad = ggplot(freq.mesa.gnomad.df, aes(x=af-cat.af)) +
   geom_histogram() +
-  xlab('frequency difference (MESA - gnomAD-SV)') +
-  ylab('SV') + 
+  xlab('frequency difference (vg-MESA - gnomAD-SV)') +
+  ylab('structural variant') + 
   theme_bw()
+ggp$mesa_gnomad
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_gnomad-2.png)<!-- -->
@@ -312,7 +299,7 @@ ggplot(freq.kgp.gnomad.df, aes(x=af, y=cat.af)) +
 ggplot(freq.kgp.gnomad.df, aes(x=af-cat.af)) +
   geom_histogram() +
   xlab('frequency difference (vg-1000GP - gnomAD-SV)') +
-  ylab('SV') + 
+  ylab('structural variant') + 
   theme_bw()
 ```
 
@@ -322,14 +309,14 @@ ggplot(freq.kgp.gnomad.df, aes(x=af-cat.af)) +
 
 ``` r
 rbind(
-  olcatstats(mesa.s, svpop) %>% mutate(set='MESA vs SVPOP'),
+  olcatstats(mesa.s, svpop) %>% mutate(set='vg-MESA vs SVPOP'),
   olcatstats(kgp.s, svpop) %>% mutate(set='vg-1000GP vs SVPOP')
 ) %>% select(set, prop.vgsite, prop.cat) %>% kable(digits=3)
 ```
 
 | set                | prop.vgsite | prop.cat |
 | :----------------- | ----------: | -------: |
-| MESA vs SVPOP      |       0.860 |    0.945 |
+| vg-MESA vs SVPOP   |       0.860 |    0.945 |
 | vg-1000GP vs SVPOP |       0.859 |    0.933 |
 
 ``` r
@@ -339,18 +326,19 @@ freq.mesa.svpop.df = ol.gr %>% as.data.frame %>%
 
 ggplot(freq.mesa.svpop.df, aes(x=af, y=cat.af)) +
   geom_point(alpha=.3) +
-  xlab('allele frequency in MESA') + ylab('allele frequency in SVPOP') + 
+  xlab('allele frequency in vg-MESA') + ylab('allele frequency in SVPOP') + 
   theme_bw()
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_svpop-1.png)<!-- -->
 
 ``` r
-ggplot(freq.mesa.svpop.df, aes(x=af-cat.af)) +
+ggp$mesa_svpop = ggplot(freq.mesa.svpop.df, aes(x=af-cat.af)) +
   geom_histogram() +
-  xlab('frequency difference (MESA - SVPOP)') +
-  ylab('SV') + 
+  xlab('frequency difference (vg-MESA - SVPOP)') +
+  ylab('structural variant') + 
   theme_bw()
+ggp$mesa_svpop
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_svpop-2.png)<!-- -->
@@ -374,7 +362,7 @@ freq.kgp.svpop.df %>% filter(af>.05, cat.af>.05) %>%
 ggplot(freq.kgp.svpop.df, aes(x=af-cat.af)) +
   geom_histogram() +
   xlab('frequency difference (vg-1000GP - SVPOP)') +
-  ylab('SV') + 
+  ylab('structural variant') + 
   theme_bw()
 ```
 
@@ -396,11 +384,12 @@ ggplot(freq.svpop.kgp3.df, aes(x=af, y=cat.af)) +
 ![](compare-public-catalogs_files/figure-gfm/svpop_vs_gnomad-1.png)<!-- -->
 
 ``` r
-ggplot(freq.svpop.kgp3.df, aes(x=af-cat.af)) +
+ggp$svpop_kgp3 = ggplot(freq.svpop.kgp3.df, aes(x=af-cat.af)) +
   geom_histogram() +
   xlab('frequency difference (SVPOP - 1000GP phase 3)') +
-  ylab('SV') + 
+  ylab('structural variant') + 
   theme_bw()
+ggp$svpop_kgp3
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/svpop_vs_gnomad-2.png)<!-- -->
@@ -419,11 +408,49 @@ ggplot(freq.svpop.gnomad.df, aes(x=af, y=cat.af)) +
 ![](compare-public-catalogs_files/figure-gfm/svpop_vs_gnomad-3.png)<!-- -->
 
 ``` r
-ggplot(freq.svpop.gnomad.df, aes(x=af-cat.af)) +
+ggp$svpop_gnomad = ggplot(freq.svpop.gnomad.df, aes(x=af-cat.af)) +
   geom_histogram() +
   xlab('frequency difference (SVPOP - gnomAD-SV)') +
-  ylab('SV') + 
+  ylab('structural variant') + 
   theme_bw()
+ggp$svpop_gnomad
 ```
 
 ![](compare-public-catalogs_files/figure-gfm/svpop_vs_gnomad-4.png)<!-- -->
+
+## Multi-panel figure
+
+``` r
+## adds a legend title: a), b), etc
+plot_list <- function(ggp.l, gg.names=NULL){
+  if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
+  if(is.null(gg.names)) gg.names = names(ggp.l)
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
+}
+
+grid.arrange(grobs=plot_list(ggp, c("afdist", "mesa_kgp3", "mesa_gnomad", "mesa_svpop", "svpop_kgp3", "svpop_gnomad")),
+             layout_matrix=matrix(c(rep(1, 5), 2:6), nrow=5))
+```
+
+![](compare-public-catalogs_files/figure-gfm/fig-1.png)<!-- -->
+
+``` r
+pdf('figs/fig-sv-freq-comp.pdf', 8, 8)
+grid.arrange(grobs=plot_list(ggp, c("afdist", "mesa_kgp3", "mesa_gnomad", "mesa_svpop", "svpop_kgp3", "svpop_gnomad")),
+             layout_matrix=matrix(c(rep(1, 5), 2:6), nrow=5))
+dev.off()
+```
+
+    ## png 
+    ##   2
+
+## Save novel SVs
+
+Not present in the 1000GP phase 3 SV catalog or gnomAD-SV
+
+``` r
+in.kgp3.gnomad = unique(c(freq.kgp.kgp3.df$queryHits, freq.kgp.gnomad.df$queryHits))
+kgp.s[setdiff(1:length(kgp.s), in.kgp3.gnomad)] %>% as.data.frame %>%
+  select(svsite) %>%
+  write.table(file='svsite.2504kgp.novel.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+```

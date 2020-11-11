@@ -37,4 +37,5 @@ Rscript -e "rmarkdown::render('pops-freq-1kgp.Rmd')"
 ## Joint analysis
 Rscript -e "rmarkdown::render('prepare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
+Rscript -e "rmarkdown::render('annotate-svs-functional.Rmd')"
 ```

@@ -348,7 +348,7 @@ tmp = lapply(ex.l, function(site) subset(svs, svsite==site) %>% plotSVs)
 ![](examples-svsites-mesa_files/figure-gfm/ex-1.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/ex-2.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/ex-3.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/ex-4.png)<!-- -->
 
 ``` r
-pdf('examples-svsites-mesa.pdf', 8, 6)
+pdf('figs/examples-svsites-mesa.pdf', 8, 6)
 tmp = lapply(ex.l, function(site) subset(svs, svsite==site) %>% plotSVs)
 dev.off()
 ```

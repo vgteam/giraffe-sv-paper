@@ -104,7 +104,7 @@ ggp$svpc.f = ggp$svpc + theme(legend.position='bottom')
 grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
              layout_matrix=matrix(c(1,2),1))
 
-pdf('fig-sv-1kgp-pcs.pdf', 9, 4)
+pdf('figs/fig-sv-1kgp-pcs.pdf', 9, 4)
 grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
              layout_matrix=matrix(c(1,2),1))
 dev.off()

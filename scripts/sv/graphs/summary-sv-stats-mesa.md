@@ -35,27 +35,27 @@ sample_n(locs, 10) %>% as.data.frame
 ```
 
     ##    seqnames       svsite type clique ac.tot   ac  af.tot af.top2      af
-    ## 1     chr17  sv_398058_0  DEL   TRUE      3    2 0.00075 0.00025 0.00050
-    ## 2     chr17  sv_401148_0  DEL   TRUE      1    1 0.00025 0.00025 0.00025
-    ## 3      chr2 sv_1787799_0  DEL  FALSE     36   18 0.00900 0.00300 0.00450
-    ## 4     chr20  sv_194722_0  DEL   TRUE    429  429 0.10725 0.10725 0.10725
-    ## 5      chr2 sv_1801944_0  INS   TRUE    143  143 0.03575 0.03575 0.03575
-    ## 6      chr4 sv_1614360_0  INS   TRUE      1    1 0.00025 0.00025 0.00025
-    ## 7      chr4 sv_1623254_0  DEL   TRUE      3    3 0.00075 0.00075 0.00075
-    ## 8      chr3 sv_1649481_0  INS   TRUE     72   72 0.01800 0.01800 0.01800
-    ## 9      chr6 sv_1394013_0  INS   TRUE      3    2 0.00075 0.00025 0.00050
-    ## 10     chr3 sv_1660383_0  INS   TRUE   2010 2010 0.50250 0.50250 0.50250
+    ## 1      chr1 sv_1955955_0  INS   TRUE   1755 1755 0.43875 0.43875 0.43875
+    ## 2      chr7 sv_1284125_0  DEL   TRUE     64   64 0.01600 0.01600 0.01600
+    ## 3      chr5 sv_1507852_0  INS   TRUE   2760 2760 0.69000 0.69000 0.69000
+    ## 4      chr4 sv_1584439_0  INS   TRUE    285  285 0.07125 0.07125 0.07125
+    ## 5     chr12  sv_774509_0  INS   TRUE   1082 1082 0.27050 0.27050 0.27050
+    ## 6     chr11  sv_843044_0  INS   TRUE   1144 1144 0.28600 0.28600 0.28600
+    ## 7     chr10  sv_941815_0  INS   TRUE    103  103 0.02575 0.02575 0.02575
+    ## 8      chr5 sv_1440521_0  INS   TRUE      4    1 0.00100 0.00025 0.00025
+    ## 9      chrX   sv_24320_0  DEL   TRUE    129  129 0.03225 0.03225 0.03225
+    ## 10     chr4 sv_1609688_0  INS   TRUE   3997 3997 0.99925 0.99925 0.99925
     ##    af.top.fc loc.n size.min size.max size
-    ## 1        2.0     2       67       68   67
-    ## 2        1.0     1      134      134  134
-    ## 3        1.5     5      540      720  633
-    ## 4        1.0     1      415      415  415
-    ## 5        1.0     1      508      508  508
-    ## 6        1.0     1      174      174  174
-    ## 7        1.0     1       79       79   79
-    ## 8        1.0     1     1380     1380 1380
-    ## 9        2.0     2      105      108  108
-    ## 10       1.0     1      373      373  373
+    ## 1          1     1     2164     2164 2164
+    ## 2          1     1       96       96   96
+    ## 3          1     1       53       53   53
+    ## 4          1     1       64       64   64
+    ## 5          1     1      107      107  107
+    ## 6          1     1      172      172  172
+    ## 7          1     1       71       71   71
+    ## 8          1     4     1408     1472 1472
+    ## 9          1     1       98       98   98
+    ## 10         1     1      118      118  118
 
 ## Allele/site numbers
 
@@ -214,7 +214,7 @@ grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top"))
 ![](summary-sv-stats-mesa_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-pdf('fig-sv-mesa-stats.pdf', 10, 8)
+pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
 grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top")),
              layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
 dev.off()

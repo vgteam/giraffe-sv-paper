@@ -154,7 +154,7 @@ grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top"))
              layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
 
 
-pdf('fig-sv-mesa-stats.pdf', 10, 8)
+pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
 grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top")),
              layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
 dev.off()

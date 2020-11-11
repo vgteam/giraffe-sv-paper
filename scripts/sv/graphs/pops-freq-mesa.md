@@ -28,8 +28,8 @@ For visualization
 ``` r
 ## PCs derived from SV genotypes or TOPMed SNVs/indels
 pc.df = read.table('mesa2k-pcs-svs-topmed.tsv.gz', as.is=TRUE, header=TRUE)
-pc.df = pc.df %>% arrange(PC1.sv, PC2.sv, PC3.sv)
-pc.d = pc.df %>% select(PC1.sv, PC2.sv, PC3.sv) %>% as.matrix %>% dist
+pc.df = pc.df %>% arrange(PC1, PC2, PC3)
+pc.d = pc.df %>% select(PC1, PC2, PC3) %>% as.matrix %>% dist
 hc.o = hclust(pc.d, method='ward.D')
 pc.df$hc = factor(cutree(hc.o, 6))
 pc.df %>% group_by(hc) %>% summarize(n=n())
@@ -38,32 +38,34 @@ pc.df %>% group_by(hc) %>% summarize(n=n())
     ## # A tibble: 6 x 2
     ##   hc        n
     ##   <fct> <int>
-    ## 1 1       752
-    ## 2 2       291
-    ## 3 3       376
+    ## 1 1       751
+    ## 2 2       373
+    ## 3 3       378
     ## 4 4       126
-    ## 5 5       191
-    ## 6 6       264
+    ## 5 5       223
+    ## 6 6       149
 
 ``` r
-ggp$pc12 = ggplot(pc.df, aes(x=PC1.sv, y=PC2.sv, color=hc)) +
+ggp$pc12 = ggplot(pc.df, aes(x=PC1, y=PC2, color=hc)) +
   geom_point(alpha=.5) + theme_bw() +
   xlab('PC1') + ylab('PC2') +
   scale_color_brewer(palette='Dark2', name='population/cluster') +
   guides(colour=guide_legend(ncol=3, override.aes=list(alpha=1, size=2))) + 
-  theme(legend.position=c(.99, .01), legend.justification=c(1,0))
+  theme(legend.position=c(.99, .01), legend.justification=c(1,0)) +
+  coord_fixed()
 ggp$pc12
 ```
 
 ![](pops-freq-mesa_files/figure-gfm/pcs-1.png)<!-- -->
 
 ``` r
-ggp$pc13 = ggplot(pc.df, aes(x=PC1.sv, y=PC3.sv, color=hc)) +
+ggp$pc13 = ggplot(pc.df, aes(x=PC1, y=PC3, color=hc)) +
   geom_point(alpha=.5) + theme_bw() + 
   xlab('PC1') + ylab('PC3') +
   scale_color_brewer(palette='Dark2', name='population/cluster') +
   guides(colour=guide_legend(ncol=3, override.aes=list(alpha=1, size=2))) + 
-  theme(legend.position=c(.99, .01), legend.justification=c(1,0))
+  theme(legend.position=c(.99, .01), legend.justification=c(1,0)) +
+  coord_fixed()
 ggp$pc13
 ```
 
@@ -222,7 +224,7 @@ grid.arrange(grobs=plot_list(list(ggp$pc12, ggp$pc13 + guides(color=FALSE),
 ![](pops-freq-mesa_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-pdf('fig-pops-freq-mesa.pdf', 8, 8)
+pdf('figs/fig-pops-freq-mesa.pdf', 8, 8)
 grid.arrange(grobs=plot_list(list(ggp$pc12, ggp$pc13 + guides(color=FALSE),
                                   ggp$range, ggp$olbar + guides(fill=FALSE))),
              layout_matrix=matrix(c(1,3,4,2,3,4), 3))

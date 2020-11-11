@@ -166,7 +166,7 @@ grid.arrange(grobs=plot_list(ggp, c('pc1', 'pc2', 'pc3')),
 ![](pca-mesa_files/figure-gfm/fig-3.png)<!-- -->
 
 ``` r
-pdf('fig-sv-mesa-pcs.pdf', 9, 4)
+pdf('figs/fig-sv-mesa-pcs.pdf', 9, 4)
 grid.arrange(grobs=plot_list(ggp, c('topmed.f', 'sv.f')),
              layout_matrix=matrix(c(1,2),1))
 grid.arrange(grobs=plot_list(ggp, c('topmed.3.4.f', 'sv.3.4.f')),
