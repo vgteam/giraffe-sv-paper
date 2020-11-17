@@ -1,0 +1,148 @@
+---
+title: Summary of the resources used for SV genotyping
+output: github_document
+---
+
+Extracted from Terra using [terra-notebook-utils](https://github.com/DataBiosphere/terra-notebook-utils).
+At the time of running this, the module for cost estimation is still experimental.
+Information from some of the jobs might be missing, for example if it needed re-running or was too old.
+There was also an issue on Terra while we were genotyping the 1000GP dataset that might have affected the reporting of these metrics.
+Still, the vast majority of the submissions will have complete information that we can use to estimate the average resource requirement.
+
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+```
+
+## Read resource metrics for both MESA and 1000GP analysis
+
+```{r}
+res.df = rbind(
+  read.table('./terra-mesa-subs-resources.tsv.gz', header=TRUE, as.is=TRUE) %>% mutate(dataset='MESA'),
+  read.table('./terra-1kgp-subs-resources.tsv.gz', header=TRUE, as.is=TRUE) %>% mutate(dataset='1000GP')
+)
+res.df = res.df %>% mutate(core.hour=cpu*duration/3600)
+sample_n(res.df, 5)
+```
+
+## Aggregate per workflow
+
+```{r}
+res.a = res.df %>% group_by(workflow, dataset) %>%
+  summarize(shard=n(), cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
+  mutate(preempted=shard-4)
+```
+
+## Pre-empted jobs
+
+We used pre-emptible instances for all the steps in the pipeline.
+If no jobs were pre-empted, each workflow should contain 4 jobs/shards (CRAM conversion, mapping two chunks in parallel, SV genotyping).
+More shards mean that some were pre-empted.
+Note: less shards most likely mean that it was a rerun where cached intermediate results allowed to skip jobs.
+
+```{r nshards_sample}
+res.a %>% group_by(shard) %>% summarize(workflow=n()) %>%
+  ggplot(aes(x=shard, y=workflow)) + geom_bar(stat='identity') + theme_bw() +
+  scale_x_continuous(breaks=1:100)
+
+res.a %>% summarize(mean.preempted.job=mean(preempted), prop.notpreempted=mean(preempted==0)) %>%
+  kable(digits=3)
+```
+
+## Cost and number of core.hours per sample
+
+```{r corehours_underest}
+ggplot(res.a, aes(x=core.hour, fill=factor(shard))) + geom_histogram() + theme_bw() +
+  geom_vline(xintercept=80, linetype=2)
+
+ggplot(res.a, aes(x=core.hour, fill=dataset)) + geom_histogram() + theme_bw() +
+  geom_vline(xintercept=80, linetype=2)
+```
+
+The jobs below *x=100* are likely under-reported because of the issue Terra experienced when we were genotyping the 1000GP dataset. 
+The logs look normal but and the duration on Terra is 0 for all or some of the steps in the workflow, leading to these under-estimated resources.
+
+Filtering incomplete or problematic jobs:
+
+```{r corehours}
+res.a %>% filter(core.hour>80, shard>=4) %>% 
+  ggplot(aes(x=core.hour, fill=dataset)) + geom_histogram() + theme_bw()
+
+res.a %>% filter(core.hour>80, shard>=4) %>% 
+  ggplot(aes(x=preempted, y=core.hour, group=paste(dataset, preempted), fill=dataset)) +
+  geom_boxplot() + theme_bw() +
+  scale_x_continuous(breaks=0:100)
+
+res.a %>% filter(core.hour>80, preempted>=0) %>%
+  summarize(mean.preempted.job=mean(preempted), prop.notpreempted=mean(preempted==0)) %>%
+  kable(digits=3)
+
+res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
+  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+  kable(digits=3)
+```
+
+As expected, when a job is pre-empted, the total cost and core.hours for this sample tend to be higher.
+
+## Resources per task
+
+The SV genotyping pipeline has three steps: converting the CRAM file to FASTQ (and chunking), mapping each chunk, genotyping SVs from the aligned reads.
+
+```{r tasks}
+## task name is not extracted yet but we know the resource requested for each of the three tasks
+## -> check that there are only 3 requested resource profiles
+res.df %>% select(cpu, mem) %>% unique %>% kable
+
+
+res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+                  task=ifelse(cpu==16, 'genotyping', task),
+                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(workflow) %>%
+  mutate(preempted=n()-4) %>%
+  filter(preempted==0) %>%
+  group_by(workflow, task, dataset) %>%
+  summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
+  group_by(workflow) %>%
+  mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
+  ungroup() %>% 
+  select(-workflow) %>% 
+  group_by(task, dataset) %>%
+  summarize_all(mean) %>%
+  kable(digits=3)
+```
+
+## Save some tables in LaTeX format
+
+```{r}
+## cost/core.hour per sample
+res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
+  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+  kable(digits=3, format='latex', caption='resource per sample') %>%
+  cat(file='resource-stats.tex')
+
+cat('\n\n', file='resource-stats.tex', append=TRUE)
+
+## resource per task
+res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+                  task=ifelse(cpu==16, 'genotyping', task),
+                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(workflow) %>%
+  mutate(preempted=n()-4) %>%
+  filter(preempted==0) %>%
+  group_by(workflow, task, dataset) %>%
+  summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
+  group_by(workflow) %>%
+  mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
+  ungroup() %>% 
+  select(-workflow) %>% 
+  group_by(task, dataset) %>%
+  summarize_all(mean) %>%
+  kable(digits=3, format='latex', caption='resource per task') %>%
+  cat(file='resource-stats.tex', append=TRUE)
+```

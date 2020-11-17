@@ -7,7 +7,8 @@
 
 ## SV genotyping
 
-The SVs were genotyped on Terra using [a WDL deposited on Dockstore](https://dockstore.org/workflows/github.com/vgteam/vg_wdl/vg_mapgaffe_call_sv_cram:sv-giraffe-paper?tab=info)
+The SVs were genotyped on Terra using [a WDL deposited on Dockstore](https://dockstore.org/workflows/github.com/vgteam/vg_wdl/vg_mapgaffe_call_sv_cram:sv-giraffe-paper?tab=info).
+See [genotype-svs](genotype-svs) for more information.
 
 ## SV analysis
 

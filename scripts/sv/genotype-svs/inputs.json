@@ -1,0 +1,16 @@
+{
+  "vgMapCallSV.CRAM_CONVERT_CORES": "${6}",
+  "vgMapCallSV.CRAM_REF": "${workspace.referenceData_hg38_ref_fasta}",
+  "vgMapCallSV.CRAM_REF_INDEX": "${workspace.referenceData_hg38_ref_fasta_index}",
+  "vgMapCallSV.DIST_IDX_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/hg38-hsvlr_srdedup17_aug.dist",
+  "vgMapCallSV.GBWT_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/hg38-hsvlr_srdedup17_aug.N32.gbwt",
+  "vgMapCallSV.INPUT_CRAM_FILE": "${this.object_id}",
+  "vgMapCallSV.MAX_CRAM_CHUNKS": "${2}",
+  "vgMapCallSV.MIN_IDX_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/hg38-hsvlr_srdedup17_aug.k29.w11.N32.min",
+  "vgMapCallSV.NB_CRAM_CHUNKS": "${4}",
+  "vgMapCallSV.PREEMPTIBLE": "${3}",
+  "vgMapCallSV.REFPATH_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/refpaths.txt",
+  "vgMapCallSV.SAMPLE_NAME": "${this.submitter_id}",
+  "vgMapCallSV.SNARL_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/hg38-hsvlr_srdedup17_aug.snarls",
+  "vgMapCallSV.XG_FILE": "gs://jmonlong-vg-sv/hsvlr_srdedup17_aug/hg38-hsvlr_srdedup17_aug.xg"
+}

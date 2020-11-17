@@ -1,0 +1,5 @@
+{
+  "vgMapCallSV.output_gaf": "${this.gaf}",
+  "vgMapCallSV.output_vcf": "${this.vcf}",
+  "vgMapCallSV.output_vcf_index": "${this.vcf_idx}"
+}
