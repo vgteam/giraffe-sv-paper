@@ -29,17 +29,17 @@ sample_n(res.df, 5)
 ```
 
     ##         batch                             workflow shard cpu mem duration
-    ## 1 batch_7_599 b393331a-360e-45b8-9c10-071372a18ed2     7  16 100 5051.696
-    ## 2 batch_7_599 c959f97a-5024-49c6-831f-d47cc3ddedb8     1  32 100 1376.417
-    ## 3 batch_2_500 d479cd25-4b49-412f-bf72-5692f791ce2d     4   8  50 1258.019
-    ## 4 batch_7_599 e5a9029a-0c57-4b92-bf16-89a7c1886138     3  16 100 3421.666
-    ## 5 batch_7_599 e3f41ab2-d6d2-474d-9dc2-cb850fd64b11     4   8  50 3845.331
-    ##         cost dataset core.hour
-    ## 1 0.28863760  1000GP 22.451982
-    ## 2 0.12139020  1000GP 12.234818
-    ## 3 0.03596543    MESA  2.795598
-    ## 4 0.19551027  1000GP 15.207404
-    ## 5 0.10986740  1000GP  8.545180
+    ## 1 batch_2_500 ccd0c5b2-c312-4925-bb76-2f462cc790f8     1  32 100 1433.384
+    ## 2 batch_4_500 6448df41-e804-44f1-a2ff-9782bc4ef8fa     3  16 100 7088.285
+    ## 3 batch_3_435 55c23703-4106-462c-8861-ee4f96b53179     3  16 100 6959.052
+    ## 4 batch_1_597 095b0ed7-aa04-4ffd-8ec5-558180a34c8d     3  16 100 5168.621
+    ## 5 batch_3_500 83755c89-3dda-44fd-b7f6-e1e704cbf5fe     1  32 100 1453.564
+    ##        cost dataset core.hour
+    ## 1 0.1264151    MESA  12.74119
+    ## 2 0.4050182    MESA  31.50349
+    ## 3 0.3976480  1000GP  30.92912
+    ## 4 0.2953222  1000GP  22.97165
+    ## 5 0.1281782    MESA  12.92057
 
 ## Aggregate per workflow
 
@@ -186,20 +186,23 @@ res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
   select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
-  kable(digits=3)
+  mutate(core.hour=paste0(round(core.hour, 3), ' (', round(prop.core.hour, 3)*100, '%)'),
+         cost=paste0(round(cost, 3), ' (', round(prop.cost, 3)*100, '%)')) %>%
+  select(task, cpu, mem, dataset, core.hour, cost) %>% 
+    kable(digits=3)
 ```
 
-| task            | dataset | cpu | mem | core.hour | prop.core.hour |  cost | prop.cost |
-| :-------------- | :------ | --: | --: | --------: | -------------: | ----: | --------: |
-| CRAM conversion | all     |   8 |  50 |    12.867 |          0.076 | 0.166 |     0.092 |
-| CRAM conversion | MESA    |   8 |  50 |    13.220 |          0.076 | 0.170 |     0.090 |
-| CRAM conversion | 1000GP  |   8 |  50 |    12.636 |          0.076 | 0.163 |     0.093 |
-| mapping         | all     |  32 | 100 |   146.261 |          0.752 | 1.451 |     0.710 |
-| mapping         | MESA    |  32 | 100 |   157.660 |          0.771 | 1.564 |     0.725 |
-| mapping         | 1000GP  |  32 | 100 |   138.782 |          0.739 | 1.377 |     0.700 |
-| genotyping      | all     |  16 | 100 |    24.891 |          0.172 | 0.320 |     0.198 |
-| genotyping      | MESA    |  16 | 100 |    27.112 |          0.154 | 0.349 |     0.185 |
-| genotyping      | 1000GP  |  16 | 100 |    23.433 |          0.185 | 0.301 |     0.207 |
+| task            | cpu | mem | dataset | core.hour       | cost          |
+| :-------------- | --: | --: | :------ | :-------------- | :------------ |
+| CRAM conversion |   8 |  50 | all     | 12.867 (7.6%)   | 0.166 (9.2%)  |
+| CRAM conversion |   8 |  50 | MESA    | 13.22 (7.6%)    | 0.17 (9%)     |
+| CRAM conversion |   8 |  50 | 1000GP  | 12.636 (7.6%)   | 0.163 (9.3%)  |
+| mapping         |  32 | 100 | all     | 146.261 (75.2%) | 1.451 (71%)   |
+| mapping         |  32 | 100 | MESA    | 157.66 (77.1%)  | 1.564 (72.5%) |
+| mapping         |  32 | 100 | 1000GP  | 138.782 (73.9%) | 1.377 (70%)   |
+| genotyping      |  16 | 100 | all     | 24.891 (17.2%)  | 0.32 (19.8%)  |
+| genotyping      |  16 | 100 | MESA    | 27.112 (15.4%)  | 0.349 (18.5%) |
+| genotyping      |  16 | 100 | 1000GP  | 23.433 (18.5%)  | 0.301 (20.7%) |
 
 ## Save some tables in LaTeX format
 
@@ -217,7 +220,6 @@ res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
 cat('\n\n', file='resource-stats.tex', append=TRUE)
 
 ## resource per task
-
 res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
   mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP')),
          task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
@@ -234,6 +236,9 @@ res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
   select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
+  mutate(core.hour=paste0(round(core.hour, 3), ' (', round(prop.core.hour, 3)*100, '%)'),
+         cost=paste0(round(cost, 3), ' (', round(prop.cost, 3)*100, '%)')) %>%
+  select(task, cpu, mem, dataset, core.hour, cost) %>% 
   kable(digits=3, format='latex', caption='resource per task') %>%
   cat(file='resource-stats.tex', append=TRUE)
 ```

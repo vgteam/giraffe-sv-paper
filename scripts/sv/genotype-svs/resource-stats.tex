@@ -37,27 +37,27 @@ preempted & dataset & workflow & cost & core.hour\\
 
 \caption{\label{tab:unnamed-chunk-5}resource per task}
 \centering
-\begin{tabular}[t]{l|l|r|r|r|r|r|r}
+\begin{tabular}[t]{l|r|r|l|l|l}
 \hline
-task & dataset & cpu & mem & core.hour & prop.core.hour & cost & prop.cost\\
+task & cpu & mem & dataset & core.hour & cost\\
 \hline
-CRAM conversion & all & 8 & 50 & 12.867 & 0.076 & 0.166 & 0.092\\
+CRAM conversion & 8 & 50 & all & 12.867 (7.6\%) & 0.166 (9.2\%)\\
 \hline
-CRAM conversion & MESA & 8 & 50 & 13.220 & 0.076 & 0.170 & 0.090\\
+CRAM conversion & 8 & 50 & MESA & 13.22 (7.6\%) & 0.17 (9\%)\\
 \hline
-CRAM conversion & 1000GP & 8 & 50 & 12.636 & 0.076 & 0.163 & 0.093\\
+CRAM conversion & 8 & 50 & 1000GP & 12.636 (7.6\%) & 0.163 (9.3\%)\\
 \hline
-mapping & all & 32 & 100 & 146.261 & 0.752 & 1.451 & 0.710\\
+mapping & 32 & 100 & all & 146.261 (75.2\%) & 1.451 (71\%)\\
 \hline
-mapping & MESA & 32 & 100 & 157.660 & 0.771 & 1.564 & 0.725\\
+mapping & 32 & 100 & MESA & 157.66 (77.1\%) & 1.564 (72.5\%)\\
 \hline
-mapping & 1000GP & 32 & 100 & 138.782 & 0.739 & 1.377 & 0.700\\
+mapping & 32 & 100 & 1000GP & 138.782 (73.9\%) & 1.377 (70\%)\\
 \hline
-genotyping & all & 16 & 100 & 24.891 & 0.172 & 0.320 & 0.198\\
+genotyping & 16 & 100 & all & 24.891 (17.2\%) & 0.32 (19.8\%)\\
 \hline
-genotyping & MESA & 16 & 100 & 27.112 & 0.154 & 0.349 & 0.185\\
+genotyping & 16 & 100 & MESA & 27.112 (15.4\%) & 0.349 (18.5\%)\\
 \hline
-genotyping & 1000GP & 16 & 100 & 23.433 & 0.185 & 0.301 & 0.207\\
+genotyping & 16 & 100 & 1000GP & 23.433 (18.5\%) & 0.301 (20.7\%)\\
 \hline
 \end{tabular}
 \end{table}
