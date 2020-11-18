@@ -4,37 +4,53 @@
 \centering
 \begin{tabular}[t]{r|l|r|r|r}
 \hline
-preempted & dataset & shard & cost & core.hour\\
+preempted & dataset & workflow & cost & core.hour\\
 \hline
-0 & 1000GP & 4 & 2.017 & 191.791\\
+0 & all & 2910 & 2.044 & 194.388\\
 \hline
-0 & MESA & 4 & 2.082 & 197.981\\
+0 & MESA & 1221 & 2.082 & 197.981\\
 \hline
-1 & 1000GP & 5 & 2.295 & 218.718\\
+0 & 1000GP & 1689 & 2.017 & 191.791\\
 \hline
-1 & MESA & 5 & 2.346 & 222.205\\
+1 & all & 1358 & 2.315 & 220.046\\
 \hline
-2 & 1000GP & 6 & 2.485 & 236.318\\
+1 & MESA & 517 & 2.346 & 222.205\\
 \hline
-2 & MESA & 6 & 2.638 & 248.246\\
+1 & 1000GP & 841 & 2.295 & 218.718\\
 \hline
-3 & 1000GP & 7 & 2.636 & 250.244\\
+2 & all & 439 & 2.545 & 240.992\\
 \hline
-3 & MESA & 7 & 3.019 & 283.251\\
+2 & MESA & 172 & 2.638 & 248.246\\
 \hline
-4 & 1000GP & 8 & 3.062 & 291.701\\
+2 & 1000GP & 267 & 2.485 & 236.318\\
 \hline
-4 & MESA & 8 & 2.986 & 277.209\\
+3 & all & 154 & 2.790 & 263.533\\
 \hline
-5 & 1000GP & 9 & 3.500 & 336.177\\
+3 & MESA & 62 & 3.019 & 283.251\\
 \hline
-5 & MESA & 9 & 3.088 & 282.514\\
+3 & 1000GP & 92 & 2.636 & 250.244\\
 \hline
-6 & 1000GP & 10 & 2.577 & 246.442\\
+4 & all & 36 & 3.028 & 285.260\\
 \hline
-6 & MESA & 10 & 3.105 & 280.710\\
+4 & MESA & 16 & 2.986 & 277.209\\
 \hline
-8 & 1000GP & 12 & 4.389 & 410.061\\
+4 & 1000GP & 20 & 3.062 & 291.701\\
+\hline
+5 & all & 12 & 3.259 & 304.873\\
+\hline
+5 & MESA & 7 & 3.088 & 282.514\\
+\hline
+5 & 1000GP & 5 & 3.500 & 336.177\\
+\hline
+6 & all & 6 & 2.841 & 263.576\\
+\hline
+6 & MESA & 3 & 3.105 & 280.710\\
+\hline
+6 & 1000GP & 3 & 2.577 & 246.442\\
+\hline
+8 & all & 1 & 4.389 & 410.061\\
+\hline
+8 & 1000GP & 1 & 4.389 & 410.061\\
 \hline
 \end{tabular}
 \end{table}
@@ -43,21 +59,27 @@ preempted & dataset & shard & cost & core.hour\\
 
 \caption{\label{tab:unnamed-chunk-5}resource per task}
 \centering
-\begin{tabular}[t]{l|l|r|r|r|r}
+\begin{tabular}[t]{l|l|r|r|r|r|r|r}
 \hline
-task & dataset & cost & core.hour & prop.cost & prop.core.hour\\
+task & dataset & cpu & mem & core.hour & prop.core.hour & cost & prop.cost\\
 \hline
-CRAM conversion & 1000GP & 0.163 & 12.636 & 0.093 & 0.076\\
+CRAM conversion & all & 8 & 50 & 12.867 & 0.076 & 0.166 & 0.092\\
 \hline
-CRAM conversion & MESA & 0.170 & 13.220 & 0.090 & 0.076\\
+CRAM conversion & MESA & 8 & 50 & 13.220 & 0.076 & 0.170 & 0.090\\
 \hline
-mapping & 1000GP & 1.377 & 138.782 & 0.700 & 0.739\\
+CRAM conversion & 1000GP & 8 & 50 & 12.636 & 0.076 & 0.163 & 0.093\\
 \hline
-mapping & MESA & 1.564 & 157.660 & 0.725 & 0.771\\
+mapping & all & 32 & 100 & 146.261 & 0.752 & 1.451 & 0.710\\
 \hline
-genotyping & 1000GP & 0.301 & 23.433 & 0.207 & 0.185\\
+mapping & MESA & 32 & 100 & 157.660 & 0.771 & 1.564 & 0.725\\
 \hline
-genotyping & MESA & 0.349 & 27.112 & 0.185 & 0.154\\
+mapping & 1000GP & 32 & 100 & 138.782 & 0.739 & 1.377 & 0.700\\
+\hline
+genotyping & all & 16 & 100 & 24.891 & 0.172 & 0.320 & 0.198\\
+\hline
+genotyping & MESA & 16 & 100 & 27.112 & 0.154 & 0.349 & 0.185\\
+\hline
+genotyping & 1000GP & 16 & 100 & 23.433 & 0.185 & 0.301 & 0.207\\
 \hline
 \end{tabular}
 \end{table}

@@ -4,5 +4,5 @@ See the [inputs.json](inputs.json) and [outputs.json](outputs.json) templates us
 Note: `"${this.object_id}"` represents the path to the CRAM file extracted from the data table with information about aligned reads (*submitted_aligned_reads*).
 
 It cost on average $1.11 to genotype the MESA cohort (BDC billing account), and $1.56 to genotype the 1000 Genomes Project dataset (lab billing account).
-[resource-stats.md](resource-stats.md) compute the average resources (time, computing cores, memory) for each step of the pipeline.
+The [resource-stats report](resource-stats.md) computes the average resources (time, computing cores, memory) for a sample or for each step of the pipeline.
 Compile this report with `Rscript -e "rmarkdown::render('resource-stats.Rmd')"`.

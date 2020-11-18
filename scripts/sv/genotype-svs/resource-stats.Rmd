@@ -83,8 +83,11 @@ res.a %>% filter(core.hour>80, preempted>=0) %>%
   summarize(mean.preempted.job=mean(preempted), prop.notpreempted=mean(preempted==0)) %>%
   kable(digits=3)
 
-res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
-  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
+  filter(core.hour>80, shard>=4) %>% 
+  group_by(preempted, dataset) %>%
+  summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3)
 ```
 
@@ -100,18 +103,20 @@ The SV genotyping pipeline has three steps: converting the CRAM file to FASTQ (a
 res.df %>% select(cpu, mem) %>% unique %>% kable
 
 
-res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
-                  task=ifelse(cpu==16, 'genotyping', task),
-                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
-  group_by(workflow) %>%
+res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP')),
+         task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+         task=ifelse(cpu==16, 'genotyping', task),
+         task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(dataset, workflow) %>%
   mutate(preempted=n()-4) %>%
   filter(preempted==0) %>%
-  group_by(workflow, task, dataset) %>%
+  group_by(workflow, task, cpu, mem, dataset) %>%
   summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
-  group_by(workflow) %>%
+  group_by(dataset, workflow) %>%
   mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
   ungroup() %>% 
-  select(-workflow) %>% 
+  select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
   kable(digits=3)
@@ -121,26 +126,32 @@ res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
 
 ```{r}
 ## cost/core.hour per sample
-res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
-  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
+  filter(core.hour>80, shard>=4) %>% 
+  group_by(preempted, dataset) %>%
+  summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3, format='latex', caption='resource per sample') %>%
   cat(file='resource-stats.tex')
 
 cat('\n\n', file='resource-stats.tex', append=TRUE)
 
 ## resource per task
-res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
-                  task=ifelse(cpu==16, 'genotyping', task),
-                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
-  group_by(workflow) %>%
+
+res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP')),
+         task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+         task=ifelse(cpu==16, 'genotyping', task),
+         task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(dataset, workflow) %>%
   mutate(preempted=n()-4) %>%
   filter(preempted==0) %>%
-  group_by(workflow, task, dataset) %>%
+  group_by(workflow, task, cpu, mem, dataset) %>%
   summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
-  group_by(workflow) %>%
+  group_by(dataset, workflow) %>%
   mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
   ungroup() %>% 
-  select(-workflow) %>% 
+  select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
   kable(digits=3, format='latex', caption='resource per task') %>%

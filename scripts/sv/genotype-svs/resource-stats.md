@@ -28,18 +28,18 @@ res.df = res.df %>% mutate(core.hour=cpu*duration/3600)
 sample_n(res.df, 5)
 ```
 
-    ##         batch                             workflow shard cpu mem duration
-    ## 1 batch_3_500 ba110796-1562-4f4f-8e73-de2006587ac9     1  32 100 4895.882
-    ## 2 batch_5_372 f41b59be-4800-4751-aa5a-606856f28c53     4   8  50 3464.571
-    ## 3 batch_3_435 b6ec166a-e915-4c45-8e87-3396f82fd066     4   8  50 3786.641
-    ## 4 batch_3_500 d36b8795-dbb6-4f51-8ce3-9a75ffac6f64     3  16 100 7805.548
-    ## 5 batch_7_599 0a6d36f8-3eaa-4632-bc59-d9ca7beb9479     1  32 100 4385.811
-    ##        cost dataset core.hour
-    ## 1 0.4316096    MESA 43.518951
-    ## 2 0.0989835  1000GP  7.699047
-    ## 3 0.1081820  1000GP  8.414758
-    ## 4 0.4459828    MESA 34.691324
-    ## 5 0.3866503  1000GP 38.984987
+    ##         batch                             workflow shard cpu mem  duration
+    ## 1 batch_5_372 e2129e2f-b933-495a-a6f4-71025ce55f77     3  32 100 13787.018
+    ## 2 batch_3_500 6c77041d-ad36-4dd9-bf7d-c50154f474b7     4   8  50  4289.536
+    ## 3 batch_4_289 bd7b04e0-5406-4f29-899f-d6699aa41e00     4   8  50  3948.741
+    ## 4 batch_3_435 ac517022-b9e1-42b7-ae70-d5dcbdb802b3     2  32 100    39.441
+    ## 5 batch_1_597 f4ec3a28-12f2-4f55-96fa-167eb493c5a6     3  16 100  5411.498
+    ##          cost dataset   core.hour
+    ## 1 1.215488800  1000GP 122.5512711
+    ## 2 0.122551000    MESA   9.5323022
+    ## 3 0.112809767  1000GP   8.7749800
+    ## 4 0.005289333  1000GP   0.3505867
+    ## 5 0.309205600  1000GP  24.0511022
 
 ## Aggregate per workflow
 
@@ -124,28 +124,39 @@ res.a %>% filter(core.hour>80, preempted>=0) %>%
 |              0.599 |             0.592 |
 
 ``` r
-res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
-  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
+  filter(core.hour>80, shard>=4) %>% 
+  group_by(preempted, dataset) %>%
+  summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3)
 ```
 
-| preempted | dataset | shard |  cost | core.hour |
-| --------: | :------ | ----: | ----: | --------: |
-|         0 | 1000GP  |     4 | 2.017 |   191.791 |
-|         0 | MESA    |     4 | 2.082 |   197.981 |
-|         1 | 1000GP  |     5 | 2.295 |   218.718 |
-|         1 | MESA    |     5 | 2.346 |   222.205 |
-|         2 | 1000GP  |     6 | 2.485 |   236.318 |
-|         2 | MESA    |     6 | 2.638 |   248.246 |
-|         3 | 1000GP  |     7 | 2.636 |   250.244 |
-|         3 | MESA    |     7 | 3.019 |   283.251 |
-|         4 | 1000GP  |     8 | 3.062 |   291.701 |
-|         4 | MESA    |     8 | 2.986 |   277.209 |
-|         5 | 1000GP  |     9 | 3.500 |   336.177 |
-|         5 | MESA    |     9 | 3.088 |   282.514 |
-|         6 | 1000GP  |    10 | 2.577 |   246.442 |
-|         6 | MESA    |    10 | 3.105 |   280.710 |
-|         8 | 1000GP  |    12 | 4.389 |   410.061 |
+| preempted | dataset | workflow |  cost | core.hour |
+| --------: | :------ | -------: | ----: | --------: |
+|         0 | all     |     2910 | 2.044 |   194.388 |
+|         0 | MESA    |     1221 | 2.082 |   197.981 |
+|         0 | 1000GP  |     1689 | 2.017 |   191.791 |
+|         1 | all     |     1358 | 2.315 |   220.046 |
+|         1 | MESA    |      517 | 2.346 |   222.205 |
+|         1 | 1000GP  |      841 | 2.295 |   218.718 |
+|         2 | all     |      439 | 2.545 |   240.992 |
+|         2 | MESA    |      172 | 2.638 |   248.246 |
+|         2 | 1000GP  |      267 | 2.485 |   236.318 |
+|         3 | all     |      154 | 2.790 |   263.533 |
+|         3 | MESA    |       62 | 3.019 |   283.251 |
+|         3 | 1000GP  |       92 | 2.636 |   250.244 |
+|         4 | all     |       36 | 3.028 |   285.260 |
+|         4 | MESA    |       16 | 2.986 |   277.209 |
+|         4 | 1000GP  |       20 | 3.062 |   291.701 |
+|         5 | all     |       12 | 3.259 |   304.873 |
+|         5 | MESA    |        7 | 3.088 |   282.514 |
+|         5 | 1000GP  |        5 | 3.500 |   336.177 |
+|         6 | all     |        6 | 2.841 |   263.576 |
+|         6 | MESA    |        3 | 3.105 |   280.710 |
+|         6 | 1000GP  |        3 | 2.577 |   246.442 |
+|         8 | all     |        1 | 4.389 |   410.061 |
+|         8 | 1000GP  |        1 | 4.389 |   410.061 |
 
 As expected, when a job is pre-empted, the total cost and core.hours for
 this sample tend to be higher.
@@ -169,56 +180,67 @@ res.df %>% select(cpu, mem) %>% unique %>% kable
 | 8 |   8 |  50 |
 
 ``` r
-res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
-                  task=ifelse(cpu==16, 'genotyping', task),
-                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
-  group_by(workflow) %>%
+res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP')),
+         task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+         task=ifelse(cpu==16, 'genotyping', task),
+         task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(dataset, workflow) %>%
   mutate(preempted=n()-4) %>%
   filter(preempted==0) %>%
-  group_by(workflow, task, dataset) %>%
+  group_by(workflow, task, cpu, mem, dataset) %>%
   summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
-  group_by(workflow) %>%
+  group_by(dataset, workflow) %>%
   mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
   ungroup() %>% 
-  select(-workflow) %>% 
+  select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
   kable(digits=3)
 ```
 
-| task            | dataset |  cost | core.hour | prop.cost | prop.core.hour |
-| :-------------- | :------ | ----: | --------: | --------: | -------------: |
-| CRAM conversion | 1000GP  | 0.163 |    12.636 |     0.093 |          0.076 |
-| CRAM conversion | MESA    | 0.170 |    13.220 |     0.090 |          0.076 |
-| mapping         | 1000GP  | 1.377 |   138.782 |     0.700 |          0.739 |
-| mapping         | MESA    | 1.564 |   157.660 |     0.725 |          0.771 |
-| genotyping      | 1000GP  | 0.301 |    23.433 |     0.207 |          0.185 |
-| genotyping      | MESA    | 0.349 |    27.112 |     0.185 |          0.154 |
+| task            | dataset | cpu | mem | core.hour | prop.core.hour |  cost | prop.cost |
+| :-------------- | :------ | --: | --: | --------: | -------------: | ----: | --------: |
+| CRAM conversion | all     |   8 |  50 |    12.867 |          0.076 | 0.166 |     0.092 |
+| CRAM conversion | MESA    |   8 |  50 |    13.220 |          0.076 | 0.170 |     0.090 |
+| CRAM conversion | 1000GP  |   8 |  50 |    12.636 |          0.076 | 0.163 |     0.093 |
+| mapping         | all     |  32 | 100 |   146.261 |          0.752 | 1.451 |     0.710 |
+| mapping         | MESA    |  32 | 100 |   157.660 |          0.771 | 1.564 |     0.725 |
+| mapping         | 1000GP  |  32 | 100 |   138.782 |          0.739 | 1.377 |     0.700 |
+| genotyping      | all     |  16 | 100 |    24.891 |          0.172 | 0.320 |     0.198 |
+| genotyping      | MESA    |  16 | 100 |    27.112 |          0.154 | 0.349 |     0.185 |
+| genotyping      | 1000GP  |  16 | 100 |    23.433 |          0.185 | 0.301 |     0.207 |
 
 ## Save some tables in LaTeX format
 
 ``` r
 ## cost/core.hour per sample
-res.a %>% filter(core.hour>80, shard>=4) %>% select(-workflow) %>%
-  group_by(preempted, dataset) %>% summarize_all(mean) %>%
+res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
+  filter(core.hour>80, shard>=4) %>% 
+  group_by(preempted, dataset) %>%
+  summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3, format='latex', caption='resource per sample') %>%
   cat(file='resource-stats.tex')
 
 cat('\n\n', file='resource-stats.tex', append=TRUE)
 
 ## resource per task
-res.df %>% mutate(task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
-                  task=ifelse(cpu==16, 'genotyping', task),
-                  task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
-  group_by(workflow) %>%
+
+res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
+  mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP')),
+         task=ifelse(cpu==32, 'mapping', 'CRAM conversion'),
+         task=ifelse(cpu==16, 'genotyping', task),
+         task=factor(task, levels=c('CRAM conversion', 'mapping', 'genotyping'))) %>%
+  group_by(dataset, workflow) %>%
   mutate(preempted=n()-4) %>%
   filter(preempted==0) %>%
-  group_by(workflow, task, dataset) %>%
+  group_by(workflow, task, cpu, mem, dataset) %>%
   summarize(cost=sum(cost), core.hour=sum(core.hour), .groups='drop') %>%
-  group_by(workflow) %>%
+  group_by(dataset, workflow) %>%
   mutate(prop.cost=cost/sum(cost), prop.core.hour=core.hour/sum(core.hour)) %>% 
   ungroup() %>% 
-  select(-workflow) %>% 
+  select(task, cpu, mem, dataset, core.hour, prop.core.hour, cost, prop.cost) %>% 
   group_by(task, dataset) %>%
   summarize_all(mean) %>%
   kable(digits=3, format='latex', caption='resource per task') %>%
