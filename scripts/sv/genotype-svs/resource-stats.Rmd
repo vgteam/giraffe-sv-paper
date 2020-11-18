@@ -86,6 +86,7 @@ res.a %>% filter(core.hour>80, preempted>=0) %>%
 res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
   mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
   filter(core.hour>80, shard>=4) %>% 
+  mutate(preempted=cut(preempted, c(-1,0,1,2,Inf), labels=c(0,1,2,'3+'))) %>% 
   group_by(preempted, dataset) %>%
   summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3)
@@ -128,7 +129,8 @@ res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
 ## cost/core.hour per sample
 res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
   mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
-  filter(core.hour>80, shard>=4) %>% 
+  filter(core.hour>80, shard>=4) %>%
+  mutate(preempted=cut(preempted, c(-1,0,1,2,Inf), labels=c(0,1,2,'3+'))) %>% 
   group_by(preempted, dataset) %>%
   summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3, format='latex', caption='resource per sample') %>%

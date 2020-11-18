@@ -28,18 +28,18 @@ res.df = res.df %>% mutate(core.hour=cpu*duration/3600)
 sample_n(res.df, 5)
 ```
 
-    ##         batch                             workflow shard cpu mem  duration
-    ## 1 batch_5_372 e2129e2f-b933-495a-a6f4-71025ce55f77     3  32 100 13787.018
-    ## 2 batch_3_500 6c77041d-ad36-4dd9-bf7d-c50154f474b7     4   8  50  4289.536
-    ## 3 batch_4_289 bd7b04e0-5406-4f29-899f-d6699aa41e00     4   8  50  3948.741
-    ## 4 batch_3_435 ac517022-b9e1-42b7-ae70-d5dcbdb802b3     2  32 100    39.441
-    ## 5 batch_1_597 f4ec3a28-12f2-4f55-96fa-167eb493c5a6     3  16 100  5411.498
-    ##          cost dataset   core.hour
-    ## 1 1.215488800  1000GP 122.5512711
-    ## 2 0.122551000    MESA   9.5323022
-    ## 3 0.112809767  1000GP   8.7749800
-    ## 4 0.005289333  1000GP   0.3505867
-    ## 5 0.309205600  1000GP  24.0511022
+    ##         batch                             workflow shard cpu mem duration
+    ## 1 batch_7_599 b393331a-360e-45b8-9c10-071372a18ed2     7  16 100 5051.696
+    ## 2 batch_7_599 c959f97a-5024-49c6-831f-d47cc3ddedb8     1  32 100 1376.417
+    ## 3 batch_2_500 d479cd25-4b49-412f-bf72-5692f791ce2d     4   8  50 1258.019
+    ## 4 batch_7_599 e5a9029a-0c57-4b92-bf16-89a7c1886138     3  16 100 3421.666
+    ## 5 batch_7_599 e3f41ab2-d6d2-474d-9dc2-cb850fd64b11     4   8  50 3845.331
+    ##         cost dataset core.hour
+    ## 1 0.28863760  1000GP 22.451982
+    ## 2 0.12139020  1000GP 12.234818
+    ## 3 0.03596543    MESA  2.795598
+    ## 4 0.19551027  1000GP 15.207404
+    ## 5 0.10986740  1000GP  8.545180
 
 ## Aggregate per workflow
 
@@ -127,36 +127,26 @@ res.a %>% filter(core.hour>80, preempted>=0) %>%
 res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
   mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
   filter(core.hour>80, shard>=4) %>% 
+  mutate(preempted=cut(preempted, c(-1,0,1,2,Inf), labels=c(0,1,2,'3+'))) %>% 
   group_by(preempted, dataset) %>%
   summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3)
 ```
 
 | preempted | dataset | workflow |  cost | core.hour |
-| --------: | :------ | -------: | ----: | --------: |
-|         0 | all     |     2910 | 2.044 |   194.388 |
-|         0 | MESA    |     1221 | 2.082 |   197.981 |
-|         0 | 1000GP  |     1689 | 2.017 |   191.791 |
-|         1 | all     |     1358 | 2.315 |   220.046 |
-|         1 | MESA    |      517 | 2.346 |   222.205 |
-|         1 | 1000GP  |      841 | 2.295 |   218.718 |
-|         2 | all     |      439 | 2.545 |   240.992 |
-|         2 | MESA    |      172 | 2.638 |   248.246 |
-|         2 | 1000GP  |      267 | 2.485 |   236.318 |
-|         3 | all     |      154 | 2.790 |   263.533 |
-|         3 | MESA    |       62 | 3.019 |   283.251 |
-|         3 | 1000GP  |       92 | 2.636 |   250.244 |
-|         4 | all     |       36 | 3.028 |   285.260 |
-|         4 | MESA    |       16 | 2.986 |   277.209 |
-|         4 | 1000GP  |       20 | 3.062 |   291.701 |
-|         5 | all     |       12 | 3.259 |   304.873 |
-|         5 | MESA    |        7 | 3.088 |   282.514 |
-|         5 | 1000GP  |        5 | 3.500 |   336.177 |
-|         6 | all     |        6 | 2.841 |   263.576 |
-|         6 | MESA    |        3 | 3.105 |   280.710 |
-|         6 | 1000GP  |        3 | 2.577 |   246.442 |
-|         8 | all     |        1 | 4.389 |   410.061 |
-|         8 | 1000GP  |        1 | 4.389 |   410.061 |
+| :-------- | :------ | -------: | ----: | --------: |
+| 0         | all     |     2910 | 2.044 |   194.388 |
+| 0         | MESA    |     1221 | 2.082 |   197.981 |
+| 0         | 1000GP  |     1689 | 2.017 |   191.791 |
+| 1         | all     |     1358 | 2.315 |   220.046 |
+| 1         | MESA    |      517 | 2.346 |   222.205 |
+| 1         | 1000GP  |      841 | 2.295 |   218.718 |
+| 2         | all     |      439 | 2.545 |   240.992 |
+| 2         | MESA    |      172 | 2.638 |   248.246 |
+| 2         | 1000GP  |      267 | 2.485 |   236.318 |
+| 3+        | all     |      209 | 2.867 |   270.351 |
+| 3+        | MESA    |       88 | 3.022 |   282.007 |
+| 3+        | 1000GP  |      121 | 2.755 |   261.874 |
 
 As expected, when a job is pre-empted, the total cost and core.hours for
 this sample tend to be higher.
@@ -217,7 +207,8 @@ res.df %>% mutate(dataset='all') %>% rbind(res.df) %>%
 ## cost/core.hour per sample
 res.a %>% mutate(dataset='all') %>% rbind(res.a) %>%
   mutate(dataset=factor(dataset, levels=c('all', 'MESA', '1000GP'))) %>% 
-  filter(core.hour>80, shard>=4) %>% 
+  filter(core.hour>80, shard>=4) %>%
+  mutate(preempted=cut(preempted, c(-1,0,1,2,Inf), labels=c(0,1,2,'3+'))) %>% 
   group_by(preempted, dataset) %>%
   summarize(workflow=n(), cost=mean(cost), core.hour=mean(core.hour)) %>%
   kable(digits=3, format='latex', caption='resource per sample') %>%
