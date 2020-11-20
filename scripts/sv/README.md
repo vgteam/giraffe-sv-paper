@@ -12,8 +12,7 @@ See [genotype-svs](genotype-svs) for more information.
 
 ## SV analysis
 
-See [graphs](graphs).
-
 Once the SVs were genotyped in the MESA cohort of 1000GP dataset, we explored their patterns. 
+See [describe-svs](describe-svs).
 This is where most figures and numbers described in the SV section of the manuscript come from and can be reproduced.
 
