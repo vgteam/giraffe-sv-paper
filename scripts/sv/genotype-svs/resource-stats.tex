@@ -1,0 +1,63 @@
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-5}resource per sample}
+\centering
+\begin{tabular}[t]{l|l|r|r|r}
+\hline
+preempted & dataset & workflow & cost & core.hour\\
+\hline
+0 & all & 2910 & 2.044 & 194.388\\
+\hline
+0 & MESA & 1221 & 2.082 & 197.981\\
+\hline
+0 & 1000GP & 1689 & 2.017 & 191.791\\
+\hline
+1 & all & 1358 & 2.315 & 220.046\\
+\hline
+1 & MESA & 517 & 2.346 & 222.205\\
+\hline
+1 & 1000GP & 841 & 2.295 & 218.718\\
+\hline
+2 & all & 439 & 2.545 & 240.992\\
+\hline
+2 & MESA & 172 & 2.638 & 248.246\\
+\hline
+2 & 1000GP & 267 & 2.485 & 236.318\\
+\hline
+3+ & all & 209 & 2.867 & 270.351\\
+\hline
+3+ & MESA & 88 & 3.022 & 282.007\\
+\hline
+3+ & 1000GP & 121 & 2.755 & 261.874\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-5}resource per task}
+\centering
+\begin{tabular}[t]{l|r|r|l|l|l}
+\hline
+task & cpu & mem & dataset & core.hour & cost\\
+\hline
+CRAM conversion & 8 & 50 & all & 12.867 (7.6\%) & 0.166 (9.2\%)\\
+\hline
+CRAM conversion & 8 & 50 & MESA & 13.22 (7.6\%) & 0.17 (9\%)\\
+\hline
+CRAM conversion & 8 & 50 & 1000GP & 12.636 (7.6\%) & 0.163 (9.3\%)\\
+\hline
+mapping & 32 & 100 & all & 146.261 (75.2\%) & 1.451 (71\%)\\
+\hline
+mapping & 32 & 100 & MESA & 157.66 (77.1\%) & 1.564 (72.5\%)\\
+\hline
+mapping & 32 & 100 & 1000GP & 138.782 (73.9\%) & 1.377 (70\%)\\
+\hline
+genotyping & 16 & 100 & all & 24.891 (17.2\%) & 0.32 (19.8\%)\\
+\hline
+genotyping & 16 & 100 & MESA & 27.112 (15.4\%) & 0.349 (18.5\%)\\
+\hline
+genotyping & 16 & 100 & 1000GP & 23.433 (18.5\%) & 0.301 (20.7\%)\\
+\hline
+\end{tabular}
+\end{table}

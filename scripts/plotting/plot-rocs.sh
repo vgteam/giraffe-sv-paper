@@ -212,7 +212,7 @@ done
 #                    ;;
 #                giraffe_primary)
 #                    INPUT_FILE="../roc_stats_giraffe_primary.tsv"
-#                    INPUT_LABEL="giraffe_${PRIMARY_GRAPH}full${READS}${PAIRING_TAG}"
+#                    INPUT_LABEL="giraffe_${PRIMARY_GRAPH}cover${READS}${PAIRING_TAG}"
 #                    ;;
 #                graphaligner)
 #                    INPUT_FILE="../roc_stats_graphaligner.tsv"

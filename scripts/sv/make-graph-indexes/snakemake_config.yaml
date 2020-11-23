@@ -1,0 +1,25 @@
+# graph (as GENOME-SVLABEL if files GENOME.fa and SVLABEL.vcf.gz exist)
+graph: 'hg38-hsvlr_srdedup17_aug'
+## Chromosome name prefix (use "" if chr names are in the form 1, 2, ...)
+chr_prefix: "chr"
+chrs: '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M'
+decoy_chrs: 'hs38d1 undecoy'
+# memory
+mem_xg: 60000
+mem_snarls: 120000
+mem_gcsa: 80000
+mem_gbwt: 70000
+mem_minimizer_index: 40000
+mem_dist_index: 100000
+# cores used in multi-threaded steps
+cores_xg: 16
+cores_snarls: 8
+cores_gcsa: 32
+cores_minimizer_index: 32
+cores_dist_index: 32
+# mapper can be either 'map', 'mpmap', or 'gaffe'
+mapper: 'map'
+# for minimizer/gaffe mapper
+mink: 29
+minw: 11
+covern: 32
