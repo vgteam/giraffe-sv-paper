@@ -10,6 +10,11 @@
 The SVs were genotyped on Terra using [a WDL deposited on Dockstore](https://dockstore.org/workflows/github.com/vgteam/vg_wdl/vg_mapgaffe_call_sv_cram:sv-giraffe-paper?tab=info).
 See [genotype-svs](genotype-svs) for more information.
 
+## Combining SV genotypes
+
+The genotype in each sample were combined and clustered to define SV alleles and sites.
+See [combine-sv-genotypes](combine-sv-genotypes).
+
 ## SV analysis
 
 Once the SVs were genotyped in the MESA cohort of 1000GP dataset, we explored their patterns. 
