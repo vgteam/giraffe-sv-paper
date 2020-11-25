@@ -1,0 +1,54 @@
+import pandas as pd
+
+CHUNKS_BED = config['chunk_bed']
+chunks = pd.read_table(CHUNKS_BED, header=None)
+if('chr' in config):
+    chunks = chunks[chunks[0] == config['chr']]
+
+rule main:
+    input: expand('hg38-hsvlr_srdedup17_aug-{chr}.vg', chr=chunks[0].unique())
+
+# augment (or construct) each chunk
+if('mode' not in config or config['mode'] != 'construct.only'):
+    rule augment_chunk:
+        input:
+            fa='SVseqs-foraugment.fa',
+            ref='hg38.fa',
+            cons_vcf='hsvlr_srdedup17_forcons.vcf'
+        output: '{dir}/{graph}.vg'
+        threads: 1
+        benchmark: '{dir}/benchmarks/{graph}-augment-chunk.benchmark.txt'
+        log: '{dir}/logs/{graph}-augment-chunk.log.txt'
+        shell:
+            "python3 chunkedAugmentation.py -r {input.ref} -f {input.fa} -c {input.cons_vcf} -o {output} > {log}"
+
+else:
+    rule construct_chunk:
+        input:
+            ref='hg38.fa',
+            cons_vcf='hsvlr_srdedup17_forcons.vcf',
+            aug_vcf='hsvlr_srdedup17_foraug.vcf'
+        output: '{dir}/{graph}.vg'
+        threads: 1
+        benchmark: '{dir}/benchmarks/{graph}-augment-chunk.benchmark.txt'
+        log: '{dir}/logs/{graph}-augment-chunk.log.txt'
+        shell:
+            "python3 chunkedConstruction.py -r {input.ref} -c {input.cons_vcf} -a {input.aug_vcf} -o {output} > {log}"
+
+# concatenate chunks into chromosome graph following the order in the 'chunk_bed' BED file
+def chr_chunks(wildcards):
+    # extract chunks for a chr
+    chunks_chr = chunks[chunks[0] == wildcards.chr]
+    return chunks_chr[3].to_list()
+rule concat_chr:
+    input:chr_chunks
+    output: 'hg38-hsvlr_srdedup17_aug-{chr}.vg'
+    log: 'concat_logs/concat_{chr}.log'
+    benchmark: 'concat_logs/concat_{chr}.benchmark.txt'
+    params: sh='concat-cmd-{chr}.sh'
+    shell:
+        """
+        python3 makeConcatCmd.py -b {CHUNKS_BED} -c {wildcards.chr} -o {output} > {params.sh}
+        cat {params.sh} >> {log}
+        sh {params.sh} 2>> {log}
+        """

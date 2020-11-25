@@ -1,0 +1,123 @@
+# Run with, for example:
+# > snakemake --configfile config.yaml --resources mem_mb=200000 --cores 16 construct_all
+# Config can also be overwritten in the command line, for example:
+# > snakemake --configfile config.yaml --config samples="HG00514" --resources mem_mb=100000 --cores 16 genotype
+
+##
+## Config
+##
+
+# chromosome names
+CHRS=[config['chr_prefix'] + ii for ii in config['chrs'].split()]
+CHRS_DECOY = CHRS + config['decoy_chrs'].split()
+
+# config values used a lot directly within shell commands
+GRAPH=config['graph']
+# parse config values
+MAPPER=config['mapper']
+if MAPPER == 'giraffe':
+    MAPPER = 'giraffe{}k{}w{}N'.format(config['mink'], config['minw'], config['covern'])
+    if 'mode' in config and config['mode'] == 'fast':
+        MAPPER=MAPPER + '_fast'
+    else:
+        MAPPER=MAPPER + '_default'
+
+# Main rules
+rule main:
+    input:
+        expand('{graph}.{ext}'graph=GRAPH, ext=['xg', 'snarls', 'dist']),
+        expand('{graph}.k{k}.w{w}.N{n}.min', graph=GRAPH, k=config['mink'],
+               w=config['minw'], n=config['covern'])
+
+##
+## Rules
+##
+
+# join ids across the multiple .vg files.
+rule join_ids:
+    input: expand('../make-graph/{{genome}}-{{svs}}-{chr}.vg', chr=CHRS_DECOY)
+    output:
+        mapping='{genome}-{svs}.ids.mapping'
+    threads: 1
+    benchmark: 'benchmarks/{genome}-{svs}-joinids.benchmark.txt'
+    log: 'logs/{genome}-{svs}-joinids.log.txt'
+    shell:
+        'vg ids --join --mapping {output.mapping} {input} 2> {log}'
+
+# make xg index containing the alts paths
+rule index_xg:
+    input:
+        vg=expand('../make-graph/{{genome}}-{{svs}}-{chr}.vg', chr=CHRS_DECOY),
+        mapping='{genome}-{svs}.ids.mapping'   
+    output: '{genome}-{svs}.xg'
+    threads: config['cores_xg']
+    resources:
+        mem_mb=config['mem_xg']
+    benchmark: 'benchmarks/{genome}-{svs}-xg.benchmark.txt'
+    log: 'logs/{genome}-{svs}-xg.log.txt'
+    shell:
+        'vg index -L -t {threads} -x {output} {input.vg} 2> {log}'
+
+# prepare the snarls index
+rule index_snarls:
+    input: '{genome}-{svs}.xg'
+    output: '{genome}-{svs}.snarls'
+    threads: config['cores_snarls']
+    resources:
+        mem_mb=config['mem_snarls']
+    benchmark: 'benchmarks/{genome}-{svs}-snarls.benchmark.txt'
+    log: 'logs/{genome}-{svs}-snarls.log.txt'
+    shell:
+        'vg snarls -t {threads} {input} > {output} 2> {log}'
+
+## GBWT with greedy path cover
+rule index_gbwt_greedy:
+    input: '{graph}.xg'
+    output:
+        gg='{graph}.N{n}.gg',
+        gbwt='{graph}.N{n}.gbwt'
+    threads: 1
+    resources:
+        mem_mb=config['mem_gbwt']
+    benchmark: 'benchmarks/{graph}-gbwt-N{n}.benchmark.txt'
+    log: 'logs/{graph}-gbwt-N{n}.log.txt'
+    shell:
+        'vg gbwt -n {wildcards.n} -g {output.gg} -o {output.gbwt} -x {input} -P 2> {log}'
+
+rule index_minimizer:
+    input:
+        xg='{graph}.xg',
+        gbwt='{graph}.N{n}.gbwt',
+        dist='{graph}.dist'
+    output: '{graph}.k{k}.w{w}.N{n}.min'
+    threads: config['cores_minimizer_index']
+    resources:
+        mem_mb=config['mem_minimizer_index']
+    benchmark: 'benchmarks/{graph}-minimizer-k{k}-w{w}-N{n}.benchmark.txt'
+    log: 'logs/{graph}-minimizer-k{k}-w{w}-N{n}.log.txt'
+    shell:
+        'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -i {output} -g {input.gbwt} -d {input.dist} {input.xg} 2> {log}'
+
+rule index_trivial_snarls:
+    input: '{genome}-{svs}.xg'
+    output: '{genome}-{svs}.trivial.snarls'
+    threads: config['cores_snarls']
+    resources:
+        mem_mb=config['mem_snarls']
+    benchmark: 'benchmarks/{genome}-{svs}-trivialsnarls.benchmark.txt'
+    log: 'logs/{genome}-{svs}-trivialsnarls.log.txt'
+    shell:
+        'vg snarls -t {threads} --include-trivial {input} > {output} 2> {log}'
+
+rule index_distance:
+    input:
+        xg='{graph}.xg',
+        snarls='{graph}.trivial.snarls'
+    output: '{graph}.dist'
+    threads: config['cores_dist_index']
+    resources:
+        mem_mb=config['mem_dist_index']
+    benchmark: 'benchmarks/{graph}-distance.benchmark.txt'
+    log: 'logs/{graph}-distance.log.txt'
+    shell:
+        'vg index -t {threads} -j {output} -x {input.xg} -s {input.snarls} 2> {log}'

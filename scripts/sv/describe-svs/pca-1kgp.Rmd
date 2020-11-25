@@ -1,0 +1,111 @@
+---
+title: Principal component analysis using SV genotypes in the 1000 Genomes Project
+output: github_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(Rtsne)
+## color palette with clear separation between consecutive groups
+interk <- function(x, k=4){ # Interleaves elements in x
+  idx = unlist(lapply(1:k, function(kk) seq(kk, length(x), k)))
+  x[idx]
+}
+pal <- function(n){
+  pal = interk(rainbow(n, s=.8), 5)
+}
+## list of figures
+ggp = list()
+```
+
+## Read PC results
+
+```{r}
+## PCs derived from SV genotypes
+pca.o = readRDS('2504kgp.svsite80al.ac.pcs.rds')
+pc.df = tibble(sample=rownames(pca.o$x)) %>% cbind(pca.o$x)
+head(pc.df)
+```
+
+## Read sample information from the 1000 Genomes Project
+
+```{r}
+samps.df = read.table('1kgp-info.tsv', as.is=TRUE, header=TRUE)
+colnames(samps.df)[1] = 'sample'
+sample_n(samps.df, 3)
+samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
+pc.df = merge(pc.df, samps.df)
+```
+
+## PCs from SV genotypes
+
+```{r svpc}
+tibble(x=1:20, y=pca.o$sdev[1:20]) %>%
+  ggplot(aes(x,y)) +
+  geom_bar(stat='identity') + 
+  theme_bw() +
+  ylab('standard deviation') + xlab('principal component')
+
+ggp$svpc = ggplot(pc.df, aes(x=PC1, y=PC2, color=Superpopulation)) +
+  geom_point(alpha=.5) +
+  scale_color_brewer(palette='Set1') +
+  theme_bw() + coord_fixed() +
+  guides(colour=guide_legend(override.aes=list(alpha=1)))
+ggp$svpc
+
+ggp$svpc.3.4 = ggplot(pc.df, aes(x=PC3, y=PC4, color=Superpopulation)) +
+  geom_point(alpha=.5) +
+  scale_color_brewer(palette='Set1') +
+  guides(colour=guide_legend(override.aes=list(alpha=1))) + 
+  theme_bw() + coord_fixed()
+ggp$svpc.3.4
+```
+
+## tSNE
+
+```{r svtsne}
+tsne.o = Rtsne(pca.o$x[,1:20])
+
+tsne.df = tibble(sample=rownames(pca.o$x), tsne1=tsne.o$Y[,1], tsne2=tsne.o$Y[,2])
+tsne.df = merge(tsne.df, samps.df)
+
+ggp$svtsne = ggplot(tsne.df, aes(x=tsne1, y=tsne2, color=Superpopulation)) +
+  geom_point(alpha=.7) +
+  scale_color_brewer(palette='Set1') +
+  guides(colour=guide_legend(override.aes=list(alpha=1))) + 
+  theme_bw()
+ggp$svtsne
+
+ggp$svtsne.pop = ggplot(tsne.df, aes(x=tsne1, y=tsne2, color=Population)) +
+  geom_point(alpha=.5) +
+  guides(colour=guide_legend(override.aes=list(alpha=1))) + 
+  theme_bw()
+ggp$svtsne.pop
+```
+
+## Multi-panel figure
+
+```{r fig}
+## adds a legend title: a), b), etc
+plot_list <- function(ggp.l, gg.names=NULL){
+  if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
+  if(is.null(gg.names)) gg.names = names(ggp.l)
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
+}
+
+ggp$svpc.3.4.f = ggp$svpc.3.4 + guides(color=FALSE)
+ggp$svpc.f = ggp$svpc + theme(legend.position='bottom')
+grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
+             layout_matrix=matrix(c(1,2),1))
+
+pdf('figs/fig-sv-1kgp-pcs.pdf', 9, 4)
+grid.arrange(grobs=plot_list(ggp, c('svpc.f', 'svpc.3.4.f')),
+             layout_matrix=matrix(c(1,2),1))
+dev.off()
+```
