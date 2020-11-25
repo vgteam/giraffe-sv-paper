@@ -10,7 +10,7 @@ spec:
       containers:
       - name: xhchang-map-primary
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.27.1
+        image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
         - -c
@@ -88,8 +88,8 @@ spec:
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1kg)
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.fq.gz ./sim.fq.gz
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                           rm -f sim.fq
                           gunzip sim.fq.gz
                           ;;

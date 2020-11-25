@@ -11,7 +11,7 @@ spec:
       - name: xhchang-giraffe
         imagePullPolicy: Always
         # TODO: See if 1.27.1 works right and learns a pair distribution in all cases with S288C as the reference
-        image: quay.io/vgteam/vg:v1.27.1
+        image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
         - -c
@@ -38,7 +38,7 @@ spec:
                       case ${GRAPH} in
                       1kg)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1

@@ -10,7 +10,7 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        image: quay.io/vgteam/vg:v1.27.1
+        image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
         - -c
@@ -22,7 +22,7 @@ spec:
                  printf "correct\tmq\tscore\taligner\n" > stats.tsv
                  if [[ ${GRAPH} == "1kg" ]] ; then
                       GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.filt1M.gam ./sim.gam
+                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                   elif [[ ${GRAPH} == "hgsvc" ]] ; then
                       GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
                       aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
