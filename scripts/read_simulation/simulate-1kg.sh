@@ -16,12 +16,12 @@ then
 fi
 
 echo download graph indexes
-aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5.gbwt .
+aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5.full.gbwt .
 aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5.xg .
 aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5.vg .
 
 echo simulate reads
-vg sim -r -n $NREADS -a -s 12345 -p 570 -v 165 -i 0.00029 -x 1kg_hs37d5.xg -g 1kg_hs37d5.gbwt --sample-name NA19239 --ploidy-regex "hs37d5:0,NC_007605:0,X:1,Y:1,chrY_.*:1,chrEBV:0,.*:2" -F $FASTQ > sim.raw.gam
+vg sim -r -n $NREADS -a -s 12345 -p 570 -v 165 -i 0.00029 -x 1kg_hs37d5.xg -g 1kg_hs37d5.full.gbwt --sample-name NA19239 --ploidy-regex "hs37d5:0,NC_007605:0,X:1,Y:1,chrY_.*:1,chrEBV:0,.*:2" -F $FASTQ > sim.raw.gam
 
 echo annotate with paths
 vg annotate -p -x 1kg_hs37d5.vg -a sim.raw.gam > sim.gam

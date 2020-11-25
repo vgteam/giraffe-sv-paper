@@ -24,4 +24,3 @@ do
     NREADS=1000000 SEQ=$SEQ sh simulate-hgsvc.sh
 done
 ```
-
