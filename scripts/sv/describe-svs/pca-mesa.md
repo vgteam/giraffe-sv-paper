@@ -103,28 +103,47 @@ ggp$svtsne
 ## Direct PC comparison
 
 ``` r
-ggp$pc1 = ggplot(pc.df, aes(x=PC1.topmed, y=PC1)) + geom_point(alpha=.2) + theme_bw()
+corLabel <- function(x, y, position='top'){
+  ## place label on the the right side
+  l.x = range(x)
+  l.x = l.x[1] + .8 * diff(l.x)
+  ## place label vertically
+  l.y = range(y)
+  l.y = l.y[1] + ifelse(position=='top', .9, .1) * diff(l.y)
+  ## result
+  list(x=l.x, y=l.y, r=cor(x, y))
+}
+
+cl = corLabel(pc.df$PC1.topmed, pc.df$PC1)
+ggp$pc1 = ggplot(pc.df, aes(x=PC1.topmed, y=PC1)) + geom_point(alpha=.2) + theme_bw() +
+  annotate("label", x=cl$x, y=cl$y, label=paste0("rho == ", round(cl$r, 3)), parse=TRUE)
 ggp$pc1
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-1.png)<!-- -->
 
 ``` r
-ggp$pc2 = ggplot(pc.df, aes(x=PC2.topmed, y=PC2)) + geom_point(alpha=.2) + theme_bw()
+cl = corLabel(pc.df$PC2.topmed, pc.df$PC2)
+ggp$pc2 = ggplot(pc.df, aes(x=PC2.topmed, y=PC2)) + geom_point(alpha=.2) + theme_bw() +
+  annotate("label", x=cl$x, y=cl$y, label=paste0("rho == ", round(cl$r, 3)), parse=TRUE)
 ggp$pc2
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-2.png)<!-- -->
 
 ``` r
-ggp$pc3 = ggplot(pc.df, aes(x=PC3.topmed, y=PC3)) + geom_point(alpha=.2) + theme_bw()
+cl = corLabel(pc.df$PC3.topmed, pc.df$PC3, position='bottom')
+ggp$pc3 = ggplot(pc.df, aes(x=PC3.topmed, y=PC3)) + geom_point(alpha=.2) + theme_bw() +
+  annotate("label", x=cl$x, y=cl$y, label=paste0("rho == ", round(cl$r, 3)), parse=TRUE)
 ggp$pc3
 ```
 
 ![](pca-mesa_files/figure-gfm/pc-3.png)<!-- -->
 
 ``` r
-ggp$pc4 = ggplot(pc.df, aes(x=PC4.topmed, y=PC4)) + geom_point(alpha=.2) + theme_bw()
+cl = corLabel(pc.df$PC4.topmed, pc.df$PC4)
+ggp$pc4 = ggplot(pc.df, aes(x=PC4.topmed, y=PC4)) + geom_point(alpha=.2) + theme_bw() +
+  annotate("label", x=cl$x, y=cl$y, label=paste0("rho == ", round(cl$r, 3)), parse=TRUE)
 ggp$pc4
 ```
 
