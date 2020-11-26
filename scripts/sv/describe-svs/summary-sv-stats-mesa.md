@@ -40,27 +40,27 @@ sample_n(locs, 10) %>% as.data.frame
 ```
 
     ##    seqnames       svsite type clique     start       end ac.tot   ac  af.tot
-    ## 1     chr12  sv_778929_0  INS  FALSE 128708638 128708638     76    8 0.01900
-    ## 2      chrX   sv_75634_0  DEL   TRUE 139503371 139503429     55   55 0.01375
-    ## 3      chr1 sv_1988472_0  INS   TRUE 246785776 246785776      2    1 0.00050
-    ## 4      chr7 sv_1282638_0  INS   TRUE 158333559 158333559      3    3 0.00075
-    ## 5      chr6 sv_1399207_0  INS   TRUE 168847279 168847279      1    1 0.00025
-    ## 6     chr19  sv_310076_0  INS   TRUE  49701112  49701112    140  140 0.03500
-    ## 7     chr17  sv_413314_0  DEL   TRUE    509873    509939   3316 3133 0.82900
-    ## 8      chr2 sv_1733668_0  DEL   TRUE    197537    197588   1740 1740 0.43500
-    ## 9     chr18  sv_368168_0  INS   TRUE  79618697  79618697      1    1 0.00025
-    ## 10    chr18  sv_334228_0  INS   TRUE  48870286  48870286     18    8 0.00450
+    ## 1     chr17  sv_455441_0  DEL   TRUE  68958830  68958937   2191 2191 0.54775
+    ## 2      chr4 sv_1624007_0  DEL   TRUE 188446921 188446977     20   20 0.00500
+    ## 3     chr11  sv_865531_0  DEL   TRUE  71677918  71677969    552  552 0.13800
+    ## 4      chr4 sv_1621839_0  INS  FALSE 187214726 187214726     47   17 0.01175
+    ## 5      chr7 sv_1229965_0  DEL   TRUE  96876233  96876311   1261 1261 0.31525
+    ## 6      chr1 sv_1912533_0  INS   TRUE   8375656   8375656     23   23 0.00575
+    ## 7     chr10  sv_920765_0  DEL   TRUE  43716304  43716378   1222 1222 0.30550
+    ## 8      chr4 sv_1532677_0  INS   TRUE    555227    555227     43   24 0.01075
+    ## 9      chr7 sv_1212917_0  DEL   TRUE  23637567  23638003   1194 1194 0.29850
+    ## 10    chr17  sv_408523_0  INS   TRUE    317344    317344    191  191 0.04775
     ##    af.top2      af af.top.fc loc.n size.min size.max size
-    ## 1  0.00125 0.00200  1.600000    52      411     1119  411
-    ## 2  0.01375 0.01375  1.000000     1       58       58   58
-    ## 3  0.00025 0.00025  1.000000     2      512      572  572
-    ## 4  0.00075 0.00075  1.000000     1      226      226  226
-    ## 5  0.00025 0.00025  1.000000     1      145      145  145
-    ## 6  0.03500 0.03500  1.000000     1      154      154  154
-    ## 7  0.04575 0.78325 17.120219     2       65       66   66
-    ## 8  0.43500 0.43500  1.000000     1       51       51   51
-    ## 9  0.00025 0.00025  1.000000     1      720      720  720
-    ## 10 0.00075 0.00200  2.666667     7      162      164  163
+    ## 1  0.54775 0.54775  1.000000     1      107      107  107
+    ## 2  0.00500 0.00500  1.000000     1       56       56   56
+    ## 3  0.13800 0.13800  1.000000     1       51       51   51
+    ## 4  0.00175 0.00425  2.428571    13       72       82   72
+    ## 5  0.31525 0.31525  1.000000     1       78       78   78
+    ## 6  0.00575 0.00575  1.000000     1       56       56   56
+    ## 7  0.30550 0.30550  1.000000     1       74       74   74
+    ## 8  0.00200 0.00600  3.000000     5      220      220  220
+    ## 9  0.29850 0.29850  1.000000     1      436      436  436
+    ## 10 0.04775 0.04775  1.000000     1       91       91   91
 
 ## Allele/site numbers
 
@@ -268,13 +268,14 @@ ggp$af.top
 locs %>% filter(loc.n>1) %>%
   summarize(af.fc.3=sum(af.top.fc>3),
             af01.fc.3=sum(af.top.fc>3 & af>.01),
-            af01.af2lt01=sum(af>=.01, af.top2<.01)) %>%
+            af01.af2lt01=sum(af>=.01, af.top2<.01),
+            major.al=sum(af>af.top2)) %>%
   kable
 ```
 
-| af.fc.3 | af01.fc.3 | af01.af2lt01 |
-| ------: | --------: | -----------: |
-|   14720 |      9472 |        52507 |
+| af.fc.3 | af01.fc.3 | af01.af2lt01 | major.al |
+| ------: | --------: | -----------: | -------: |
+|   14720 |      9472 |        52507 |    37667 |
 
   - *af.fc.3*: SV sites where the most frequent allele is at least 3
     times more frequent than the seoncd most frequent allele.
@@ -283,6 +284,8 @@ locs %>% filter(loc.n>1) %>%
     frequent allele.
   - *af01.af2lt01*: SV sites where most frequent allele with frequency
     \>1% but other alleles with \<1% frequency.
+  - *major.al*: SV sites with one allele more frequent than the other
+    alleles.
 
 ## Alleles per SV sites
 
@@ -332,7 +335,7 @@ ggp$loc.cl
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
   if(is.null(gg.names)) gg.names = names(ggp.l)
-  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(LETTERS[ii], ')')))
 }
 
 grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top")),
