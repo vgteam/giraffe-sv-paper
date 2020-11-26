@@ -66,9 +66,9 @@ sample_n(samps.df, 3)
 ```
 
     ##    sample Population Sex Superpopulation
-    ## 1 HG03805        BEB   2             SAS
-    ## 2 HG01521        IBS   1             EUR
-    ## 3 HG00290        FIN   1             EUR
+    ## 1 HG03370        ESN   1             AFR
+    ## 2 HG01600        KHV   2             EAS
+    ## 3 HG02188        CDX   2             EAS
 
 ``` r
 samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
@@ -156,7 +156,7 @@ ggp$svtsne.pop
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
   if(is.null(gg.names)) gg.names = names(ggp.l)
-  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(LETTERS[ii], ')')))
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
 ggp$svpc.3.4.f = ggp$svpc.3.4 + guides(color=FALSE)
