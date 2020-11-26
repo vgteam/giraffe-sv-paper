@@ -537,13 +537,26 @@ olcatstats = function(sites.gr, cat.gr, min.ol=.3, max.ins.dist=200, use.sr=TRUE
            sum(cat.gr$af>=.05))
 }
 
-rbind(
+tab = rbind(
   olcatstats(mesa.s, kgp3) %>% mutate(set='vg-MESA vs 1000GP'),
   olcatstats(kgp.s, kgp3) %>% mutate(set='vg-1000GP vs 1000GP'),
   olcatstats(mesa.s, gnomad) %>% mutate(set='vg-MESA vs gnomAD-SV'),
   olcatstats(kgp.s, gnomad) %>% mutate(set='vg-1000GP vs gnomAD-SV')
-) %>% select(set, prop.novel, prop.cat.covered, prop.af05.cat.covered) %>%
-  kable(digits=3, format='latex', caption='comparison with 1000GP') %>%
+) %>% select(set, prop.novel, prop.cat.covered, prop.af05.cat.covered)
+
+kable(tab, digits=3)
+```
+
+| set                    | prop.novel | prop.cat.covered | prop.af05.cat.covered |
+| :--------------------- | ---------: | ---------------: | --------------------: |
+| vg-MESA vs 1000GP      |      0.932 |            0.160 |                 0.844 |
+| vg-1000GP vs 1000GP    |      0.932 |            0.160 |                 0.844 |
+| vg-MESA vs gnomAD-SV   |      0.673 |            0.088 |                 0.628 |
+| vg-1000GP vs gnomAD-SV |      0.670 |            0.087 |                 0.627 |
+
+``` r
+## write LaTeX table
+kable(tab, digits=3, format='latex', caption='comparison with 1000GP') %>%
   cat(file='compare-public-catalogs.tex')
 ```
 
