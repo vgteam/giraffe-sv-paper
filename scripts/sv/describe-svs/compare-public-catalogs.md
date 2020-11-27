@@ -166,7 +166,7 @@ ggp$afdist
 ## Comparison with the 1000 Genomes Project phase 3 catalog
 
 ``` r
-olcatstats = function(sites.gr, cat.gr, min.ol=.1, max.ins.dist=200, use.sr=FALSE){
+olcatstats = function(sites.gr, cat.gr, min.ol=.3, max.ins.dist=200, use.sr=TRUE){
   if(!use.sr){
     sr = NULL
   }
@@ -188,13 +188,13 @@ rbind(
 
 | set                                     | prop.vgsite | prop.cat |
 | :-------------------------------------- | ----------: | -------: |
-| vg-MESA vs 1000GP                       |       0.068 |    0.165 |
-| vg-MESA freq\>=5% vs 1000GP freq\>=5%   |       0.087 |    0.792 |
-| vg-1000GP vs 1000GP                     |       0.068 |    0.166 |
-| vg-1000GP freq\>=5% vs 1000GP freq\>=5% |       0.090 |    0.819 |
+| vg-MESA vs 1000GP                       |       0.068 |    0.160 |
+| vg-MESA freq\>=5% vs 1000GP freq\>=5%   |       0.084 |    0.779 |
+| vg-1000GP vs 1000GP                     |       0.068 |    0.160 |
+| vg-1000GP freq\>=5% vs 1000GP freq\>=5% |       0.088 |    0.805 |
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(mesa.s, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, kgp3))
 freq.mesa.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -218,7 +218,7 @@ ggp$mesa_kgp3
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_kgp3-2.png)<!-- -->
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(kgp.s, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, kgp3))
 freq.kgp.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -253,13 +253,13 @@ rbind(
 
 | set                                        | prop.vgsite | prop.cat |
 | :----------------------------------------- | ----------: | -------: |
-| vg-MESA vs gnomAD-SV                       |       0.283 |    0.092 |
-| vg-MESA freq\>=5% vs gnomAD-SV freq\>=5%   |       0.151 |    0.588 |
-| vg-1000GP vs gnomAD-SV                     |       0.284 |    0.091 |
-| vg-1000GP freq\>=5% vs gnomAD-SV freq\>=5% |       0.154 |    0.599 |
+| vg-MESA vs gnomAD-SV                       |       0.327 |    0.088 |
+| vg-MESA freq\>=5% vs gnomAD-SV freq\>=5%   |       0.146 |    0.567 |
+| vg-1000GP vs gnomAD-SV                     |       0.330 |    0.087 |
+| vg-1000GP freq\>=5% vs gnomAD-SV freq\>=5% |       0.149 |    0.577 |
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(mesa.s, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, gnomad))
 freq.mesa.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -283,7 +283,7 @@ ggp$mesa_gnomad
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_gnomad-2.png)<!-- -->
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(kgp.s, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, gnomad))
 freq.kgp.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -316,11 +316,11 @@ rbind(
 
 | set                | prop.vgsite | prop.cat |
 | :----------------- | ----------: | -------: |
-| vg-MESA vs SVPOP   |       0.860 |    0.945 |
-| vg-1000GP vs SVPOP |       0.859 |    0.933 |
+| vg-MESA vs SVPOP   |       0.919 |    0.954 |
+| vg-1000GP vs SVPOP |       0.920 |    0.942 |
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(mesa.s, svpop, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, svpop))
 freq.mesa.svpop.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=svpop$af[subjectHits])
 
@@ -344,7 +344,7 @@ ggp$mesa_svpop
 ![](compare-public-catalogs_files/figure-gfm/freqcomp_svpop-2.png)<!-- -->
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(kgp.s, svpop, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, svpop))
 freq.kgp.svpop.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=svpop$af[subjectHits])
 
@@ -371,7 +371,7 @@ ggplot(freq.kgp.svpop.df, aes(x=af-cat.af)) +
 ### SVPOP vs gnomAD-SV/1000GP
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(svpop, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(svpop, kgp3))
 freq.svpop.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=svpop$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -395,7 +395,7 @@ ggp$svpop_kgp3
 ![](compare-public-catalogs_files/figure-gfm/svpop_vs_gnomad-2.png)<!-- -->
 
 ``` r
-ol.gr = suppressWarnings(svOverlap(svpop, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(svpop, gnomad))
 freq.svpop.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=svpop$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -499,7 +499,7 @@ svs %>% as.data.frame %>%
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
   if(is.null(gg.names)) gg.names = names(ggp.l)
-  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
 grid.arrange(grobs=plot_list(ggp, c("afdist", "mesa_kgp3", "mesa_gnomad", "mesa_svpop", "svpop_kgp3", "svpop_gnomad")),
@@ -517,6 +517,48 @@ dev.off()
 
     ## png 
     ##   2
+
+## Summary table
+
+``` r
+olcatstats = function(sites.gr, cat.gr, min.ol=.3, max.ins.dist=200, use.sr=TRUE){
+  if(!use.sr){
+    sr = NULL
+  }
+  sites.gr$ac = 1
+  cat.gr$ac = 1
+  ol.df = suppressWarnings(svOverlap(sites.gr, cat.gr, min.ol=min.ol, max.ins.dist=max.ins.dist, simprep=sr)) %>%
+    as.data.frame %>%
+    mutate(cat.af=cat.gr$af[subjectHits])
+  ## compute proportions
+  tibble(prop.novel=1-length(unique(ol.df$queryHits)) / length(sites.gr),
+         prop.cat.covered=length(unique(ol.df$subjectHits)) / length(cat.gr),
+         prop.af05.cat.covered=length(unique(subset(ol.df, cat.af>=.05)$subjectHits)) /
+           sum(cat.gr$af>=.05))
+}
+
+tab = rbind(
+  olcatstats(mesa.s, kgp3) %>% mutate(set='vg-MESA vs 1000GP'),
+  olcatstats(kgp.s, kgp3) %>% mutate(set='vg-1000GP vs 1000GP'),
+  olcatstats(mesa.s, gnomad) %>% mutate(set='vg-MESA vs gnomAD-SV'),
+  olcatstats(kgp.s, gnomad) %>% mutate(set='vg-1000GP vs gnomAD-SV')
+) %>% select(set, prop.novel, prop.cat.covered, prop.af05.cat.covered)
+
+kable(tab, digits=3)
+```
+
+| set                    | prop.novel | prop.cat.covered | prop.af05.cat.covered |
+| :--------------------- | ---------: | ---------------: | --------------------: |
+| vg-MESA vs 1000GP      |      0.932 |            0.160 |                 0.844 |
+| vg-1000GP vs 1000GP    |      0.932 |            0.160 |                 0.844 |
+| vg-MESA vs gnomAD-SV   |      0.673 |            0.088 |                 0.628 |
+| vg-1000GP vs gnomAD-SV |      0.670 |            0.087 |                 0.627 |
+
+``` r
+## write LaTeX table
+kable(tab, digits=3, format='latex', caption='comparison with 1000GP') %>%
+  cat(file='compare-public-catalogs.tex')
+```
 
 ## Save novel SVs
 

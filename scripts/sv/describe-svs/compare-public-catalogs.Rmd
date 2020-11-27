@@ -26,7 +26,7 @@ ggp = list()
 
 Can be used to rescue misplaced SVs within simple repeats.
 
-```{r, eval=FALSE}
+```{r}
 if(!file.exists('simpleRepeat.hg38.txt.gz')){
   download.file('https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/simpleRepeat.txt.gz', 'simpleRepeat.hg38.txt.gz')
 }
@@ -128,7 +128,7 @@ ggp$afdist
 ## Comparison with the 1000 Genomes Project phase 3 catalog
 
 ```{r olkgp}
-olcatstats = function(sites.gr, cat.gr, min.ol=.1, max.ins.dist=200, use.sr=FALSE){
+olcatstats = function(sites.gr, cat.gr, min.ol=.3, max.ins.dist=200, use.sr=TRUE){
   if(!use.sr){
     sr = NULL
   }
@@ -149,7 +149,7 @@ rbind(
 ```
 
 ```{r freqcomp_kgp3}
-ol.gr = suppressWarnings(svOverlap(mesa.s, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, kgp3))
 freq.mesa.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -165,7 +165,7 @@ ggp$mesa_kgp3 = ggplot(freq.mesa.kgp3.df, aes(x=af-cat.af)) +
   theme_bw()
 ggp$mesa_kgp3
 
-ol.gr = suppressWarnings(svOverlap(kgp.s, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, kgp3))
 freq.kgp.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -193,7 +193,7 @@ rbind(
 ```
 
 ```{r freqcomp_gnomad}
-ol.gr = suppressWarnings(svOverlap(mesa.s, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, gnomad))
 freq.mesa.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -209,7 +209,7 @@ ggp$mesa_gnomad = ggplot(freq.mesa.gnomad.df, aes(x=af-cat.af)) +
   theme_bw()
 ggp$mesa_gnomad
 
-ol.gr = suppressWarnings(svOverlap(kgp.s, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, gnomad))
 freq.kgp.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -235,7 +235,7 @@ rbind(
 ```
 
 ```{r freqcomp_svpop}
-ol.gr = suppressWarnings(svOverlap(mesa.s, svpop, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(mesa.s, svpop))
 freq.mesa.svpop.df = ol.gr %>% as.data.frame %>%
   mutate(af=mesa.s$af[queryHits], cat.af=svpop$af[subjectHits])
 
@@ -251,7 +251,7 @@ ggp$mesa_svpop = ggplot(freq.mesa.svpop.df, aes(x=af-cat.af)) +
   theme_bw()
 ggp$mesa_svpop
 
-ol.gr = suppressWarnings(svOverlap(kgp.s, svpop, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(kgp.s, svpop))
 freq.kgp.svpop.df = ol.gr %>% as.data.frame %>%
   mutate(af=kgp.s$af[queryHits], cat.af=svpop$af[subjectHits])
 
@@ -272,7 +272,7 @@ ggplot(freq.kgp.svpop.df, aes(x=af-cat.af)) +
 ### SVPOP vs gnomAD-SV/1000GP
 
 ```{r svpop_vs_gnomad}
-ol.gr = suppressWarnings(svOverlap(svpop, kgp3, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(svpop, kgp3))
 freq.svpop.kgp3.df = ol.gr %>% as.data.frame %>%
   mutate(af=svpop$af[queryHits], cat.af=kgp3$af[subjectHits])
 
@@ -288,7 +288,7 @@ ggp$svpop_kgp3 = ggplot(freq.svpop.kgp3.df, aes(x=af-cat.af)) +
   theme_bw()
 ggp$svpop_kgp3
 
-ol.gr = suppressWarnings(svOverlap(svpop, gnomad, min.ol=.1, max.ins.dist=200))
+ol.gr = suppressWarnings(svOverlap(svpop, gnomad))
 freq.svpop.gnomad.df = ol.gr %>% as.data.frame %>%
   mutate(af=svpop$af[queryHits], cat.af=gnomad$af[subjectHits])
 
@@ -380,7 +380,7 @@ svs %>% as.data.frame %>%
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
   if(is.null(gg.names)) gg.names = names(ggp.l)
-  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0(letters[ii], ')')))
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
 grid.arrange(grobs=plot_list(ggp, c("afdist", "mesa_kgp3", "mesa_gnomad", "mesa_svpop", "svpop_kgp3", "svpop_gnomad")),
@@ -391,6 +391,39 @@ pdf('figs/fig-sv-freq-comp.pdf', 8, 8)
 grid.arrange(grobs=plot_list(ggp, c("afdist", "mesa_kgp3", "mesa_gnomad", "mesa_svpop", "svpop_kgp3", "svpop_gnomad")),
              layout_matrix=matrix(c(rep(1, 5), 2:6), nrow=5))
 dev.off()
+```
+
+## Summary table
+
+```{r tab}
+olcatstats = function(sites.gr, cat.gr, min.ol=.3, max.ins.dist=200, use.sr=TRUE){
+  if(!use.sr){
+    sr = NULL
+  }
+  sites.gr$ac = 1
+  cat.gr$ac = 1
+  ol.df = suppressWarnings(svOverlap(sites.gr, cat.gr, min.ol=min.ol, max.ins.dist=max.ins.dist, simprep=sr)) %>%
+    as.data.frame %>%
+    mutate(cat.af=cat.gr$af[subjectHits])
+  ## compute proportions
+  tibble(prop.novel=1-length(unique(ol.df$queryHits)) / length(sites.gr),
+         prop.cat.covered=length(unique(ol.df$subjectHits)) / length(cat.gr),
+         prop.af05.cat.covered=length(unique(subset(ol.df, cat.af>=.05)$subjectHits)) /
+           sum(cat.gr$af>=.05))
+}
+
+tab = rbind(
+  olcatstats(mesa.s, kgp3) %>% mutate(set='vg-MESA vs 1000GP'),
+  olcatstats(kgp.s, kgp3) %>% mutate(set='vg-1000GP vs 1000GP'),
+  olcatstats(mesa.s, gnomad) %>% mutate(set='vg-MESA vs gnomAD-SV'),
+  olcatstats(kgp.s, gnomad) %>% mutate(set='vg-1000GP vs gnomAD-SV')
+) %>% select(set, prop.novel, prop.cat.covered, prop.af05.cat.covered)
+
+kable(tab, digits=3)
+
+## write LaTeX table
+kable(tab, digits=3, format='latex', caption='comparison with 1000GP') %>%
+  cat(file='compare-public-catalogs.tex')
 ```
 
 
