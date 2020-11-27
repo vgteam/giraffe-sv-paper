@@ -31,7 +31,7 @@ spec:
           
           THREAD_COUNT=16
           
-          for SPECIES in human yeast ; do
+          for SPECIES in human  ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(yeast_subset)
@@ -46,8 +46,8 @@ spec:
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1kg)
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim/sim.fq.gz ./sim.fq.gz
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                           gunzip sim.fq.gz
                           ;;
                       hgsvc)
