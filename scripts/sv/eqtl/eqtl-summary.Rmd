@@ -94,8 +94,41 @@ eqtl.df %>% group_by(pop) %>%
             esv.fdr05=length(unique(snps[FDR<=.05])),
             egene.fdr05=length(unique(gene[FDR<=.05]))) %>%
   kable(format.args=list(big.mark=','))
-
 ```
+
+### Specific to EUR or YRI
+
+```{r spec}
+## frequencies in different super-populations for each SV site
+freq.df = read.table('../describe-svs/2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
+freq.df = freq.df %>% group_by(svsite) %>% mutate(af.med=median(af))
+
+## eqtl in eur but not yri or eur+yri
+eqtl.eur = eqtl.df %>% group_by(snps, gene) %>%
+  filter(n()==1, pop=='EUR', FDR<=.01)
+
+eur.freq = freq.df %>%
+  filter(svsite %in% eqtl.eur$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
+
+## ex: eqtl in yri but not eur or eur+yri
+eqtl.yri = eqtl.df %>% group_by(snps, gene) %>%
+  filter(n()==1, pop=='YRI', FDR<=.01)
+
+yri.freq = freq.df %>%
+  filter(svsite %in% eqtl.yri$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
+
+rbind(
+  eqtl.eur %>% mutate(pop='EUR', pop.af=snps %in% eur.freq$svsite),
+  eqtl.yri %>% mutate(pop='YRI', pop.af=snps %in% yri.freq$svsite)) %>%
+  group_by(pop) %>%
+  summarize(eqtl.fdr01=sum(FDR<=.01),
+            esv.fdr01=length(unique(snps[FDR<=.01])),
+            esv.fdr01.popaf=length(unique(snps[FDR<=.01 & pop.af])),
+            egene.fdr01=length(unique(gene[FDR<=.01]))) %>%
+  kable
+```
+
+*esv.fdr01.popaf*: number of SVs that are eQTLs (FDR<=0.01) and with specific frequency patterns (in EUR or AFR populations).
 
 ## Effect of different normalization on the gene expression
 
@@ -138,22 +171,26 @@ plotEx <- function(gene, svid){
 ## most significant positive association in subset of 100 eQTLs
 ex = ex.all %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
 kable(as.matrix(ex))
-plotEx(ex$gene, ex$snps)
+ggp$ex.all.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.all.pos
 
 ## most significant negative association in subset of 100 eQTLs
 ex = ex.all %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
 kable(as.matrix(ex))
-plotEx(ex$gene, ex$snps)
+ggp$ex.all.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.all.neg
 
 ## most significant positive association in YRI-specific eQTLs
 ex = ex.yri %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
 kable(as.matrix(ex))
-plotEx(ex$gene, ex$snps)
+ggp$ex.yri.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.pos
 
 ## most significant negative association in YRI-specific eQTLs
 ex = ex.yri %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
 kable(as.matrix(ex))
-plotEx(ex$gene, ex$snps)
+ggp$ex.yri.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.neg
 ```
 
 ## Multi-panel figure
@@ -171,13 +208,21 @@ plot_list <- function(ggp.l, gg.names=NULL, gg.titles=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')', gg.titles[ii])))
 }
 
-grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+grid.arrange(grobs=plot_list(ggp,
+                             gg.names=names(ggp)[1:6],
+                             gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
              layout_matrix=matrix(1:6, 2),
              heights=c(3, 5))
 
+## grid.arrange(grobs=plot_list(ggp,
+##                              gg.names=names(ggp)[7:10],
+##                              gg.titles=rep(c('EUR+YRI', 'YRI'), each=2)),
+##              layout_matrix=matrix(1:4, 2))
 
 pdf('fig-sv-eqtl.pdf', 9, 5)
-grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+grid.arrange(grobs=plot_list(ggp,
+                             gg.names=names(ggp)[1:6],
+                             gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
              layout_matrix=matrix(1:6, 2),
              heights=c(3, 5))
 dev.off()

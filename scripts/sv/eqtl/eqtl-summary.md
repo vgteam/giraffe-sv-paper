@@ -130,6 +130,46 @@ eqtl.df %>% group_by(pop) %>%
 | EUR       |      1,998 |     1,290 |         879 |      2,864 |     1,904 |       1,332 |
 | YRI       |        173 |       145 |         102 |        352 |       294 |         227 |
 
+### Specific to EUR or YRI
+
+``` r
+## frequencies in different super-populations for each SV site
+freq.df = read.table('../describe-svs/2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
+freq.df = freq.df %>% group_by(svsite) %>% mutate(af.med=median(af))
+
+## eqtl in eur but not yri or eur+yri
+eqtl.eur = eqtl.df %>% group_by(snps, gene) %>%
+  filter(n()==1, pop=='EUR', FDR<=.01)
+
+eur.freq = freq.df %>%
+  filter(svsite %in% eqtl.eur$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
+
+## ex: eqtl in yri but not eur or eur+yri
+eqtl.yri = eqtl.df %>% group_by(snps, gene) %>%
+  filter(n()==1, pop=='YRI', FDR<=.01)
+
+yri.freq = freq.df %>%
+  filter(svsite %in% eqtl.yri$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
+
+rbind(
+  eqtl.eur %>% mutate(pop='EUR', pop.af=snps %in% eur.freq$svsite),
+  eqtl.yri %>% mutate(pop='YRI', pop.af=snps %in% yri.freq$svsite)) %>%
+  group_by(pop) %>%
+  summarize(eqtl.fdr01=sum(FDR<=.01),
+            esv.fdr01=length(unique(snps[FDR<=.01])),
+            esv.fdr01.popaf=length(unique(snps[FDR<=.01 & pop.af])),
+            egene.fdr01=length(unique(gene[FDR<=.01]))) %>%
+  kable
+```
+
+| pop | eqtl.fdr01 | esv.fdr01 | esv.fdr01.popaf | egene.fdr01 |
+| :-- | ---------: | --------: | --------------: | ----------: |
+| EUR |         58 |        48 |              24 |          53 |
+| YRI |         58 |        57 |              10 |          53 |
+
+*esv.fdr01.popaf*: number of SVs that are eQTLs (FDR\<=0.01) and with
+specific frequency patterns (in EUR or AFR populations).
+
 ## Effect of different normalization on the gene expression
 
 ``` r
@@ -190,7 +230,8 @@ kable(as.matrix(ex))
 | sv\_2083394\_0 | ENSG00000198468 | 36.90249  | 1.699143e-136 | 1.13354e-130 | 3.844799 |
 
 ``` r
-plotEx(ex$gene, ex$snps)
+ggp$ex.all.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.all.pos
 ```
 
 ![](eqtl-summary_files/figure-gfm/ex-1.png)<!-- -->
@@ -206,7 +247,8 @@ kable(as.matrix(ex))
 | sv\_1415534\_0 | ENSG00000179344 | \-19.91856 | 2.532182e-63 | 2.598893e-58 | \-191.9349 |
 
 ``` r
-plotEx(ex$gene, ex$snps)
+ggp$ex.all.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.all.neg
 ```
 
 ![](eqtl-summary_files/figure-gfm/ex-2.png)<!-- -->
@@ -222,7 +264,8 @@ kable(as.matrix(ex))
 | sv\_1479136\_0 | ENSG00000229921 | 10.03917  | 8.108229e-16 | 7.602067e-11 | 0.1032301 |
 
 ``` r
-plotEx(ex$gene, ex$snps)
+ggp$ex.yri.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.pos
 ```
 
 ![](eqtl-summary_files/figure-gfm/ex-3.png)<!-- -->
@@ -238,7 +281,8 @@ kable(as.matrix(ex))
 | sv\_949208\_0 | ENSG00000064199 | \-7.043589 | 5.850222e-10 | 2.194007e-05 | \-0.9605566 |
 
 ``` r
-plotEx(ex$gene, ex$snps)
+ggp$ex.yri.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.neg
 ```
 
 ![](eqtl-summary_files/figure-gfm/ex-4.png)<!-- -->
@@ -258,7 +302,9 @@ plot_list <- function(ggp.l, gg.names=NULL, gg.titles=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')', gg.titles[ii])))
 }
 
-grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+grid.arrange(grobs=plot_list(ggp,
+                             gg.names=names(ggp)[1:6],
+                             gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
              layout_matrix=matrix(1:6, 2),
              heights=c(3, 5))
 ```
@@ -266,8 +312,15 @@ grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each
 ![](eqtl-summary_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
+## grid.arrange(grobs=plot_list(ggp,
+##                              gg.names=names(ggp)[7:10],
+##                              gg.titles=rep(c('EUR+YRI', 'YRI'), each=2)),
+##              layout_matrix=matrix(1:4, 2))
+
 pdf('fig-sv-eqtl.pdf', 9, 5)
-grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+grid.arrange(grobs=plot_list(ggp,
+                             gg.names=names(ggp)[1:6],
+                             gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
              layout_matrix=matrix(1:6, 2),
              heights=c(3, 5))
 dev.off()
