@@ -34,6 +34,7 @@ for SPECIES in human yeast ; do
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1kg/hs37d5/1kg_hs37d5
             # We simulated some reads
             READSETS=(novaseq6000 hiseqxten hiseq2500)
+            ;;
         1kg-primary)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
             DEST_BASE=${DEST_DIR}/mapping/graphs/generic/primary/hs37d5/primaryhs37d5
@@ -98,6 +99,7 @@ for SPECIES in human yeast ; do
             1kg-unfiltered)
                 READ_BASE=s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim
                 READDEST_BASE=${DEST_DIR}/mapping/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim
+                ;;
             1kg)
                 READ_BASE=""
                 READDEST_BASE=""
