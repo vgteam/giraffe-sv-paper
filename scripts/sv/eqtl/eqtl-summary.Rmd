@@ -1,0 +1,210 @@
+---
+title: SV-eQTLs summary
+output: github_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(knitr)
+## list of figures
+ggp = list()
+```
+
+## Read eQTL results
+
+Matrix-eQTL was ran on different sample sets (*all* samples, *Eur*opeans, *YRI*) and using different gene expression normalization (*nonorm*: no additional normalization, *norm*: standardized normal distribution, *quant*: quantile normalization).
+
+```{r}
+load('eqtl-test-results.RData')
+names(ll)
+names(ll) = paste(
+  rep(c('No additional normalization', 'Quantile normalization'),each=3),
+  rep(c('EUR + YRI', 'EUR', 'YRI'), 2), sep=' - ')
+```
+
+## QC: p-value distribution and QQ plots
+
+```{r qc}
+qqplot_matrixeqtl <- function(me.o){
+  pvs.s = tibble(n=me.o$cis$hist.counts,
+                 pv.s=me.o$cis$hist.bins[-length(me.o$cis$hist.bins)],
+                 pv.e=me.o$cis$hist.bins[-1])
+  pvs.s$pv.s.exp = cumsum(pvs.s$n)/sum(pvs.s$n)
+  pvs.s %>% filter(n>0) %>% 
+    ggplot(aes(x=-log10(pv.s.exp), y=-log10(pv.s))) +
+    geom_step() +
+    ## geom_point(aes(size=cut(n, c(0,1,2,10,Inf), labels=c(1, 2, '3-10', '>10'))), alpha=.5) +
+    theme_bw() +
+    scale_size_manual(values=c(1,1.5,2,3), 'cis-eQTLs') + 
+    geom_abline(linetype=2) +
+    xlab('theoritical null p-value (-log10)') +
+    ylab('p-value (-log10)')
+}
+
+pvhist_matrixeqtl <- function(me.o){
+  pvs.s = tibble(n=me.o$cis$hist.counts,
+                 pv.s=me.o$cis$hist.bins[-length(me.o$cis$hist.bins)])
+  ## pv < 0.01 were split in multiple bins for the qqplot -> aggregate them
+  pvs.h = pvs.s %>% mutate(pv.s=ifelse(pv.s<.01, 0, pv.s)) %>%
+    group_by(pv.s) %>% summarize(n=sum(n))
+  ## histogram
+  ggplot(pvs.h, aes(x=pv.s+.005, y=n)) +
+    geom_bar(stat='identity', width=.01) + theme_bw() +
+    ylim(0, max(pvs.h$n)) +
+    xlab('p-value') + ylab('SV-gene test')
+}
+
+ggp$hist.all = pvhist_matrixeqtl(ll[['No additional normalization - EUR + YRI']])
+ggp$hist.all + ggtitle('EUR + YRI')
+ggp$qq.all = qqplot_matrixeqtl(ll[['No additional normalization - EUR + YRI']])
+ggp$qq.all + ggtitle('EUR + YRI')
+
+ggp$hist.eur = pvhist_matrixeqtl(ll[['No additional normalization - EUR']])
+ggp$hist.eur + ggtitle('EUR')
+ggp$qq.eur = qqplot_matrixeqtl(ll[['No additional normalization - EUR']])
+ggp$qq.eur + ggtitle('EUR')
+
+ggp$hist.yri = pvhist_matrixeqtl(ll[['No additional normalization - YRI']])
+ggp$hist.yri + ggtitle('YRI')
+ggp$qq.yri = qqplot_matrixeqtl(ll[['No additional normalization - YRI']])
+ggp$qq.yri + ggtitle('YRI')
+```
+
+## Number of eQTLs and eGenes
+
+```{r}
+eqtl.df = lapply(names(ll)[1:3], function(nn){
+  ll[[nn]]$cis$eqtls %>% mutate(exp=nn)
+}) %>% bind_rows
+
+eqtl.df = eqtl.df %>% mutate(pop=gsub('.* - (.*)', '\\1', exp),
+                             pop=factor(pop, levels=c('EUR + YRI', 'EUR', 'YRI')))
+
+eqtl.df %>% group_by(pop) %>%
+  summarize(eqtl.fdr01=sum(FDR<=.01),
+            esv.fdr01=length(unique(snps[FDR<=.01])),
+            egene.fdr01=length(unique(gene[FDR<=.01])),
+            eqtl.fdr05=sum(FDR<=.05),
+            esv.fdr05=length(unique(snps[FDR<=.05])),
+            egene.fdr05=length(unique(gene[FDR<=.05]))) %>%
+  kable(format.args=list(big.mark=','))
+
+```
+
+## Effect of different normalization on the gene expression
+
+
+```{r norm}
+eqtl.all.df = lapply(names(ll), function(nn){
+  print(qqplot_matrixeqtl(ll[[nn]]) + ggtitle(nn))
+  print(pvhist_matrixeqtl(ll[[nn]]) + ggtitle(nn))
+  return(ll[[nn]]$cis$eqtls %>% mutate(exp=nn) %>% filter(FDR<.01))
+}) %>% bind_rows
+
+eqtl.all.df %>% group_by(exp) %>%
+  summarize(eqtl.fdr01=sum(FDR<=.01),
+            esv.fdr01=length(unique(snps[FDR<=.01])),
+            egene.fdr01=length(unique(gene[FDR<=.01]))) %>%
+  kable(format.args=list(big.mark=','))
+```
+
+## Examples
+
+```{r ex}
+load('./eqtl-examples.RData')
+
+plotEx <- function(gene, svid){
+  df = merge(
+    tibble(sample=colnames(ge.ex), ge=ge.ex[gene,]),
+    tibble(sample=colnames(ac.ex), ac=ac.ex[svid,])) %>%
+    mutate(pop=ifelse(sample%in% yri.samples, 'YRI', 'EUR'))
+  df.n = df %>% group_by(ac, pop) %>% summarize(ge=median(ge), n=n())
+  ggplot(df, aes(x=factor(ac), y=ge, group=paste(ac, pop))) +
+    geom_boxplot(aes(fill=pop)) +
+    geom_label(aes(label=n), data=df.n, position=position_dodge(.75)) + 
+    theme_bw() +
+    scale_fill_brewer(palette='Set2', name='population') +
+    xlab('allele count') +
+    ylab('gene expression (RPKM)') +
+    ggtitle(paste(gene, svid))
+}
+
+## most significant positive association in subset of 100 eQTLs
+ex = ex.all %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
+kable(as.matrix(ex))
+plotEx(ex$gene, ex$snps)
+
+## most significant negative association in subset of 100 eQTLs
+ex = ex.all %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
+kable(as.matrix(ex))
+plotEx(ex$gene, ex$snps)
+
+## most significant positive association in YRI-specific eQTLs
+ex = ex.yri %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
+kable(as.matrix(ex))
+plotEx(ex$gene, ex$snps)
+
+## most significant negative association in YRI-specific eQTLs
+ex = ex.yri %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
+kable(as.matrix(ex))
+plotEx(ex$gene, ex$snps)
+```
+
+## Multi-panel figure
+
+```{r fig}
+## adds a legend title: a), b), etc
+plot_list <- function(ggp.l, gg.names=NULL, gg.titles=NULL){
+  if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
+  if(is.null(gg.names)) gg.names = names(ggp.l)
+  if(is.null(gg.titles)){
+    gg.titles = rep('', length(gg.names))
+  } else {
+    gg.titles = paste0(' ', gg.titles)
+  }
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')', gg.titles[ii])))
+}
+
+grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+             layout_matrix=matrix(1:6, 2),
+             heights=c(3, 5))
+
+
+pdf('fig-sv-eqtl.pdf', 9, 5)
+grid.arrange(grobs=plot_list(ggp, gg.titles=rep(c('EUR+YRI', 'EUR', 'YRI'), each=2)),
+             layout_matrix=matrix(1:6, 2),
+             heights=c(3, 5))
+dev.off()
+```
+
+## Save table
+
+```{r tab}
+eqtl.df %>% group_by(pop) %>%
+  summarize(eQTL=sum(FDR<=.01),
+            eSV=length(unique(snps[FDR<=.01])),
+            eGene=length(unique(gene[FDR<=.01]))) %>%
+  kable(format.args=list(big.mark=','))
+
+eqtl.df %>% group_by(pop) %>%
+  summarize(eQTL=sum(FDR<=.01),
+            eSV=length(unique(snps[FDR<=.01])),
+            eGene=length(unique(gene[FDR<=.01]))) %>%
+  kable(format.args=list(big.mark=','), format='latex') %>%
+  cat(file='eqtl-summary.tex')
+
+```
+
+## Save eQTL information
+
+```{r save}
+eqtl.df %>% filter(FDR<=.01) %>% mutate(svid=snps) %>%
+  select(pop, svid, gene, statistic, pvalue, FDR, beta) %>%
+  write.table(file='eqtl-svs.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+```
