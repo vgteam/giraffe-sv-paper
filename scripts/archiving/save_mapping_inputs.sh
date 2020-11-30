@@ -75,20 +75,20 @@ for SPECIES in human yeast ; do
         
         for EXT in vg xg snarls trivial.snarls gcsa gcsa.lcp dist ; do
             # Copy the graph and all generic indexes
-            aws s3 cp ${GRAPH_BASE}.${EXT} ${DEST_BASE}.${EXT}
+            aws s3 cp --no-progress ${GRAPH_BASE}.${EXT} ${DEST_BASE}.${EXT}
         done
         
         
         for GBWT in ${GBWTS[@]} ; do
             # Copy each GBWT and related file that exists
             if [[ "${GBWT}" == "raw" ]] ; then
-                aws s3 cp ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
-                aws s3 cp ${GRAPH_BASE}.gg ${DEST_BASE}.gg
-                aws s3 cp ${GRAPH_BASE}.min ${DEST_BASE}.min
+                aws s3 cp --no-progress ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
+                aws s3 cp --no-progress ${GRAPH_BASE}.gg ${DEST_BASE}.gg
+                aws s3 cp --no-progress ${GRAPH_BASE}.min ${DEST_BASE}.min
             else
-                aws s3 cp ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
-                aws s3 cp ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
-                aws s3 cp ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
+                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
+                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
+                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
             fi
         done
         
@@ -123,7 +123,7 @@ for SPECIES in human yeast ; do
             esac
             
             # Do the read copy 
-            aws s3 cp ${READ_BASE}.gam ${READDEST_BASE}.gam
+            aws s3 cp --no-progress ${READ_BASE}.gam ${READDEST_BASE}.gam
         done
     done
 done
