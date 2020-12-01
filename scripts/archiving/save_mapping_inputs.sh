@@ -6,6 +6,12 @@ set -x
 
 DEST_DIR=/nanopore/cgl/data/giraffe
 
+function download() {
+    if [ ! -e "${2}" ] ; then
+        aws s3 cp --no-progress "${1}" "${2}"
+    fi
+}
+
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
@@ -38,8 +44,6 @@ for SPECIES in human yeast ; do
         1kg-primary)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
             DEST_BASE=${DEST_DIR}/mapping/graphs/generic/primary/hs37d5/primaryhs37d5
-            # Grab all the other sampled GBWTs too
-            GBWTS+=("sampled.1" "sampled.2" "sampled.4" "sampled.8" "sampled.16" "sampled.32" "sampled.128")
             ;;
         hgsvc-primary)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
@@ -48,6 +52,8 @@ for SPECIES in human yeast ; do
         1kg)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
+            # Grab all the other sampled GBWTs too
+            GBWTS+=("sampled.1" "sampled.2" "sampled.4" "sampled.8" "sampled.16" "sampled.32" "sampled.128")
             ;;
         hgsvc)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
@@ -75,20 +81,20 @@ for SPECIES in human yeast ; do
         
         for EXT in vg xg snarls trivial.snarls gcsa gcsa.lcp dist ; do
             # Copy the graph and all generic indexes
-            aws s3 cp --no-progress ${GRAPH_BASE}.${EXT} ${DEST_BASE}.${EXT}
+            download ${GRAPH_BASE}.${EXT} ${DEST_BASE}.${EXT}
         done
         
         
         for GBWT in ${GBWTS[@]} ; do
             # Copy each GBWT and related file that exists
             if [[ "${GBWT}" == "raw" ]] ; then
-                aws s3 cp --no-progress ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
-                aws s3 cp --no-progress ${GRAPH_BASE}.gg ${DEST_BASE}.gg
-                aws s3 cp --no-progress ${GRAPH_BASE}.min ${DEST_BASE}.min
+                download ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
+                download ${GRAPH_BASE}.gg ${DEST_BASE}.gg
+                download ${GRAPH_BASE}.min ${DEST_BASE}.min
             else
-                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
-                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
-                aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
+                download ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
+                download ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
+                download ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
             fi
         done
         
@@ -123,7 +129,7 @@ for SPECIES in human yeast ; do
             esac
             
             # Do the read copy 
-            aws s3 cp --no-progress ${READ_BASE}.gam ${READDEST_BASE}.gam
+            download ${READ_BASE}.gam ${READDEST_BASE}.gam
         done
     done
 done
