@@ -42,6 +42,7 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             .groups='drop') %>%
   filter(size>=50)
 
+set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
 ```
 
@@ -199,15 +200,15 @@ ggp$af.top
 
 locs %>% filter(loc.n>1) %>%
   summarize(af.fc.3=sum(af.top.fc>3),
-            af01.fc.3=sum(af.top.fc>3 & af>.01),
-            af01.af2lt01=sum(af>=.01, af.top2<.01),
+            af01.af2lt01=sum(af>=.01 & af.top2<.01),
+            af01.af2lt01.fc3=sum(af>=.01 & af.top2<.01 & af.top.fc>3),
             major.al=sum(af>af.top2)) %>%
   kable
 ```
 
 - *af.fc.3*: SV sites where the most frequent allele is at least 3 times more frequent than the seoncd most frequent allele.
-- *af01.fc.3*: SV sites where the most frequent allele has frequency >1% and is at least 3 times more frequent than the seoncd most frequent allele.
 - *af01.af2lt01*: SV sites where most frequent allele with frequency >1% but other alleles with <1% frequency.
+- *af01.af2lt01.fc3*: Same + the most frequent allele is at least 3 times more frequent than the seoncd most frequent allele.
 - *major.al*: SV sites with one allele more frequent than the other alleles.
 
 ## Alleles per SV sites

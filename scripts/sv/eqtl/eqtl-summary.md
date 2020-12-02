@@ -2,6 +2,7 @@ SV-eQTLs summary
 ================
 
 ``` r
+library(rtracklayer)
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
@@ -29,6 +30,19 @@ names(ll)
 names(ll) = paste(
   rep(c('No additional normalization', 'Quantile normalization'),each=3),
   rep(c('EUR + YRI', 'EUR', 'YRI'), 2), sep=' - ')
+```
+
+## Gene annotation
+
+``` r
+if(!file.exists('../describe-svs/gencode.v35.annotation.gtf.gz')){
+  download.file('ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_35/gencode.v35.annotation.gtf.gz', '../describe-svs/gencode.v35.annotation.gtf.gz')
+}
+
+genc = import('../describe-svs/gencode.v35.annotation.gtf.gz')
+genc = subset(genc, type=='gene')
+genc$gene_id = gsub('\\..*', '', genc$gene_id)
+genc = genc %>% as.data.frame %>% mutate(gene=gene_id) %>% select(gene, gene_type, gene_name)
 ```
 
 ## QC: p-value distribution and QQ plots
@@ -112,23 +126,44 @@ eqtl.df = lapply(names(ll)[1:3], function(nn){
 }) %>% bind_rows
 
 eqtl.df = eqtl.df %>% mutate(pop=gsub('.* - (.*)', '\\1', exp),
-                             pop=factor(pop, levels=c('EUR + YRI', 'EUR', 'YRI')))
+                             pop=factor(pop, levels=c('EUR + YRI', 'EUR', 'YRI'))) %>%
+  select(-exp) %>% dplyr::rename(svid=snps) %>% merge(genc)
 
-eqtl.df %>% group_by(pop) %>%
+svs = read.table('../describe-svs/svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
+eqtl.df = svs %>% select(seqnames, start, end, type, size, svid) %>% merge(eqtl.df)
+
+eqtl.df %>% mutate(type='all') %>% rbind(eqtl.df) %>%
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  group_by(gene_type, pop, type) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
-            esv.fdr01=length(unique(snps[FDR<=.01])),
+            esv.fdr01=length(unique(svid[FDR<=.01])),
             egene.fdr01=length(unique(gene[FDR<=.01])),
             eqtl.fdr05=sum(FDR<=.05),
-            esv.fdr05=length(unique(snps[FDR<=.05])),
+            esv.fdr05=length(unique(svid[FDR<=.05])),
             egene.fdr05=length(unique(gene[FDR<=.05]))) %>%
   kable(format.args=list(big.mark=','))
 ```
 
-| pop       | eqtl.fdr01 | esv.fdr01 | egene.fdr01 | eqtl.fdr05 | esv.fdr05 | egene.fdr05 |
-| :-------- | ---------: | --------: | ----------: | ---------: | --------: | ----------: |
-| EUR + YRI |      2,059 |     1,319 |         909 |      2,909 |     1,910 |       1,358 |
-| EUR       |      1,998 |     1,290 |         879 |      2,864 |     1,904 |       1,332 |
-| YRI       |        173 |       145 |         102 |        352 |       294 |         227 |
+| gene\_type      | pop       | type | eqtl.fdr01 | esv.fdr01 | egene.fdr01 | eqtl.fdr05 | esv.fdr05 | egene.fdr05 |
+| :-------------- | :-------- | :--- | ---------: | --------: | ----------: | ---------: | --------: | ----------: |
+| other           | EUR + YRI | all  |        686 |       566 |         280 |        982 |       798 |         419 |
+| other           | EUR + YRI | DEL  |        349 |       283 |         176 |        506 |       408 |         266 |
+| other           | EUR + YRI | INS  |        337 |       283 |         182 |        476 |       390 |         262 |
+| other           | EUR       | all  |        675 |       546 |         281 |        959 |       782 |         413 |
+| other           | EUR       | DEL  |        339 |       273 |         175 |        484 |       392 |         256 |
+| other           | EUR       | INS  |        336 |       273 |         188 |        475 |       390 |         266 |
+| other           | YRI       | all  |         54 |        53 |          31 |        108 |       107 |          67 |
+| other           | YRI       | DEL  |         28 |        27 |          21 |         56 |        55 |          42 |
+| other           | YRI       | INS  |         26 |        26 |          15 |         52 |        52 |          34 |
+| protein\_coding | EUR + YRI | all  |      1,373 |       949 |         629 |      1,927 |     1,370 |         939 |
+| protein\_coding | EUR + YRI | DEL  |        680 |       460 |         356 |        938 |       659 |         525 |
+| protein\_coding | EUR + YRI | INS  |        693 |       489 |         387 |        989 |       711 |         587 |
+| protein\_coding | EUR       | all  |      1,323 |       935 |         598 |      1,905 |     1,373 |         919 |
+| protein\_coding | EUR       | DEL  |        646 |       443 |         340 |        936 |       655 |         512 |
+| protein\_coding | EUR       | INS  |        677 |       492 |         381 |        969 |       718 |         587 |
+| protein\_coding | YRI       | all  |        119 |       103 |          71 |        244 |       212 |         160 |
+| protein\_coding | YRI       | DEL  |         75 |        61 |          44 |        139 |       116 |          94 |
+| protein\_coding | YRI       | INS  |         44 |        42 |          31 |        105 |        96 |          77 |
 
 ### Specific to EUR or YRI
 
@@ -137,35 +172,36 @@ eqtl.df %>% group_by(pop) %>%
 freq.df = read.table('../describe-svs/2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
 freq.df = freq.df %>% group_by(svsite) %>% mutate(af.med=median(af))
 
+pop.spec = freq.df %>%
+  filter(abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
+
 ## eqtl in eur but not yri or eur+yri
-eqtl.eur = eqtl.df %>% group_by(snps, gene) %>%
+eqtl.eur = eqtl.df %>% group_by(svid, gene) %>%
   filter(n()==1, pop=='EUR', FDR<=.01)
 
-eur.freq = freq.df %>%
-  filter(svsite %in% eqtl.eur$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
-
 ## ex: eqtl in yri but not eur or eur+yri
-eqtl.yri = eqtl.df %>% group_by(snps, gene) %>%
+eqtl.yri = eqtl.df %>% group_by(svid, gene) %>%
   filter(n()==1, pop=='YRI', FDR<=.01)
 
-yri.freq = freq.df %>%
-  filter(svsite %in% eqtl.yri$snps, abs(af.med-af)>.1, Superpopulation %in% c('AFR', 'EUR'))
-
 rbind(
-  eqtl.eur %>% mutate(pop='EUR', pop.af=snps %in% eur.freq$svsite),
-  eqtl.yri %>% mutate(pop='YRI', pop.af=snps %in% yri.freq$svsite)) %>%
-  group_by(pop) %>%
+  eqtl.eur %>% mutate(pop='EUR', pop.af=svid %in% pop.spec$svsite),
+  eqtl.yri %>% mutate(pop='YRI', pop.af=svid %in% pop.spec$svsite)) %>%
+  merge(genc) %>% 
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  group_by(gene_type, pop) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
-            esv.fdr01=length(unique(snps[FDR<=.01])),
-            esv.fdr01.popaf=length(unique(snps[FDR<=.01 & pop.af])),
+            esv.fdr01=length(unique(svid[FDR<=.01])),
+            esv.fdr01.popaf=length(unique(svid[FDR<=.01 & pop.af])),
             egene.fdr01=length(unique(gene[FDR<=.01]))) %>%
   kable
 ```
 
-| pop | eqtl.fdr01 | esv.fdr01 | esv.fdr01.popaf | egene.fdr01 |
-| :-- | ---------: | --------: | --------------: | ----------: |
-| EUR |         58 |        48 |              24 |          53 |
-| YRI |         58 |        57 |              10 |          53 |
+| gene\_type      | pop | eqtl.fdr01 | esv.fdr01 | esv.fdr01.popaf | egene.fdr01 |
+| :-------------- | :-- | ---------: | --------: | --------------: | ----------: |
+| other           | EUR |         24 |        20 |              11 |          20 |
+| other           | YRI |         20 |        20 |               2 |          16 |
+| protein\_coding | EUR |         34 |        32 |              16 |          33 |
+| protein\_coding | YRI |         38 |        37 |               8 |          37 |
 
 *esv.fdr01.popaf*: number of SVs that are eQTLs (FDR\<=0.01) and with
 specific frequency patterns (in EUR or AFR populations).
@@ -177,37 +213,45 @@ eqtl.all.df = lapply(names(ll), function(nn){
   print(qqplot_matrixeqtl(ll[[nn]]) + ggtitle(nn))
   print(pvhist_matrixeqtl(ll[[nn]]) + ggtitle(nn))
   return(ll[[nn]]$cis$eqtls %>% mutate(exp=nn) %>% filter(FDR<.01))
-}) %>% bind_rows
+}) %>% bind_rows %>% dplyr::rename(svid=snps)
 ```
 
 ![](eqtl-summary_files/figure-gfm/norm-1.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-2.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-3.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-4.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-5.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-6.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-7.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-8.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-9.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-10.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-11.png)<!-- -->![](eqtl-summary_files/figure-gfm/norm-12.png)<!-- -->
 
 ``` r
-eqtl.all.df %>% group_by(exp) %>%
+eqtl.all.df %>% merge(genc) %>%
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  group_by(gene_type, exp) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
-            esv.fdr01=length(unique(snps[FDR<=.01])),
+            esv.fdr01=length(unique(svid[FDR<=.01])),
             egene.fdr01=length(unique(gene[FDR<=.01]))) %>%
   kable(format.args=list(big.mark=','))
 ```
 
-| exp                                     | eqtl.fdr01 | esv.fdr01 | egene.fdr01 |
-| :-------------------------------------- | ---------: | --------: | ----------: |
-| No additional normalization - EUR       |      1,998 |     1,290 |         879 |
-| No additional normalization - EUR + YRI |      2,059 |     1,319 |         909 |
-| No additional normalization - YRI       |        173 |       145 |         102 |
-| Quantile normalization - EUR            |      2,090 |     1,278 |         871 |
-| Quantile normalization - EUR + YRI      |      2,143 |     1,303 |         899 |
-| Quantile normalization - YRI            |        121 |        87 |          45 |
+| gene\_type      | exp                                     | eqtl.fdr01 | esv.fdr01 | egene.fdr01 |
+| :-------------- | :-------------------------------------- | ---------: | --------: | ----------: |
+| other           | No additional normalization - EUR       |        675 |       546 |         281 |
+| other           | No additional normalization - EUR + YRI |        686 |       566 |         280 |
+| other           | No additional normalization - YRI       |         54 |        53 |          31 |
+| other           | Quantile normalization - EUR            |        688 |       539 |         266 |
+| other           | Quantile normalization - EUR + YRI      |        707 |       560 |         267 |
+| other           | Quantile normalization - YRI            |         34 |        33 |          13 |
+| protein\_coding | No additional normalization - EUR       |      1,323 |       935 |         598 |
+| protein\_coding | No additional normalization - EUR + YRI |      1,373 |       949 |         629 |
+| protein\_coding | No additional normalization - YRI       |        119 |       103 |          71 |
+| protein\_coding | Quantile normalization - EUR            |      1,402 |       947 |         605 |
+| protein\_coding | Quantile normalization - EUR + YRI      |      1,436 |       956 |         632 |
+| protein\_coding | Quantile normalization - YRI            |         87 |        67 |          32 |
 
 ## Examples
 
 ``` r
 load('./eqtl-examples.RData')
 
-plotEx <- function(gene, svid){
+plotEx <- function(ex){
   df = merge(
-    tibble(sample=colnames(ge.ex), ge=ge.ex[gene,]),
-    tibble(sample=colnames(ac.ex), ac=ac.ex[svid,])) %>%
+    tibble(sample=colnames(ge.ex), ge=ge.ex[ex$gene[1],]),
+    tibble(sample=colnames(ac.ex), ac=ac.ex[ex$svid[1],])) %>%
     mutate(pop=ifelse(sample%in% yri.samples, 'YRI', 'EUR'))
   df.n = df %>% group_by(ac, pop) %>% summarize(ge=median(ge), n=n())
   ggplot(df, aes(x=factor(ac), y=ge, group=paste(ac, pop))) +
@@ -217,20 +261,30 @@ plotEx <- function(gene, svid){
     scale_fill_brewer(palette='Set2', name='population') +
     xlab('allele count') +
     ylab('gene expression (RPKM)') +
-    ggtitle(paste(gene, svid))
+    ggtitle(paste(ex$gene[1], ex$svid[1], paste0(ex$size[1], 'bp'), ex$type[1]))
+}
+formatEx <- function(df){
+  df %>% select(-pop) %>%
+    dplyr::rename(svid=snps) %>% merge(svs) %>% 
+    mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                        '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                        seqnames, '%3A', start, '%2D', end, ')')) %>% 
+    select(coord, svid, type, size, gene, gene_name, beta, pvalue, FDR) %>%
+    mutate(pvalue=signif(pvalue, 3), FDR=signif(FDR, 3), beta=signif(beta, 3))
 }
 
 ## most significant positive association in subset of 100 eQTLs
-ex = ex.all %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
-kable(as.matrix(ex))
+ex = ex.all %>% merge(genc) %>% filter(statistic>0, gene_type=='protein_coding') %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
 ```
 
-| snps           | gene            | statistic | pvalue        | FDR          | beta     |
-| :------------- | :-------------- | :-------- | :------------ | :----------- | :------- |
-| sv\_2083394\_0 | ENSG00000198468 | 36.90249  | 1.699143e-136 | 1.13354e-130 | 3.844799 |
+| coord                                                                                                        | svid          | type | size | gene\_name | beta | pvalue | FDR |
+| :----------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | :--------- | ---: | -----: | --: |
+| [chr19:9408967-9409025](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A9408967%2D9409025) | sv\_320847\_0 | DEL  |   58 | ZNF266     | 2.04 |      0 |   0 |
 
 ``` r
-ggp$ex.all.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.all.pos = plotEx(ex)
 ggp$ex.all.pos
 ```
 
@@ -238,16 +292,17 @@ ggp$ex.all.pos
 
 ``` r
 ## most significant negative association in subset of 100 eQTLs
-ex = ex.all %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
-kable(as.matrix(ex))
+ex = ex.all %>% merge(genc) %>% filter(statistic<0, gene_type=='protein_coding', !grepl('HLA', gene_name)) %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
 ```
 
-| snps           | gene            | statistic  | pvalue       | FDR          | beta       |
-| :------------- | :-------------- | :--------- | :----------- | :----------- | :--------- |
-| sv\_1415534\_0 | ENSG00000179344 | \-19.91856 | 2.532182e-63 | 2.598893e-58 | \-191.9349 |
+| coord                                                                                                            | svid          | type | size | gene\_name |  beta | pvalue | FDR |
+| :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | :--------- | ----: | -----: | --: |
+| [chr14:92120589-92120589](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr14%3A92120589%2D92120589) | sv\_690749\_0 | INS  |  285 | NDUFB1     | \-6.9 |      0 |   0 |
 
 ``` r
-ggp$ex.all.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.all.neg = plotEx(ex)
 ggp$ex.all.neg
 ```
 
@@ -255,16 +310,17 @@ ggp$ex.all.neg
 
 ``` r
 ## most significant positive association in YRI-specific eQTLs
-ex = ex.yri %>% filter(statistic>0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
-kable(as.matrix(ex))
+ex = ex.yri %>% merge(genc) %>% filter(statistic>0, gene_type=='protein_coding') %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
 ```
 
-| snps           | gene            | statistic | pvalue       | FDR          | beta      |
-| :------------- | :-------------- | :-------- | :----------- | :----------- | :-------- |
-| sv\_1479136\_0 | ENSG00000229921 | 10.03917  | 8.108229e-16 | 7.602067e-11 | 0.1032301 |
+| coord                                                                                                            | svid          | type | size | gene\_name | beta | pvalue |   FDR |
+| :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | :--------- | ---: | -----: | ----: |
+| [chr17:43317181-43317181](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43317181%2D43317181) | sv\_484152\_0 | INS  |  610 | TMEM106A   | 2.08 |      0 | 4e-07 |
 
 ``` r
-ggp$ex.yri.pos = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.pos = plotEx(ex)
 ggp$ex.yri.pos
 ```
 
@@ -272,16 +328,17 @@ ggp$ex.yri.pos
 
 ``` r
 ## most significant negative association in YRI-specific eQTLs
-ex = ex.yri %>% filter(statistic<0) %>% arrange(FDR) %>% head(1) %>% select(-pop)
-kable(as.matrix(ex))
+ex = ex.yri %>% merge(genc) %>% filter(statistic<0, gene_type=='protein_coding') %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
 ```
 
-| snps          | gene            | statistic  | pvalue       | FDR          | beta        |
-| :------------ | :-------------- | :--------- | :----------- | :----------- | :---------- |
-| sv\_949208\_0 | ENSG00000064199 | \-7.043589 | 5.850222e-10 | 2.194007e-05 | \-0.9605566 |
+| coord                                                                                                                | svid          | type | size | gene\_name |    beta | pvalue |      FDR |
+| :------------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | :--------- | ------: | -----: | -------: |
+| [chr11:124704774-124704774](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A124704774%2D124704774) | sv\_949208\_0 | INS  |  127 | SPA17      | \-0.961 |      0 | 2.19e-05 |
 
 ``` r
-ggp$ex.yri.neg = plotEx(ex$gene, ex$snps)
+ggp$ex.yri.neg = plotEx(ex)
 ggp$ex.yri.neg
 ```
 
@@ -332,32 +389,48 @@ dev.off()
 ## Save table
 
 ``` r
-eqtl.df %>% group_by(pop) %>%
+tab = eqtl.df %>% mutate(type='all') %>% rbind(eqtl.df) %>%
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type),
+         gene_type=factor(gene_type, levels=c('protein_coding', 'other'))) %>% 
+  group_by(gene_type, pop, type) %>%
   summarize(eQTL=sum(FDR<=.01),
-            eSV=length(unique(snps[FDR<=.01])),
-            eGene=length(unique(gene[FDR<=.01]))) %>%
-  kable(format.args=list(big.mark=','))
+            eSV=length(unique(svid[FDR<=.01])),
+            eGene=length(unique(gene[FDR<=.01])))
+
+kable(tab, format.args=list(big.mark=','))
 ```
 
-| pop       |  eQTL |   eSV | eGene |
-| :-------- | ----: | ----: | ----: |
-| EUR + YRI | 2,059 | 1,319 |   909 |
-| EUR       | 1,998 | 1,290 |   879 |
-| YRI       |   173 |   145 |   102 |
+| gene\_type      | pop       | type |  eQTL | eSV | eGene |
+| :-------------- | :-------- | :--- | ----: | --: | ----: |
+| protein\_coding | EUR + YRI | all  | 1,373 | 949 |   629 |
+| protein\_coding | EUR + YRI | DEL  |   680 | 460 |   356 |
+| protein\_coding | EUR + YRI | INS  |   693 | 489 |   387 |
+| protein\_coding | EUR       | all  | 1,323 | 935 |   598 |
+| protein\_coding | EUR       | DEL  |   646 | 443 |   340 |
+| protein\_coding | EUR       | INS  |   677 | 492 |   381 |
+| protein\_coding | YRI       | all  |   119 | 103 |    71 |
+| protein\_coding | YRI       | DEL  |    75 |  61 |    44 |
+| protein\_coding | YRI       | INS  |    44 |  42 |    31 |
+| other           | EUR + YRI | all  |   686 | 566 |   280 |
+| other           | EUR + YRI | DEL  |   349 | 283 |   176 |
+| other           | EUR + YRI | INS  |   337 | 283 |   182 |
+| other           | EUR       | all  |   675 | 546 |   281 |
+| other           | EUR       | DEL  |   339 | 273 |   175 |
+| other           | EUR       | INS  |   336 | 273 |   188 |
+| other           | YRI       | all  |    54 |  53 |    31 |
+| other           | YRI       | DEL  |    28 |  27 |    21 |
+| other           | YRI       | INS  |    26 |  26 |    15 |
 
 ``` r
-eqtl.df %>% group_by(pop) %>%
-  summarize(eQTL=sum(FDR<=.01),
-            eSV=length(unique(snps[FDR<=.01])),
-            eGene=length(unique(gene[FDR<=.01]))) %>%
-  kable(format.args=list(big.mark=','), format='latex') %>%
-  cat(file='eqtl-summary.tex')
+kable(tab, format.args=list(big.mark=','), format='latex') %>% cat(file='eqtl-summary.tex')
 ```
 
 ## Save eQTL information
 
 ``` r
-eqtl.df %>% filter(FDR<=.01) %>% mutate(svid=snps) %>%
-  select(pop, svid, gene, statistic, pvalue, FDR, beta) %>%
+eqtl.df %>% filter(FDR<=.01) %>% 
+  select(seqnames, start, end, svid, type, size, pop,
+         gene, gene_name, gene_type, statistic, beta, pvalue, FDR) %>%
+  arrange(FDR) %>% 
   write.table(file='eqtl-svs.tsv', sep='\t', quote=FALSE, row.names=FALSE)
 ```

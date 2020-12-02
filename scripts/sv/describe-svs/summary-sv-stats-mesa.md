@@ -36,31 +36,32 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             .groups='drop') %>%
   filter(size>=50)
 
+set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
 ```
 
     ##    seqnames       svsite type clique     start       end ac.tot   ac  af.tot
-    ## 1      chr2 sv_1739148_0  DEL   TRUE   1221537   1221603     58   58 0.01450
-    ## 2     chr17  sv_465115_0  INS   TRUE  80665474  80665474     28   25 0.00700
-    ## 3      chr2 sv_1867587_0  INS   TRUE 241875068 241875068    395  395 0.09875
-    ## 4      chr9 sv_1041374_0  DEL   TRUE 129735941 129736048    250  250 0.06250
-    ## 5     chr15  sv_585162_0  INS   TRUE  24184580  24184580     30   30 0.00750
-    ## 6     chr14  sv_651663_0  INS   TRUE 105230460 105230460   1245 1046 0.31125
-    ## 7     chr17  sv_449289_0  INS   TRUE  43296451  43296451      2    2 0.00050
-    ## 8      chr4 sv_1610944_0  INS   TRUE 179130760 179130760     23   23 0.00575
-    ## 9     chr18  sv_367075_0  DEL   TRUE  79550920  79551078      2    2 0.00050
-    ## 10     chrX   sv_26486_0  DEL   TRUE   1789749   1789803    340  340 0.08500
+    ## 1      chr6 sv_1411495_0  DEL   TRUE 170246886 170247024      7    7 0.00175
+    ## 2      chr5 sv_1528143_0  DEL   TRUE 179313456 179313710     74   74 0.01850
+    ## 3      chrX   sv_18563_0  DEL   TRUE    551424    551484    949  949 0.23725
+    ## 4      chr3 sv_1712852_0  DEL  FALSE 195502445 195502633     36   26 0.00900
+    ## 5      chr5 sv_1532605_0  DEL   TRUE 181385141 181385295   2134 2134 0.53350
+    ## 6     chr16  sv_506558_0  INS   TRUE    961040    961040     23   23 0.00575
+    ## 7     chr18  sv_378775_0  INS   TRUE  79765462  79765462    118  118 0.02950
+    ## 8     chr16  sv_529988_0  DEL   TRUE  14689406  14695486      1    1 0.00025
+    ## 9      chr7 sv_1234346_0  DEL   TRUE 107422090 107422154      1    1 0.00025
+    ## 10    chr17  sv_466009_0  INS  FALSE  80744271  80744271    204   46 0.05100
     ##    af.top2      af af.top.fc loc.n size.min size.max size
-    ## 1  0.01450 0.01450  1.000000     1       66       66   66
-    ## 2  0.00075 0.00625  8.333333     2      115      136  136
-    ## 3  0.09875 0.09875  1.000000     1       54       54   54
-    ## 4  0.06250 0.06250  1.000000     1      107      107  107
-    ## 5  0.00750 0.00750  1.000000     1      242      242  242
-    ## 6  0.03200 0.26150  8.171875     4      202      203  202
-    ## 7  0.00050 0.00050  1.000000     1       51       51   51
-    ## 8  0.00575 0.00575  1.000000     1       86       86   86
-    ## 9  0.00050 0.00050  1.000000     1      158      158  158
-    ## 10 0.08500 0.08500  1.000000     1       54       54   54
+    ## 1  0.00175 0.00175      1.00     1      138      138  138
+    ## 2  0.01850 0.01850      1.00     1      254      254  254
+    ## 3  0.23725 0.23725      1.00     1       60       60   60
+    ## 4  0.00125 0.00650      5.20     4      152      190  188
+    ## 5  0.53350 0.53350      1.00     1      154      154  154
+    ## 6  0.00575 0.00575      1.00     1      263      263  263
+    ## 7  0.02950 0.02950      1.00     1       86       86   86
+    ## 8  0.00025 0.00025      1.00     1     6080     6080 6080
+    ## 9  0.00025 0.00025      1.00     1       64       64   64
+    ## 10 0.00625 0.01150      1.84    47       67      162  121
 
 ## Allele/site numbers
 
@@ -267,23 +268,22 @@ ggp$af.top
 ``` r
 locs %>% filter(loc.n>1) %>%
   summarize(af.fc.3=sum(af.top.fc>3),
-            af01.fc.3=sum(af.top.fc>3 & af>.01),
-            af01.af2lt01=sum(af>=.01, af.top2<.01),
+            af01.af2lt01=sum(af>=.01 & af.top2<.01),
+            af01.af2lt01.fc3=sum(af>=.01 & af.top2<.01 & af.top.fc>3),
             major.al=sum(af>af.top2)) %>%
   kable
 ```
 
-| af.fc.3 | af01.fc.3 | af01.af2lt01 | major.al |
-| ------: | --------: | -----------: | -------: |
-|   14720 |      9472 |        52507 |    37667 |
+| af.fc.3 | af01.af2lt01 | af01.af2lt01.fc3 | major.al |
+| ------: | -----------: | ---------------: | -------: |
+|   14720 |         7346 |             5936 |    37667 |
 
   - *af.fc.3*: SV sites where the most frequent allele is at least 3
     times more frequent than the seoncd most frequent allele.
-  - *af01.fc.3*: SV sites where the most frequent allele has frequency
-    \>1% and is at least 3 times more frequent than the seoncd most
-    frequent allele.
   - *af01.af2lt01*: SV sites where most frequent allele with frequency
     \>1% but other alleles with \<1% frequency.
+  - *af01.af2lt01.fc3*: Same + the most frequent allele is at least 3
+    times more frequent than the seoncd most frequent allele.
   - *major.al*: SV sites with one allele more frequent than the other
     alleles.
 
