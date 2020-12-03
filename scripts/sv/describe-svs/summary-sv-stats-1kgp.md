@@ -209,6 +209,67 @@ locs %>%  mutate(type='all') %>% rbind(locs) %>%
 *sr*: simple repeat; *lc*: low-complexity; *sat*: satellite DNA. *.50*
 means that at least 50% of the SV region overlaps repeats.
 
+### Non-clique SV sites are repeat-rich
+
+We expect most non-clique sites, i.e. with very different alleles, to be
+repeat variation like short-tandem repeats variation (or VNTRs). Is it?
+
+``` r
+locs %>% mutate(type='all') %>% rbind(locs) %>%
+  filter(!clique) %>% 
+  group_by(type) %>% 
+  summarize(rep.sr.lc.sat.50=mean(rep.sr.lc.sat>=.50), rep.sr.lc.50=mean(rep.sr.lc>=.50),
+                   rep.sr.50=mean(rep.sr>=.50),
+                   rep.lc.50=mean(rep.lc>=.50), rep.sat.50=mean(rep.sat>=.50)) %>%
+  kable(digits=3)
+```
+
+| type | rep.sr.lc.sat.50 | rep.sr.lc.50 | rep.sr.50 | rep.lc.50 | rep.sat.50 |
+| :--- | ---------------: | -----------: | --------: | --------: | ---------: |
+| all  |            0.978 |        0.978 |     0.977 |     0.015 |      0.008 |
+| DEL  |            0.986 |        0.986 |     0.986 |     0.008 |      0.008 |
+| INS  |            0.974 |        0.974 |     0.973 |     0.018 |      0.008 |
+
+Yes, almost all are within simple repeats. What are the ones that are
+not?
+
+``` r
+locs.nc = locs %>% filter(!clique, rep.sr.lc.sat<=.5)
+
+## distance to simple repeat
+locs.nc.gr = makeGRangesFromDataFrame(locs.nc)
+dd = distanceToNearest(locs.nc.gr, rm) %>% as.data.frame
+locs.nc$rep.dist = NA
+locs.nc$rep.dist[dd$queryHits] = dd$distance
+
+## random subset
+set.seed(123)
+locs.nc %>%
+  filter(size.min/size.max>.8) %>% 
+  mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                      '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                      seqnames, '%3A', start, '%2D', end, ')')) %>% 
+  select(coord, svsite, type, size, loc.n, size.min, size.max, rep.dist, rep.sr.lc.sat) %>% sample_n(10) %>%
+  kable
+```
+
+| coord                                                                                                                | svsite         | type | size | loc.n | size.min | size.max | rep.dist | rep.sr.lc.sat |
+| :------------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | ----: | -------: | -------: | -------: | ------------: |
+| [chr11:108408671-108408671](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A108408671%2D108408671) | sv\_935225\_0  | INS  |   92 |     8 |       75 |       93 |        2 |     0.0000000 |
+| [chr17:43260332-43260332](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43260332%2D43260332)     | sv\_482825\_0  | INS  |  801 |    16 |      801 |      921 |      761 |     0.0000000 |
+| [chr7:43342586-43342586](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr7%3A43342586%2D43342586)       | sv\_1291357\_0 | INS  |  280 |    19 |      236 |      280 |      860 |     0.0000000 |
+| [chr17:43251220-43251572](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43251220%2D43251572)     | sv\_481489\_0  | DEL  |  352 |     5 |      318 |      352 |        0 |     0.4730878 |
+| [chrX:135723989-135723989](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A135723989%2D135723989)   | sv\_75863\_0   | INS  |  104 |     8 |      103 |      128 |       12 |     0.0000000 |
+| [chrX:46497436-46497436](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A46497436%2D46497436)       | sv\_46105\_0   | INS  |   56 |    17 |       49 |       56 |     2418 |     0.0000000 |
+| [chr14:24043342-24043342](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr14%3A24043342%2D24043342)     | sv\_674092\_0  | INS  |  317 |    88 |      266 |      324 |      878 |     0.0000000 |
+| [chr22:22120840-22120848](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr22%3A22120840%2D22120848)     | sv\_96341\_0   | INS  |  196 |    50 |      174 |      201 |        7 |     0.0000000 |
+| [chr3:23256656-23256656](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr3%3A23256656%2D23256656)       | sv\_1762710\_0 | INS  |  299 |   131 |      256 |      313 |     1551 |     0.0000000 |
+| [chr2:87247911-87247911](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr2%3A87247911%2D87247911)       | sv\_1887946\_0 | INS  |   52 |    28 |       52 |       52 |     2739 |     0.0000000 |
+
+Either very close to repeats, or in segmental duplication or
+transposons, or slightly below the 80% threshold used to define matching
+alleles.
+
 ## Gene annotation
 
 ``` r

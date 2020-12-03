@@ -152,6 +152,46 @@ locs %>%  mutate(type='all') %>% rbind(locs) %>%
 *sr*: simple repeat; *lc*: low-complexity; *sat*: satellite DNA. 
 *.50* means that at least 50% of the SV region overlaps repeats.
 
+### Non-clique SV sites are repeat-rich
+
+We expect most non-clique sites, i.e. with very different alleles, to be repeat variation like short-tandem repeats variation (or VNTRs).
+Is it?
+
+```{r}
+locs %>% mutate(type='all') %>% rbind(locs) %>%
+  filter(!clique) %>% 
+  group_by(type) %>% 
+  summarize(rep.sr.lc.sat.50=mean(rep.sr.lc.sat>=.50), rep.sr.lc.50=mean(rep.sr.lc>=.50),
+                   rep.sr.50=mean(rep.sr>=.50),
+                   rep.lc.50=mean(rep.lc>=.50), rep.sat.50=mean(rep.sat>=.50)) %>%
+  kable(digits=3)
+```
+
+Yes, almost all are within simple repeats. 
+What are the ones that are not?
+
+```{r}
+locs.nc = locs %>% filter(!clique, rep.sr.lc.sat<=.5)
+
+## distance to simple repeat
+locs.nc.gr = makeGRangesFromDataFrame(locs.nc)
+dd = distanceToNearest(locs.nc.gr, rm) %>% as.data.frame
+locs.nc$rep.dist = NA
+locs.nc$rep.dist[dd$queryHits] = dd$distance
+
+## random subset
+set.seed(123)
+locs.nc %>%
+  filter(size.min/size.max>.8) %>% 
+  mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                      '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                      seqnames, '%3A', start, '%2D', end, ')')) %>% 
+  select(coord, svsite, type, size, loc.n, size.min, size.max, rep.dist, rep.sr.lc.sat) %>% sample_n(10) %>%
+  kable
+```
+
+Either very close to repeats, or in segmental duplication or transposons, or slightly below the 80% threshold used to define matching alleles.
+
 ## Gene annotation 
 
 ```{r gene}
