@@ -1,6 +1,24 @@
 Annotate SVs with functional information
 ================
 
+  - [Gene annotation](#gene-annotation)
+  - [SVs genotyped in 2,504 samples from 1000 Genomes
+    Project](#svs-genotyped-in-2504-samples-from-1000-genomes-project)
+  - [Coding SVs](#coding-svs)
+  - [SVs with different frequency across
+    populations](#svs-with-different-frequency-across-populations)
+  - [Novel (compared to
+    gnomAD-SV/1000GP)](#novel-compared-to-gnomad-sv1000gp)
+  - [eQTLs](#eqtls)
+  - [Example: population-specific, novel and
+    coding](#example-population-specific-novel-and-coding)
+  - [Examples: population-specific, novel and
+    eQTL](#examples-population-specific-novel-and-eqtl)
+  - [Examples: novel and eQTL in coding/promoter/UTR region of the
+    associated
+    gene](#examples-novel-and-eqtl-in-codingpromoterutr-region-of-the-associated-gene)
+  - [Figures](#figures)
+
 ``` r
 library(dplyr)
 library(sveval)
@@ -68,10 +86,21 @@ length(kgp.cds)
 ``` r
 freq.all = read.table('2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
 pop.spec = read.table('pops-freq-1kgp-med1.tsv', as.is=TRUE, header=TRUE)
-
-
-## overlap pop=spec SVs with gene annotation
 kgp.ps = subset(kgp.s, svsite %in% pop.spec$svsite)
+```
+
+### SVs in coding/promoter/UTR/intronic regions
+
+``` r
+length(subsetByOverlaps(kgp.ps, subset(genc, gene_type=='protein_coding')))
+```
+
+    ## [1] 10617
+
+### Overlap with gene annotation and enrichment
+
+``` r
+## overlap pop=spec SVs with gene annotation
 ol.genc = findOverlaps(kgp.ps, genc) %>% as.data.frame %>%
   mutate(svsite=kgp.ps$svsite[queryHits],
          gene.name=genc$gene_name[subjectHits],
@@ -118,11 +147,11 @@ kable(ps.enr)
 
 | exp                 | impact     |     n |      prop |
 | :------------------ | :--------- | ----: | --------: |
-| control             | intronic   | 21998 | 0.5507624 |
-| control             | intergenic | 15597 | 0.3905010 |
-| control             | promoter   |  1812 | 0.0453669 |
-| control             | coding     |   344 | 0.0086127 |
-| control             | UTR        |   190 | 0.0047570 |
+| control             | intronic   | 22418 | 0.5590803 |
+| control             | intergenic | 15313 | 0.3818894 |
+| control             | promoter   |  1845 | 0.0460123 |
+| control             | coding     |   308 | 0.0076812 |
+| control             | UTR        |   214 | 0.0053369 |
 | population patterns | intronic   | 22316 | 0.5538843 |
 | population patterns | intergenic | 15434 | 0.3830727 |
 | population patterns | promoter   |  2004 | 0.0497394 |
@@ -239,7 +268,7 @@ null.ol = findOverlaps(kgp.c, genc.null) %>% as.data.frame %>%
   summarize(impact=head(impact, 1))
 
 eqtl.ol.null = merge(kgp.null, null.ol, all.x=TRUE) %>%
-  mutate(statistic=NA, pvalue=NA, FDR=NA, beta=NA,
+  mutate(statistic=NA,
          impact=ifelse(is.na(impact), 'intergenic', as.character(impact)),
          impact=ifelse(impact=='intergenic' & svid %in% svids.cres, 'regulatory element', impact))
 ```
@@ -248,7 +277,8 @@ eqtl.ol.null = merge(kgp.null, null.ol, all.x=TRUE) %>%
 
 ``` r
 ## merge eQTL and controls
-eqtl.enr = rbind(eqtls.ol, eqtl.ol.null) %>%
+eqtl.enr = rbind(eqtls.ol %>% select(statistic, impact),
+                 eqtl.ol.null %>% select(statistic, impact)) %>%
   mutate(direction=ifelse(statistic>0, 'positive', 'negative'),
          direction=ifelse(is.na(statistic), 'control', direction),
          direction=factor(direction, levels=c('positive', 'negative', 'control'))) %>%
@@ -297,6 +327,45 @@ ggp$eqtl
 ```
 
 ![](annotate-svs-functional_files/figure-gfm/eqtlenr-1.png)<!-- -->
+
+### Overlap SV-eQTL with simple repeats
+
+``` r
+## simple repeats
+if(!file.exists('simpleRepeat.hg38.txt.gz')){
+  download.file('https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/simpleRepeat.txt.gz', 'simpleRepeat.hg38.txt.gz')
+}
+sr = read.table('simpleRepeat.hg38.txt.gz', as.is=TRUE)
+sr = reduce(GRanges(sr$V2, IRanges(sr$V3, sr$V4)))
+sr$repClass = 'Simple_repeat'
+## repeat masker with low-complexity regions
+if(!file.exists('rmsk.txt.gz')){
+  download.file('https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/rmsk.txt.gz', 'rmsk.txt.gz')
+}
+rm = read.table('rmsk.txt.gz', as.is=TRUE,
+                colClasses=c(rep("NULL", 5), 'character', 'integer', 'integer',
+                             rep('NULL', 3), 'character',  rep('NULL', 5)))
+colnames(rm) = c('chr', 'start', 'end', 'repClass')
+rm = subset(rm, repClass %in% c('Low_complexity', 'Simple_repeat', 'Satellite'))
+rm = makeGRangesFromDataFrame(rm, keep.extra.columns=TRUE)
+rm = c(rm, sr)
+
+olRep <- function(gr, rm.r){
+  rm.r = reduce(rm.r)
+  findOverlaps(gr, rm.r) %>% as.data.frame %>%
+    mutate(sv.w=width(gr[queryHits]), ol.w=width(pintersect(gr[queryHits], rm.r[subjectHits])),
+           ol.prop=ol.w/sv.w) %>%
+    group_by(queryHits) %>% summarize(ol.prop=sum(ol.prop), .groups='drop')
+}
+
+ol.df = olRep(kgp.eqtl, rm)
+kgp.eqtl$sr = 0
+kgp.eqtl$sr[ol.df$queryHits] = ol.df$ol.prop
+
+mean(kgp.eqtl$sr>=.5)
+```
+
+    ## [1] 0.4601701
 
 ## Example: population-specific, novel and coding
 
@@ -480,8 +549,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                            | svid          | type | size |        af | gene            |      beta | FDR | pop       |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :-------------- | --------: | --: | :-------- |
-| [chr19:50004928-50004983](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50004928%2D50004983) | sv\_335313\_0 | DEL  |   55 | 0.0634984 | ENSG00000204666 | 0.1938535 |   0 | EUR + YRI |
 | [chr19:50004928-50004983](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50004928%2D50004983) | sv\_335313\_0 | DEL  |   55 | 0.0634984 | ENSG00000204666 | 0.1971778 |   0 | YRI       |
+| [chr19:50004928-50004983](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50004928%2D50004983) | sv\_335313\_0 | DEL  |   55 | 0.0634984 | ENSG00000204666 | 0.1938535 |   0 | EUR + YRI |
 
 | svsite        | Superpopulation |        af |
 | :------------ | :-------------- | --------: |
@@ -518,8 +587,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                            | svid          | type | size |        af | gene            |      beta |   FDR | pop       |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :-------------- | --------: | ----: | :-------- |
-| [chr19:50086740-50086740](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50086740%2D50086740) | sv\_336029\_0 | INS  |  126 | 0.0559105 | ENSG00000204666 | 0.1751253 | 0e+00 | EUR + YRI |
 | [chr19:50086740-50086740](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50086740%2D50086740) | sv\_336029\_0 | INS  |  126 | 0.0559105 | ENSG00000204666 | 0.1873643 | 8e-07 | YRI       |
+| [chr19:50086740-50086740](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50086740%2D50086740) | sv\_336029\_0 | INS  |  126 | 0.0559105 | ENSG00000204666 | 0.1751253 | 0e+00 | EUR + YRI |
 
 | svsite        | Superpopulation |        af |
 | :------------ | :-------------- | --------: |
@@ -545,8 +614,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                    | svid          | type | size |        af | gene            |      beta |     FDR | pop       |
 | :------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :-------------- | --------: | ------: | :-------- |
-| [chr11:520297-520297](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A520297%2D520297) | sv\_890795\_0 | INS  |  198 | 0.0628994 | ENSG00000099834 | 0.0432450 | 6.5e-06 | EUR       |
 | [chr11:520297-520297](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A520297%2D520297) | sv\_890795\_0 | INS  |  198 | 0.0628994 | ENSG00000099834 | 0.0406173 | 5.0e-06 | EUR + YRI |
+| [chr11:520297-520297](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A520297%2D520297) | sv\_890795\_0 | INS  |  198 | 0.0628994 | ENSG00000099834 | 0.0432450 | 6.5e-06 | EUR       |
 
 | svsite        | Superpopulation |        af |
 | :------------ | :-------------- | --------: |
@@ -570,8 +639,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                            | svid          | type | size |        af | gene            |      beta |      FDR | pop       |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :-------------- | --------: | -------: | :-------- |
-| [chr19:50006123-50006123](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50006123%2D50006123) | sv\_336023\_0 | INS  |   51 | 0.0371406 | ENSG00000204666 | 0.1712758 | 0.00e+00 | EUR + YRI |
 | [chr19:50006123-50006123](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50006123%2D50006123) | sv\_336023\_0 | INS  |   51 | 0.0371406 | ENSG00000204666 | 0.1797031 | 2.52e-05 | YRI       |
+| [chr19:50006123-50006123](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr19%3A50006123%2D50006123) | sv\_336023\_0 | INS  |   51 | 0.0371406 | ENSG00000204666 | 0.1712758 | 0.00e+00 | EUR + YRI |
 
 | svsite        | Superpopulation |        af |
 | :------------ | :-------------- | --------: |

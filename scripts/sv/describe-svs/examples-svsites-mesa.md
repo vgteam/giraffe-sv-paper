@@ -1,6 +1,16 @@
 Examples of SV sites
 ================
 
+  - [Read population stats for each SV
+    allele](#read-population-stats-for-each-sv-allele)
+  - [Deletions in clique formation](#deletions-in-clique-formation)
+  - [Deletions not in clique
+    formation](#deletions-not-in-clique-formation)
+  - [Insertions in clique formation](#insertions-in-clique-formation)
+  - [Insertions not in clique
+    formation](#insertions-not-in-clique-formation)
+  - [For figures](#for-figures)
+
 ``` r
 library(sveval)
 library(GenomicRanges)
@@ -11,6 +21,7 @@ library(knitr)
 library(RColorBrewer)
 library(msa)
 library(igraph)
+set.seed(123)
 
 ## ggplot graph for a MSA object
 ggplotMsa <- function(msa.o){
@@ -150,6 +161,18 @@ subset(svs, svsite==ex.site) %>% plotSVs(label.svs=FALSE)
 
 ![](examples-svsites-mesa_files/figure-gfm/del-clique-5.png)<!-- -->
 
+### Deletions with one major allele
+
+``` r
+ex.site = locs %>% filter(type=='DEL', clique, loc.n<10, af>.1, af.top2<.01) %>% sample_n(3) %>% .$svsite
+
+tmp = lapply(ex.site, function(es){
+  subset(svs, svsite==es) %>% plotSVs
+})
+```
+
+![](examples-svsites-mesa_files/figure-gfm/del-clique-major-1.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/del-clique-major-2.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/del-clique-major-3.png)<!-- -->
+
 ## Deletions not in clique formation
 
 ``` r
@@ -263,6 +286,18 @@ subset(svs, svsite==ex.site) %>% plotSVs(panel3='size', label.svs=FALSE)
 ```
 
 ![](examples-svsites-mesa_files/figure-gfm/ins-clique-6.png)<!-- -->
+
+### Insertions with one major allele
+
+``` r
+ex.site = locs %>% filter(type=='INS', clique, loc.n<10, af>.1, af.top2<.01) %>% sample_n(3) %>% .$svsite
+
+tmp = lapply(ex.site, function(es){
+  subset(svs, svsite==es) %>% plotSVs
+})
+```
+
+![](examples-svsites-mesa_files/figure-gfm/ins-clique-major-1.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/ins-clique-major-2.png)<!-- -->![](examples-svsites-mesa_files/figure-gfm/ins-clique-major-3.png)<!-- -->
 
 ## Insertions not in clique formation
 

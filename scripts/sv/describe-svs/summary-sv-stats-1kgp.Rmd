@@ -1,6 +1,9 @@
 ---
 title: Summary stats for SVs in the 2,504 unrelated samples from the 1000 Genomes Project
-output: github_document
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r include=FALSE}
@@ -201,11 +204,19 @@ if(!file.exists('gencode.v35.annotation.gtf.gz')){
 genc = import('gencode.v35.annotation.gtf.gz')
 
 genc.pc = subset(genc, type %in% c('CDS', 'UTR', 'gene') & gene_type=='protein_coding')
+prom = promoters(subset(genc.pc, type=='gene'))
+prom$type = 'promoter'
+genc.pc = c(genc.pc, prom)
 ol.gene = findOverlaps(locs.gr, genc.pc) %>% as.data.frame %>%
   mutate(gene=genc.pc$gene_name[subjectHits], type=genc.pc$type[subjectHits]) %>%
-  group_by(queryHits) %>% summarize(cds=any(type=='CDS'), int.utr=any(type!='CDS'))
+  group_by(queryHits, gene) %>%
+  summarize(cds=any(type=='CDS'))
 
-ol.gene %>% summarize(cds.int.utr=n(), cds=sum(cds)) %>% kable
+rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
+      ol.gene %>% mutate(impact='cds.prom.utr.intron')) %>%
+  group_by(impact) %>%
+  summarize(sv=length(unique(queryHits)), gene=length(unique(gene))) %>%
+  kable
 ```
 
 ## Allele frequency

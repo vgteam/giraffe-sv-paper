@@ -1,6 +1,9 @@
 ---
 title: Examples of SV sites
-output: github_document
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r include=FALSE}
@@ -17,6 +20,7 @@ library(knitr)
 library(RColorBrewer)
 library(msa)
 library(igraph)
+set.seed(123)
 
 ## ggplot graph for a MSA object
 ggplotMsa <- function(msa.o){
@@ -133,6 +137,16 @@ ex.site = locs %>% filter(type=='DEL', clique) %>% arrange(desc(loc.n)) %>% head
 subset(svs, svsite==ex.site) %>% plotSVs(label.svs=FALSE)
 ```
 
+### Deletions with one major allele
+
+```{r del-clique-major}
+ex.site = locs %>% filter(type=='DEL', clique, loc.n<10, af>.1, af.top2<.01) %>% sample_n(3) %>% .$svsite
+
+tmp = lapply(ex.site, function(es){
+  subset(svs, svsite==es) %>% plotSVs
+})
+```
+
 ## Deletions not in clique formation
 
 ```{r del-notclique}
@@ -192,6 +206,16 @@ subset(svs, svsite==ex.site) %>% plotSVs(panel3='size', label.svs=FALSE)
 ## locus with >1000 insertions
 ex.site = locs %>% filter(type=='INS', clique, loc.n>1000) %>% sample_n(1) %>% .$svsite
 subset(svs, svsite==ex.site) %>% plotSVs(panel3='size', label.svs=FALSE)
+```
+
+### Insertions with one major allele
+
+```{r ins-clique-major}
+ex.site = locs %>% filter(type=='INS', clique, loc.n<10, af>.1, af.top2<.01) %>% sample_n(3) %>% .$svsite
+
+tmp = lapply(ex.site, function(es){
+  subset(svs, svsite==es) %>% plotSVs
+})
 ```
 
 

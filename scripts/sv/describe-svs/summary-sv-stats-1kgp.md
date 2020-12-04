@@ -2,6 +2,19 @@ Summary stats for SVs in the 2,504 unrelated samples from the 1000
 Genomes Project
 ================
 
+  - [Read population stats for each SV
+    allele](#read-population-stats-for-each-sv-allele)
+  - [Allele/site numbers](#allelesite-numbers)
+  - [Size](#size)
+  - [Overlap with simple repeats, satellites or low-complexity
+    regions](#overlap-with-simple-repeats-satellites-or-low-complexity-regions)
+  - [Gene annotation](#gene-annotation)
+  - [Allele frequency](#allele-frequency)
+  - [Alleles per SV sites](#alleles-per-sv-sites)
+  - [Multi-panel figure](#multi-panel-figure)
+  - [Save TSV with SV site
+    information](#save-tsv-with-sv-site-information)
+
 ``` r
 library(dplyr)
 library(ggplot2)
@@ -279,16 +292,25 @@ if(!file.exists('gencode.v35.annotation.gtf.gz')){
 genc = import('gencode.v35.annotation.gtf.gz')
 
 genc.pc = subset(genc, type %in% c('CDS', 'UTR', 'gene') & gene_type=='protein_coding')
+prom = promoters(subset(genc.pc, type=='gene'))
+prom$type = 'promoter'
+genc.pc = c(genc.pc, prom)
 ol.gene = findOverlaps(locs.gr, genc.pc) %>% as.data.frame %>%
   mutate(gene=genc.pc$gene_name[subjectHits], type=genc.pc$type[subjectHits]) %>%
-  group_by(queryHits) %>% summarize(cds=any(type=='CDS'), int.utr=any(type!='CDS'))
+  group_by(queryHits, gene) %>%
+  summarize(cds=any(type=='CDS'))
 
-ol.gene %>% summarize(cds.int.utr=n(), cds=sum(cds)) %>% kable
+rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
+      ol.gene %>% mutate(impact='cds.prom.utr.intron')) %>%
+  group_by(impact) %>%
+  summarize(sv=length(unique(queryHits)), gene=length(unique(gene))) %>%
+  kable
 ```
 
-| cds.int.utr |  cds |
-| ----------: | ---: |
-|       76360 | 1599 |
+| impact              |    sv | gene |
+| :------------------ | ----: | ---: |
+| cds                 |  1599 |  380 |
+| cds.prom.utr.intron | 77808 | 7640 |
 
 ## Allele frequency
 
