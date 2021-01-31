@@ -37,6 +37,7 @@ svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 locs = svs %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
   summarize(start=start[1], end=end[1],
+            svid=svid[1],
             ac.tot=sum(ac), ac=ac[1],
             af.tot=sum(af), af.top2=tail(head(af, 2), 1), af=af[1],
             af.top.fc=ifelse(af.top2==0, 10, af/af.top2),

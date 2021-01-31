@@ -122,7 +122,7 @@ ggp$olbar = bar.df %>% group_by(af.dev) %>%
 ggp$olbar
 
 lapply(c(.1,.25,.5), function(th){
-  freq.df %>% filter(af.med-af>th) %>%
+  freq.df %>% filter(abs(af.med-af)>th) %>%
     group_by(exp) %>%
     summarize(svsite=length(unique(svsite)), .groups='drop') %>% 
     mutate(min.af.dev=th)

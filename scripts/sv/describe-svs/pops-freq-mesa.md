@@ -152,7 +152,7 @@ ggp$olbar
 
 ``` r
 lapply(c(.1,.25,.5), function(th){
-  freq.df %>% filter(af.med-af>th) %>%
+  freq.df %>% filter(abs(af.med-af)>th) %>%
     group_by(exp) %>%
     summarize(svsite=length(unique(svsite)), .groups='drop') %>% 
     mutate(min.af.dev=th)
@@ -163,10 +163,11 @@ lapply(c(.1,.25,.5), function(th){
 
 | min.af.dev | exp      | svsite |
 | ---------: | :------- | -----: |
-|       0.10 | expected |     38 |
-|       0.10 | observed |  11264 |
-|       0.25 | observed |   1049 |
-|       0.50 | observed |     15 |
+|       0.10 | expected |     85 |
+|       0.10 | observed |  21069 |
+|       0.25 | expected |      1 |
+|       0.25 | observed |   2667 |
+|       0.50 | observed |     45 |
 
 The table shows the number of sites with a population-specific frequency
 pattern, defined as deviating form the median frequency by at least 10%,
