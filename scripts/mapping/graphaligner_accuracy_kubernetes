@@ -29,7 +29,7 @@ spec:
           aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
           aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset.xg ./yeast_subset.xg
           
-          THREAD_COUNT=16
+          THREAD_COUNT=20
           
           for SPECIES in human  ; do
               case "${SPECIES}" in
@@ -38,7 +38,7 @@ spec:
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
                   ;;
               human)
-                  GRAPHS=(hgsvc 1kg)
+                  GRAPHS=( 1kg)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   ;;
               esac
@@ -78,7 +78,7 @@ spec:
               done
           done
           aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_graphaligner.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_graphaligner.tsv
+          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_graphaligner_1kg.tsv
           
         volumeMounts:
         - mountPath: /tmp
@@ -88,12 +88,12 @@ spec:
         resources:
           requests:
             cpu: 24
-            memory: "120Gi"
-            ephemeral-storage: "150Gi"
+            memory: "310Gi"
+            ephemeral-storage: "300Gi"
           limits:
             cpu: 24
-            memory: "120Gi"
-            ephemeral-storage: "150Gi"
+            memory: "310Gi"
+            ephemeral-storage: "300Gi"
       restartPolicy: Never
       volumes:
       - name: scratch-volume
