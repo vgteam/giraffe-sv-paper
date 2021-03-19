@@ -2,6 +2,19 @@ Summary stats for SVs in the 2,504 unrelated samples from the 1000
 Genomes Project
 ================
 
+  - [Read population stats for each SV
+    allele](#read-population-stats-for-each-sv-allele)
+  - [Allele/site numbers](#allelesite-numbers)
+  - [Size](#size)
+  - [Overlap with simple repeats, satellites or low-complexity
+    regions](#overlap-with-simple-repeats-satellites-or-low-complexity-regions)
+  - [Gene annotation](#gene-annotation)
+  - [Allele frequency](#allele-frequency)
+  - [Alleles per SV sites](#alleles-per-sv-sites)
+  - [Multi-panel figure](#multi-panel-figure)
+  - [Save TSV with SV site
+    information](#save-tsv-with-sv-site-information)
+
 ``` r
 library(dplyr)
 library(ggplot2)
@@ -29,6 +42,7 @@ svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 locs = svs %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
   summarize(start=start[1], end=end[1],
+            svid=svid[1],
             ac.tot=sum(ac), ac=ac[1],
             af.tot=sum(af), af.top2=tail(head(af, 2), 1), af=af[1],
             af.top.fc=ifelse(af.top2==0, 10, af/af.top2),
@@ -37,42 +51,43 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             .groups='drop') %>%
   filter(size>=50)
 
+set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
 ```
 
-    ##    seqnames       svsite type clique     start       end ac.tot   ac
-    ## 1     chr17  sv_425962_0  DEL  FALSE    253678    253745     47   22
-    ## 2     chr22  sv_112617_0  INS   TRUE  45240785  45240785   5004 5004
-    ## 3      chr2 sv_1886574_0  INS   TRUE  80767440  80767440    768  768
-    ## 4      chr8 sv_1191113_0  DEL   TRUE  25596374  25596488    316  316
-    ## 5     chr11  sv_943974_0  INS   TRUE 121186085 121186085     11    2
-    ## 6     chr22  sv_127884_0  INS   TRUE  48850379  48850379   2116 2116
-    ## 7      chr7 sv_1345178_0  INS   TRUE 158059059 158059059      2    2
-    ## 8      chr7 sv_1305409_0  INS   TRUE  81365045  81365045      1    1
-    ## 9      chr7 sv_1391487_0  INS   TRUE 159206651 159206651      1    1
-    ## 10    chr19  sv_340077_0  INS   TRUE  54349707  54349707    367  344
-    ##          af.tot      af.top2           af af.top.fc loc.n size.min size.max
-    ## 1  0.0093849840 0.0043929712 0.0043929712   1.00000     4       66       67
-    ## 2  0.9992012780 0.9992012780 0.9992012780   1.00000     1      133      133
-    ## 3  0.1533546326 0.1533546326 0.1533546326   1.00000     1       65       65
-    ## 4  0.0630990415 0.0630990415 0.0630990415   1.00000     1      114      114
-    ## 5  0.0021964856 0.0003993610 0.0003993610   1.00000     7     2673     2835
-    ## 6  0.4225239617 0.4225239617 0.4225239617   1.00000     1      300      300
-    ## 7  0.0003993610 0.0003993610 0.0003993610   1.00000     1      112      112
-    ## 8  0.0001996805 0.0001996805 0.0001996805   1.00000     1       60       60
-    ## 9  0.0001996805 0.0001996805 0.0001996805   1.00000     1       58       58
-    ## 10 0.0732827476 0.0045926518 0.0686900958  14.95652     2       63       64
+    ##    seqnames       svsite type clique     start       end         svid ac.tot
+    ## 1      chr6 sv_1512131_0  INS   TRUE 170658978 170658978 sv_1512131_0      2
+    ## 2      chr6 sv_1394394_0  INS   TRUE    520627    520627 sv_1394589_0     12
+    ## 3      chrX   sv_24793_0  DEL   TRUE   1083823   1083941   sv_24793_0      4
+    ## 4      chr3 sv_1819993_0  DEL  FALSE 195780671 195780815 sv_1820010_0    100
+    ## 5      chr6 sv_1402682_0  INS  FALSE   1205657   1205657 sv_1402696_0     82
+    ## 6     chr16  sv_562246_0  DEL   TRUE   1373023   1373075  sv_562246_0      2
+    ## 7     chr19  sv_272224_0  DEL   TRUE    270120    270189  sv_272224_0     25
+    ## 8     chr16  sv_574763_0  DEL   TRUE  22939844  22939945  sv_574763_0      7
+    ## 9      chr7 sv_1316948_0  INS   TRUE 148869723 148869723 sv_1316948_0    265
+    ## 10    chr17  sv_511936_0  INS   TRUE  82672186  82672186  sv_511936_0   1750
+    ##      ac      af.tot     af.top2           af af.top.fc loc.n size.min size.max
+    ## 1     2 0.000399361 0.000399361 0.0003993610  1.000000     1      305      305
+    ## 2     3 0.002396166 0.000399361 0.0005990415  1.500000     8      147      149
+    ## 3     4 0.000798722 0.000798722 0.0007987220  1.000000     1      118      118
+    ## 4    54 0.019968051 0.006988818 0.0107827476  1.542857     6      143      144
+    ## 5    51 0.016373802 0.002196486 0.0101837061  4.636364     9       50       51
+    ## 6     2 0.000399361 0.000399361 0.0003993610  1.000000     1       52       52
+    ## 7    25 0.004992013 0.004992013 0.0049920128  1.000000     1       69       69
+    ## 8     7 0.001397764 0.001397764 0.0013977636  1.000000     1      101      101
+    ## 9   265 0.052915335 0.052915335 0.0529153355  1.000000     1      593      593
+    ## 10 1750 0.349440895 0.349440895 0.3494408946  1.000000     1      553      553
     ##    size
-    ## 1    67
-    ## 2   133
-    ## 3    65
-    ## 4   114
-    ## 5  2835
-    ## 6   300
-    ## 7   112
-    ## 8    60
-    ## 9    58
-    ## 10   64
+    ## 1   305
+    ## 2   147
+    ## 3   118
+    ## 4   144
+    ## 5    51
+    ## 6    52
+    ## 7    69
+    ## 8   101
+    ## 9   593
+    ## 10  553
 
 ## Allele/site numbers
 
@@ -219,6 +234,67 @@ locs %>%  mutate(type='all') %>% rbind(locs) %>%
 *sr*: simple repeat; *lc*: low-complexity; *sat*: satellite DNA. *.50*
 means that at least 50% of the SV region overlaps repeats.
 
+### Non-clique SV sites are repeat-rich
+
+We expect most non-clique sites, i.e. with very different alleles, to be
+repeat variation like short-tandem repeats variation (or VNTRs). Is it?
+
+``` r
+locs %>% mutate(type='all') %>% rbind(locs) %>%
+  filter(!clique) %>% 
+  group_by(type) %>% 
+  summarize(rep.sr.lc.sat.50=mean(rep.sr.lc.sat>=.50), rep.sr.lc.50=mean(rep.sr.lc>=.50),
+                   rep.sr.50=mean(rep.sr>=.50),
+                   rep.lc.50=mean(rep.lc>=.50), rep.sat.50=mean(rep.sat>=.50)) %>%
+  kable(digits=3)
+```
+
+| type | rep.sr.lc.sat.50 | rep.sr.lc.50 | rep.sr.50 | rep.lc.50 | rep.sat.50 |
+| :--- | ---------------: | -----------: | --------: | --------: | ---------: |
+| all  |            0.978 |        0.978 |     0.977 |     0.015 |      0.008 |
+| DEL  |            0.986 |        0.986 |     0.986 |     0.008 |      0.008 |
+| INS  |            0.974 |        0.974 |     0.973 |     0.018 |      0.008 |
+
+Yes, almost all are within simple repeats. What are the ones that are
+not?
+
+``` r
+locs.nc = locs %>% filter(!clique, rep.sr.lc.sat<=.5)
+
+## distance to simple repeat
+locs.nc.gr = makeGRangesFromDataFrame(locs.nc)
+dd = distanceToNearest(locs.nc.gr, rm) %>% as.data.frame
+locs.nc$rep.dist = NA
+locs.nc$rep.dist[dd$queryHits] = dd$distance
+
+## random subset
+set.seed(123)
+locs.nc %>%
+  filter(size.min/size.max>.8) %>% 
+  mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                      '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                      seqnames, '%3A', start, '%2D', end, ')')) %>% 
+  select(coord, svsite, type, size, loc.n, size.min, size.max, rep.dist, rep.sr.lc.sat) %>% sample_n(10) %>%
+  kable
+```
+
+| coord                                                                                                                | svsite         | type | size | loc.n | size.min | size.max | rep.dist | rep.sr.lc.sat |
+| :------------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | ----: | -------: | -------: | -------: | ------------: |
+| [chr11:108408671-108408671](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A108408671%2D108408671) | sv\_935225\_0  | INS  |   92 |     8 |       75 |       93 |        2 |     0.0000000 |
+| [chr17:43260332-43260332](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43260332%2D43260332)     | sv\_482825\_0  | INS  |  801 |    16 |      801 |      921 |      761 |     0.0000000 |
+| [chr7:43342586-43342586](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr7%3A43342586%2D43342586)       | sv\_1291357\_0 | INS  |  280 |    19 |      236 |      280 |      860 |     0.0000000 |
+| [chr17:43251220-43251572](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43251220%2D43251572)     | sv\_481489\_0  | DEL  |  352 |     5 |      318 |      352 |        0 |     0.4730878 |
+| [chrX:135723989-135723989](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A135723989%2D135723989)   | sv\_75863\_0   | INS  |  104 |     8 |      103 |      128 |       12 |     0.0000000 |
+| [chrX:46497436-46497436](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A46497436%2D46497436)       | sv\_46105\_0   | INS  |   56 |    17 |       49 |       56 |     2418 |     0.0000000 |
+| [chr14:24043342-24043342](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr14%3A24043342%2D24043342)     | sv\_674092\_0  | INS  |  317 |    88 |      266 |      324 |      878 |     0.0000000 |
+| [chr22:22120840-22120848](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr22%3A22120840%2D22120848)     | sv\_96341\_0   | INS  |  196 |    50 |      174 |      201 |        7 |     0.0000000 |
+| [chr3:23256656-23256656](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr3%3A23256656%2D23256656)       | sv\_1762710\_0 | INS  |  299 |   131 |      256 |      313 |     1551 |     0.0000000 |
+| [chr2:87247911-87247911](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr2%3A87247911%2D87247911)       | sv\_1887946\_0 | INS  |   52 |    28 |       52 |       52 |     2739 |     0.0000000 |
+
+Either very close to repeats, or in segmental duplication or
+transposons, or slightly below the 80% threshold used to define matching
+alleles.
+
 ## Gene annotation
 
 ``` r
@@ -228,16 +304,25 @@ if(!file.exists('gencode.v35.annotation.gtf.gz')){
 genc = import('gencode.v35.annotation.gtf.gz')
 
 genc.pc = subset(genc, type %in% c('CDS', 'UTR', 'gene') & gene_type=='protein_coding')
+prom = promoters(subset(genc.pc, type=='gene'))
+prom$type = 'promoter'
+genc.pc = c(genc.pc, prom)
 ol.gene = findOverlaps(locs.gr, genc.pc) %>% as.data.frame %>%
   mutate(gene=genc.pc$gene_name[subjectHits], type=genc.pc$type[subjectHits]) %>%
-  group_by(queryHits) %>% summarize(cds=any(type=='CDS'), int.utr=any(type!='CDS'))
+  group_by(queryHits, gene) %>%
+  summarize(cds=any(type=='CDS'))
 
-ol.gene %>% summarize(cds.int.utr=n(), cds=sum(cds)) %>% kable
+rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
+      ol.gene %>% mutate(impact='cds.prom.utr.intron')) %>%
+  group_by(impact) %>%
+  summarize(sv=length(unique(queryHits)), gene=length(unique(gene))) %>%
+  kable
 ```
 
-| cds.int.utr |  cds |
-| ----------: | ---: |
-|       76360 | 1599 |
+| impact              |    sv | gene |
+| :------------------ | ----: | ---: |
+| cds                 |  1599 |  380 |
+| cds.prom.utr.intron | 77808 | 7640 |
 
 ## Allele frequency
 
@@ -279,23 +364,22 @@ ggp$af.top
 ``` r
 locs %>% filter(loc.n>1) %>%
   summarize(af.fc.3=sum(af.top.fc>3),
-            af01.fc.3=sum(af.top.fc>3 & af>.01),
-            af01.af2lt01=sum(af>=.01, af.top2<.01),
+            af01.af2lt01=sum(af>=.01 & af.top2<.01),
+            af01.af2lt01.fc3=sum(af>=.01 & af.top2<.01 & af.top.fc>3),
             major.al=sum(af>af.top2)) %>%
   kable
 ```
 
-| af.fc.3 | af01.fc.3 | af01.af2lt01 | major.al |
-| ------: | --------: | -----------: | -------: |
-|   15698 |      9681 |        53554 |    38730 |
+| af.fc.3 | af01.af2lt01 | af01.af2lt01.fc3 | major.al |
+| ------: | -----------: | ---------------: | -------: |
+|   15698 |         7326 |             6032 |    38730 |
 
   - *af.fc.3*: SV sites where the most frequent allele is at least 3
     times more frequent than the seoncd most frequent allele.
-  - *af01.fc.3*: SV sites where the most frequent allele has frequency
-    \>1% and is at least 3 times more frequent than the seoncd most
-    frequent allele.
   - *af01.af2lt01*: SV sites where most frequent allele with frequency
     \>1% but other alleles with \<1% frequency.
+  - *af01.af2lt01.fc3*: Same + the most frequent allele is at least 3
+    times more frequent than the seoncd most frequent allele.
   - *major.al*: SV sites with one allele more frequent than the other
     alleles.
 

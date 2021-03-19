@@ -1,6 +1,9 @@
 ---
 title: Summary stats for SVs in the 2,504 unrelated samples from the 1000 Genomes Project
-output: github_document
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r include=FALSE}
@@ -34,6 +37,7 @@ svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 locs = svs %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
   summarize(start=start[1], end=end[1],
+            svid=svid[1],
             ac.tot=sum(ac), ac=ac[1],
             af.tot=sum(af), af.top2=tail(head(af, 2), 1), af=af[1],
             af.top.fc=ifelse(af.top2==0, 10, af/af.top2),
@@ -42,6 +46,7 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             .groups='drop') %>%
   filter(size>=50)
 
+set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
 ```
 
@@ -151,6 +156,46 @@ locs %>%  mutate(type='all') %>% rbind(locs) %>%
 *sr*: simple repeat; *lc*: low-complexity; *sat*: satellite DNA. 
 *.50* means that at least 50% of the SV region overlaps repeats.
 
+### Non-clique SV sites are repeat-rich
+
+We expect most non-clique sites, i.e. with very different alleles, to be repeat variation like short-tandem repeats variation (or VNTRs).
+Is it?
+
+```{r}
+locs %>% mutate(type='all') %>% rbind(locs) %>%
+  filter(!clique) %>% 
+  group_by(type) %>% 
+  summarize(rep.sr.lc.sat.50=mean(rep.sr.lc.sat>=.50), rep.sr.lc.50=mean(rep.sr.lc>=.50),
+                   rep.sr.50=mean(rep.sr>=.50),
+                   rep.lc.50=mean(rep.lc>=.50), rep.sat.50=mean(rep.sat>=.50)) %>%
+  kable(digits=3)
+```
+
+Yes, almost all are within simple repeats. 
+What are the ones that are not?
+
+```{r}
+locs.nc = locs %>% filter(!clique, rep.sr.lc.sat<=.5)
+
+## distance to simple repeat
+locs.nc.gr = makeGRangesFromDataFrame(locs.nc)
+dd = distanceToNearest(locs.nc.gr, rm) %>% as.data.frame
+locs.nc$rep.dist = NA
+locs.nc$rep.dist[dd$queryHits] = dd$distance
+
+## random subset
+set.seed(123)
+locs.nc %>%
+  filter(size.min/size.max>.8) %>% 
+  mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                      '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                      seqnames, '%3A', start, '%2D', end, ')')) %>% 
+  select(coord, svsite, type, size, loc.n, size.min, size.max, rep.dist, rep.sr.lc.sat) %>% sample_n(10) %>%
+  kable
+```
+
+Either very close to repeats, or in segmental duplication or transposons, or slightly below the 80% threshold used to define matching alleles.
+
 ## Gene annotation 
 
 ```{r gene}
@@ -160,11 +205,19 @@ if(!file.exists('gencode.v35.annotation.gtf.gz')){
 genc = import('gencode.v35.annotation.gtf.gz')
 
 genc.pc = subset(genc, type %in% c('CDS', 'UTR', 'gene') & gene_type=='protein_coding')
+prom = promoters(subset(genc.pc, type=='gene'))
+prom$type = 'promoter'
+genc.pc = c(genc.pc, prom)
 ol.gene = findOverlaps(locs.gr, genc.pc) %>% as.data.frame %>%
   mutate(gene=genc.pc$gene_name[subjectHits], type=genc.pc$type[subjectHits]) %>%
-  group_by(queryHits) %>% summarize(cds=any(type=='CDS'), int.utr=any(type!='CDS'))
+  group_by(queryHits, gene) %>%
+  summarize(cds=any(type=='CDS'))
 
-ol.gene %>% summarize(cds.int.utr=n(), cds=sum(cds)) %>% kable
+rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
+      ol.gene %>% mutate(impact='cds.prom.utr.intron')) %>%
+  group_by(impact) %>%
+  summarize(sv=length(unique(queryHits)), gene=length(unique(gene))) %>%
+  kable
 ```
 
 ## Allele frequency
@@ -199,15 +252,15 @@ ggp$af.top
 
 locs %>% filter(loc.n>1) %>%
   summarize(af.fc.3=sum(af.top.fc>3),
-            af01.fc.3=sum(af.top.fc>3 & af>.01),
-            af01.af2lt01=sum(af>=.01, af.top2<.01),
+            af01.af2lt01=sum(af>=.01 & af.top2<.01),
+            af01.af2lt01.fc3=sum(af>=.01 & af.top2<.01 & af.top.fc>3),
             major.al=sum(af>af.top2)) %>%
   kable
 ```
 
 - *af.fc.3*: SV sites where the most frequent allele is at least 3 times more frequent than the seoncd most frequent allele.
-- *af01.fc.3*: SV sites where the most frequent allele has frequency >1% and is at least 3 times more frequent than the seoncd most frequent allele.
 - *af01.af2lt01*: SV sites where most frequent allele with frequency >1% but other alleles with <1% frequency.
+- *af01.af2lt01.fc3*: Same + the most frequent allele is at least 3 times more frequent than the seoncd most frequent allele.
 - *major.al*: SV sites with one allele more frequent than the other alleles.
 
 ## Alleles per SV sites

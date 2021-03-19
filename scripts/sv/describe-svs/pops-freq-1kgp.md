@@ -102,21 +102,41 @@ ggp$olbar
 
 ``` r
 lapply(c(.1,.25,.5), function(th){
-  freq.df %>% filter(af.med-af>th) %>%
-    group_by(exp) %>%
+  freq.df %>% mutate(Superpopulation='all') %>% rbind(freq.df) %>%
+    filter(abs(af.med-af)>th) %>%
+    group_by(Superpopulation, exp) %>%
     summarize(svsite=length(unique(svsite)), .groups='drop') %>% 
     mutate(min.af.dev=th)
 }) %>% bind_rows %>%
-  select(min.af.dev, exp, svsite) %>%
+  arrange(desc(svsite)) %>% 
+  mutate(Superpopulation=factor(Superpopulation, levels=unique(Superpopulation))) %>% 
+  arrange(min.af.dev, Superpopulation, exp) %>% 
+  select(min.af.dev, Superpopulation, exp, svsite) %>%
   kable()
 ```
 
-| min.af.dev | exp      | svsite |
-| ---------: | :------- | -----: |
-|       0.10 | expected |      9 |
-|       0.10 | observed |  13896 |
-|       0.25 | observed |   1899 |
-|       0.50 | observed |     79 |
+| min.af.dev | Superpopulation | exp      | svsite |
+| ---------: | :-------------- | :------- | -----: |
+|       0.10 | all             | expected |     14 |
+|       0.10 | all             | observed |  25960 |
+|       0.10 | AFR             | expected |      1 |
+|       0.10 | AFR             | observed |  17041 |
+|       0.10 | EAS             | observed |   9989 |
+|       0.10 | EUR             | expected |      6 |
+|       0.10 | EUR             | observed |   4468 |
+|       0.10 | SAS             | expected |      4 |
+|       0.10 | SAS             | observed |   2850 |
+|       0.10 | AMR             | expected |      6 |
+|       0.10 | AMR             | observed |   2269 |
+|       0.25 | all             | observed |   4404 |
+|       0.25 | AFR             | observed |   3184 |
+|       0.25 | EAS             | observed |   1172 |
+|       0.25 | EUR             | observed |    183 |
+|       0.25 | SAS             | observed |     70 |
+|       0.25 | AMR             | observed |     39 |
+|       0.50 | all             | observed |    189 |
+|       0.50 | AFR             | observed |    174 |
+|       0.50 | EAS             | observed |     15 |
 
 The table shows the number of sites with a population-specific frequency
 pattern, defined as deviating form the median frequency by at least 10%,
