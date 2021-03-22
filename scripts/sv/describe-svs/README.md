@@ -20,6 +20,7 @@ The `.md` files are markdown reports that show the code and the resulting graphs
 - [Download and prepare public SV catalogs](prepare-public-catalogs.md)
 - [Compare SVs and frequencies to public SV catalogs](compare-public-catalogs.md)
 - [Annotate interesting SVs with functional information](annotate-svs-functional.md)
+- [Format supplementary tables](format-supp-tabs.md)
 
 # To compile the reports
 
@@ -39,4 +40,5 @@ Rscript -e "rmarkdown::render('pops-freq-1kgp.Rmd')"
 Rscript -e "rmarkdown::render('prepare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('annotate-svs-functional.Rmd')"
+Rscript -e "rmarkdown::render('format-supp-tabs.Rmd')"
 ```

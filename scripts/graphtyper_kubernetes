@@ -1,0 +1,72 @@
+(kubectl delete job xhchang-graphtyper || true) && kubectl apply -f - <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: xhchang-graphtyper
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+      - name: xhchang-graphtyper
+        imagePullPolicy: Always
+        image: xhchang/vg:giraffe-paper
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -ex
+          cd /tmp
+
+          ## reference and SVs to make the graph
+          aws s3 cp s3://vg-k8s/users/jmonlong/references/hg38.fa .
+          aws s3 cp s3://vg-k8s/users/jmonlong/references/hg38.fa.fai .
+          aws s3 cp s3://vg-k8s/users/jmonlong/hgsvc/hgsvc.vcf.gz .
+          aws s3 cp s3://vg-k8s/users/jmonlong/hgsvc/hgsvc.vcf.gz.tbi .
+
+          ## mapped, sorted reads
+          aws s3 cp s3://vg-k8s/users/jmonlong/data/ERR903030_bwa_mem_sort_rg_md.bam mapped.sorted.bam
+          
+          # Split reads by chromosome
+          for CHR in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y ; do
+              samtools view mapped.sorted.bam chr${CHR} -b > chr${CHR}.bam
+              samtools index chr${CHR}.bam 
+          done
+          rm mapped.sorted.bam
+
+          #Genotype
+          parallel '/usr/bin/time -v bash -c "graphtyper genotype_sv hg38.fa hgsvc.vcf.gz --sam=chr{}.bam --threads=1 --region=chr{}"' ::: {1..22} X Y
+          
+          #Put everything into one vcf
+          for CHR in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y ; do
+              bcftools concat ./sv_results/chr${CHR}/*.vcf.gz -O z -o chr${CHR}.vcf.gz
+              aws s3 cp chr${CHR}.vcf.gz s3://vg-k8s/users/xhchang/giraffe_paper_experiments/graphtyper/
+          done
+          bcftools concat chr*.vcf.gz -O z -o hg38_hgsvc_ERR903030_graphtyper.vcf.gz
+          
+          aws s3 cp hg38_hgsvc_ERR903030_graphtyper.vcf.gz s3://vg-k8s/users/xhchang/giraffe_paper_experiments/graphtyper/hg38_hgsvc_ERR903030_graphtyper.vcf.gz
+          
+
+        volumeMounts:
+        - mountPath: /tmp
+          name: scratch-volume
+        - mountPath: /root/.aws
+          name: s3-credentials
+        resources:
+          requests:
+            cpu: 26
+            memory: "200Gi"
+            ephemeral-storage: "200Gi"
+          limits:
+            cpu: 26
+            memory: "200Gi"
+            ephemeral-storage: "200Gi"
+      restartPolicy: Never
+      volumes:
+      - name: scratch-volume
+        emptyDir: {}
+      - name: s3-credentials
+        secret:
+          secretName: shared-s3-credentials
+  backoffLimit: 0
+EOF

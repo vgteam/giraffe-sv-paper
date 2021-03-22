@@ -1,8 +1,8 @@
-(kubectl delete job xhchang-giraffe-all || true) && kubectl apply -f - <<'EOF'
+(kubectl delete job xhchang-giraffe || true) && kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xhchang-giraffe-all
+  name: xhchang-giraffe
 spec:
   ttlSecondsAfterFinished: 86400
   template:
@@ -20,7 +20,7 @@ spec:
           cd /tmp
           printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
-          for SPECIES in human yeast ; do
+          for SPECIES in human ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(yeast_all yeast_subset)
@@ -37,7 +37,7 @@ spec:
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1kg)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1_filter
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
@@ -81,7 +81,6 @@ spec:
                                   fi
                                   vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam -b ${PARAM_PRESET} ${PAIRED} -t 22 > mapped.gam 
                                   vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
-                                  aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/giraffe_${GRAPH}_${GBWT}_${READS}_${PAIRING}.json
                                   CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
                                   SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
                                   MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"

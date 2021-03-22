@@ -1,10 +1,13 @@
 ---
 title: Annotate SVs with functional information
-output: github_document
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10, fig.height=10)
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
 ```
 
 ```{r}
@@ -27,6 +30,15 @@ if(!file.exists('gencode.v35.annotation.gtf.gz')){
 }
 
 genc = import('gencode.v35.annotation.gtf.gz')
+
+types.ranked = c('CDS', 'UTR', 'promoter', 'gene')
+types.labels = c('coding', 'UTR', 'promoter', 'intronic')
+genc = subset(genc, type %in% types.ranked)
+prom = promoters(subset(genc, type=='gene'))
+prom$type = 'promoter'
+genc = c(genc, prom)
+mcols(genc) = mcols(genc)[,c('type', 'gene_name', 'gene_type', 'gene_id')]
+genc$gene_id = gsub('\\..*', '', genc$gene_id)
 ```
 
 ## SVs genotyped in 2,504 samples from 1000 Genomes Project
@@ -58,16 +70,246 @@ kgp.cds$gene = ol.cds$gene
 length(kgp.cds)
 ```
 
-## Example: population-specific and novel
+## SVs with different frequency across populations
 
 ```{r}
-## population specific information
 freq.all = read.table('2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
 pop.spec = read.table('pops-freq-1kgp-med1.tsv', as.is=TRUE, header=TRUE)
+kgp.ps = subset(kgp.s, svsite %in% pop.spec$svsite)
+```
 
-## novel annotation
+### SVs in coding/promoter/UTR/intronic regions
+
+```{r}
+length(subsetByOverlaps(kgp.ps, subset(genc, gene_type=='protein_coding')))
+```
+
+### Overlap with gene annotation and enrichment
+
+```{r popspec, fig.height=4}
+## overlap pop=spec SVs with gene annotation
+ol.genc = findOverlaps(kgp.ps, genc) %>% as.data.frame %>%
+  mutate(svsite=kgp.ps$svsite[queryHits],
+         gene.name=genc$gene_name[subjectHits],
+         gene=genc$gene_id[subjectHits],
+         gene_type=genc$gene_type[subjectHits],
+         impact=genc$type[subjectHits],
+         impact=factor(impact, levels=types.ranked, labels=types.labels)) %>%
+  arrange(impact) %>% 
+  group_by(svsite, gene, gene.name, gene_type) %>%
+  summarize(impact=head(impact, 1))
+ps.ol = merge(pop.spec, ol.genc, all.x=TRUE) %>%
+  mutate(impact=ifelse(is.na(impact), 'intergenic', as.character(impact)))
+
+## control: SVs with similar frequencies
+null = merge(freq.all, pop.spec, all.x=TRUE) %>%
+  mutate(target=!is.na(af.med), af.c=cut(af, seq(0,1,.01))) %>%
+  group_by(Superpopulation, af.c) %>% mutate(n=sum(target)) %>%
+  filter(!target, n>0) %>% 
+  group_by(Superpopulation, af.c) %>% do({sample_n(., n[1])})
+kgp.null = subset(kgp.s, svsite %in% null$svsite)
+ol.genc = findOverlaps(kgp.null, genc) %>% as.data.frame %>%
+  mutate(svsite=kgp.null$svsite[queryHits],
+         gene.name=genc$gene_name[subjectHits],
+         gene=genc$gene_id[subjectHits],
+         gene_type=genc$gene_type[subjectHits],
+         impact=genc$type[subjectHits],
+         impact=factor(impact, levels=types.ranked, labels=types.labels)) %>%
+  arrange(impact) %>% 
+  group_by(svsite, gene, gene.name, gene_type) %>%
+  summarize(impact=head(impact, 1))
+ps.ol.null = merge(null, ol.genc, all.x=TRUE) %>%
+  mutate(impact=ifelse(is.na(impact), 'intergenic', as.character(impact)))
+
+ps.enr = rbind(ps.ol,
+               ps.ol.null %>% select(-af.c, -n, -target)) %>%
+  mutate(exp=ifelse(is.na(af.med), 'control', 'population patterns')) %>%
+  group_by(exp, impact) %>% summarize(n=n()) %>%
+  group_by(exp) %>% mutate(prop=n/sum(n)) %>%
+  mutate(impact=reorder(impact, prop, sum)) %>% 
+  arrange(exp, desc(impact))
+
+kable(ps.enr)
+
+ggp$ps = ggplot(ps.enr, aes(x=exp, y=prop, fill=exp)) +
+  geom_bar(stat='identity') +
+  facet_wrap(~impact, scales='free', ncol=5) +
+  theme_bw() +
+  ylab('proportion of SVs') +
+  xlab('SV set') +
+  scale_fill_brewer(palette='Set1', name='SV set') + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        legend.position='bottom')
+ggp$ps
+```
+
+
+## Novel (compared to gnomAD-SV/1000GP)
+
+```{r}
 novel = read.table('svsite.2504kgp.novel.tsv', as.is=TRUE, header=TRUE)
+```
 
+## eQTLs
+
+### eQTLs for the joint EUR+YRI analysis
+
+```{r}
+eqtls.all = read.table('../eqtl/eqtl-svs.tsv', as.is=TRUE, header=TRUE, sep='\t')
+eqtls = eqtls.all %>% filter(pop=='EUR + YRI') %>% select(-pop)
+```
+
+### Regulatory regions in LCL
+
+```{r}
+if(!file.exists('ENCFF590IMH.bed.gz')){
+  download.file('https://www.encodeproject.org/files/ENCFF590IMH/@@download/ENCFF590IMH.bed.gz', 'ENCFF590IMH.bed.gz')
+}
+cres = read.table('ENCFF590IMH.bed.gz', sep='\t')
+cres = reduce(GRanges(cres[,1], IRanges(cres[,2], cres[,3])))
+```
+
+### Overlap SV-eQTLs with gene annotation and regulatory regions
+
+```{r}
+kgp.eqtl = subset(kgp.s, svsite %in% eqtls$svid)
+svids.cres = subsetByOverlaps(kgp.eqtl, cres)$svsite
+ol.genc = findOverlaps(kgp.eqtl, genc) %>% as.data.frame %>%
+  mutate(svid=kgp.eqtl$svsite[queryHits],
+         gene.name=genc$gene_name[subjectHits],
+         gene=genc$gene_id[subjectHits],
+         gene_type=genc$gene_type[subjectHits],
+         impact=genc$type[subjectHits],
+         impact=factor(impact, levels=types.ranked, labels=types.labels)) %>%
+  arrange(impact) %>% 
+  group_by(svid, gene, gene.name, gene_type) %>%
+  summarize(impact=head(impact, 1))
+eqtls.ol = merge(eqtls, ol.genc, all.x=TRUE) %>%
+  mutate(impact=ifelse(is.na(impact), 'intergenic', as.character(impact)),
+         impact=ifelse(impact=='intergenic' & svid %in% svids.cres, 'regulatory element', impact))
+```
+
+### Control genes and SVs
+
+What do we expect from SV ditribution around similar genes (size-wise)?
+
+```{r eqtlcontrols}
+sampleControlGenes <- function(genes, genc){
+  genes = unique(genes)
+  gene.sizes = subset(genc, type=='gene' & gene_type=='protein_coding') %>%
+    as.data.frame %>% select(gene_id, width) %>%
+    mutate(width.q=cut(width, quantile(width, probs=seq(0,1,.01))), target=gene_id %in% genes) %>%
+    group_by(width.q) %>% mutate(n=sum(target)) %>% filter(!target) %>%
+    do({sample_n(., n[1])})
+  gene.sizes$gene_id
+}
+set.seed(123)
+genc.null = subset(genc, gene_id %in% sampleControlGenes(eqtls$gene, genc))
+
+## check that control genes have similar sizes
+subset(genc, type=='gene' & gene_type=='protein_coding') %>% as.data.frame %>%
+  select(gene_id, width) %>% mutate(class=ifelse(gene_id %in% eqtls$gene, 'eGene', NA),
+                                    class=ifelse(gene_id %in% genc.null$gene_id, 'controls', class)) %>%
+  filter(!is.na(class)) %>% 
+  ggplot(aes(x=width, fill=class)) + geom_histogram(position='dodge', bins=50) + theme_bw() +
+  xlab('gene size (bp)') + ylab('gene')
+
+## Find common SVs around control genes
+kgp.c = subset(kgp.s, af>.05)
+svids.cres = subsetByOverlaps(kgp.c, cres)$svsite
+kgp.null = findOverlaps(kgp.c, genc.null, maxgap=1e6) %>%
+  as.data.frame %>%
+  mutate(svid=kgp.c$svsite[queryHits], gene=genc.null$gene_id[subjectHits]) %>% 
+  select(svid, gene) %>% unique
+
+null.ol = findOverlaps(kgp.c, genc.null) %>% as.data.frame %>%
+  mutate(svid=kgp.c$svsite[queryHits],
+         gene.name=genc.null$gene_name[subjectHits],
+         gene=genc.null$gene_id[subjectHits],
+         gene_type=genc.null$gene_type[subjectHits],
+         impact=genc.null$type[subjectHits],
+         impact=factor(impact, levels=types.ranked, labels=types.labels)) %>%
+  arrange(impact) %>% 
+  group_by(svid, gene, gene.name, gene_type) %>%
+  summarize(impact=head(impact, 1))
+
+eqtl.ol.null = merge(kgp.null, null.ol, all.x=TRUE) %>%
+  mutate(statistic=NA,
+         impact=ifelse(is.na(impact), 'intergenic', as.character(impact)),
+         impact=ifelse(impact=='intergenic' & svid %in% svids.cres, 'regulatory element', impact))
+```
+
+### Merge eQTLs and controls
+
+```{r eqtlenr, fig.height=4}
+## merge eQTL and controls
+eqtl.enr = rbind(eqtls.ol %>% select(statistic, impact),
+                 eqtl.ol.null %>% select(statistic, impact)) %>%
+  mutate(direction=ifelse(statistic>0, 'positive', 'negative'),
+         direction=ifelse(is.na(statistic), 'control', direction),
+         direction=factor(direction, levels=c('positive', 'negative', 'control'))) %>%
+  group_by(direction, impact) %>% summarize(n=n()) %>%
+  group_by(direction) %>% mutate(prop=n/sum(n)) %>%
+  mutate(impact=reorder(impact, prop, sum)) %>% 
+  arrange(direction, desc(impact))
+
+kable(eqtl.enr)
+
+ggp$eqtl = ggplot(eqtl.enr, aes(x=direction, y=prop, fill=direction)) +
+  geom_bar(stat='identity') +
+  facet_wrap(~impact, scales='free', ncol=3) +
+  theme_bw() +
+  ylab('proportion of SV-eQTLs') +
+  xlab('direction of the association') +
+  scale_fill_brewer(palette='Set1', name='direction of the association') + 
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        legend.position='bottom') +
+  coord_flip()
+ggp$eqtl
+```
+
+### Overlap SV-eQTL with simple repeats
+
+```{r}
+## simple repeats
+if(!file.exists('simpleRepeat.hg38.txt.gz')){
+  download.file('https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/simpleRepeat.txt.gz', 'simpleRepeat.hg38.txt.gz')
+}
+sr = read.table('simpleRepeat.hg38.txt.gz', as.is=TRUE)
+sr = reduce(GRanges(sr$V2, IRanges(sr$V3, sr$V4)))
+sr$repClass = 'Simple_repeat'
+## repeat masker with low-complexity regions
+if(!file.exists('rmsk.txt.gz')){
+  download.file('https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/rmsk.txt.gz', 'rmsk.txt.gz')
+}
+rm = read.table('rmsk.txt.gz', as.is=TRUE,
+                colClasses=c(rep("NULL", 5), 'character', 'integer', 'integer',
+                             rep('NULL', 3), 'character',  rep('NULL', 5)))
+colnames(rm) = c('chr', 'start', 'end', 'repClass')
+rm = subset(rm, repClass %in% c('Low_complexity', 'Simple_repeat', 'Satellite'))
+rm = makeGRangesFromDataFrame(rm, keep.extra.columns=TRUE)
+rm = c(rm, sr)
+
+olRep <- function(gr, rm.r){
+  rm.r = reduce(rm.r)
+  findOverlaps(gr, rm.r) %>% as.data.frame %>%
+    mutate(sv.w=width(gr[queryHits]), ol.w=width(pintersect(gr[queryHits], rm.r[subjectHits])),
+           ol.prop=ol.w/sv.w) %>%
+    group_by(queryHits) %>% summarize(ol.prop=sum(ol.prop), .groups='drop')
+}
+
+ol.df = olRep(kgp.eqtl, rm)
+kgp.eqtl$sr = 0
+kgp.eqtl$sr[ol.df$queryHits] = ol.df$ol.prop
+
+mean(kgp.eqtl$sr>=.5)
+```
+
+## Example: population-specific, novel and coding
+
+```{r}
 ex.df = pop.spec %>% filter(svsite %in% kgp.cds$svsite,
                             svsite %in% novel$svsite, 
                             af.med<.05) %>%
@@ -86,4 +328,59 @@ tmp = lapply(1:min(10, nrow(ex.df)), function(ii){
   freq.all %>% filter(svsite==ex.df$svsite[ii]) %>% arrange(desc(af)) %>% kable %>% cat(sep='\n')
   cat('\n\n')
 })
+```
+
+## Examples: population-specific, novel and eQTL
+
+```{r}
+ex.df = pop.spec %>% filter(svsite %in% novel$svsite,
+                            svsite %in% eqtls$svid,
+                            af.med<.05) %>%
+  arrange(desc(abs(af-af.med))) 
+```
+
+```{r, results='asis'}
+tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
+  subset(kgp.s, svsite==ex.df$svsite[ii]) %>% as.data.frame %>%
+    mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                        '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                        seqnames, '%3A', start, '%2D', end, ')')) %>%
+    dplyr::rename(svid=svsite) %>% 
+    merge(eqtls.all) %>% 
+    select(coord, svid, type, size, af, gene, beta, FDR, pop) %>% 
+    kable %>% cat(sep='\n')
+  cat('\n\n')
+  freq.all %>% filter(svsite==ex.df$svsite[ii]) %>% arrange(desc(af)) %>% kable %>% cat(sep='\n')
+  cat('\n\n')
+})
+```
+
+## Examples: novel and eQTL in coding/promoter/UTR region of the associated gene
+
+```{r}
+ex.df = eqtls.ol %>% filter(svid %in% novel$svsite,
+                            impact %in% c('UTR', 'promoter', 'coding')) %>%
+  arrange(FDR, abs(beta))
+```
+
+```{r, results='asis'}
+tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
+  subset(kgp.s, svsite==ex.df$svid[ii]) %>% as.data.frame %>%
+    mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                        '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                        seqnames, '%3A', start, '%2D', end, ')')) %>%
+    dplyr::rename(svid=svsite) %>% 
+    merge(eqtls.ol) %>% 
+    select(coord, svid, type, size, af, gene.name, impact, beta, FDR) %>% 
+    kable %>% cat(sep='\n')
+  cat('\n\n')
+})
+```
+
+## Figures
+
+```{r fig}
+pdf('figs/fig-sv-functional-summary.pdf', 9, 4)
+ggp
+dev.off()
 ```

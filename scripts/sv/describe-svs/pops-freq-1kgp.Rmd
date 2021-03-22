@@ -90,12 +90,16 @@ ggp$olbar = bar.df %>% group_by(af.dev) %>%
 ggp$olbar
 
 lapply(c(.1,.25,.5), function(th){
-  freq.df %>% filter(af.med-af>th) %>%
-    group_by(exp) %>%
+  freq.df %>% mutate(Superpopulation='all') %>% rbind(freq.df) %>%
+    filter(abs(af.med-af)>th) %>%
+    group_by(Superpopulation, exp) %>%
     summarize(svsite=length(unique(svsite)), .groups='drop') %>% 
     mutate(min.af.dev=th)
 }) %>% bind_rows %>%
-  select(min.af.dev, exp, svsite) %>%
+  arrange(desc(svsite)) %>% 
+  mutate(Superpopulation=factor(Superpopulation, levels=unique(Superpopulation))) %>% 
+  arrange(min.af.dev, Superpopulation, exp) %>% 
+  select(min.af.dev, Superpopulation, exp, svsite) %>%
   kable()
 ```
 

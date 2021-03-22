@@ -92,7 +92,7 @@ for SPECIES in human yeast ; do
                         printf "${GRAPH}\t${GBWT}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> giraffe_speed_log.txt
                         cat time-log.txt >> giraffe_speed_log.txt
                         cat log.txt >> giraffe_speed_log.txt
-                        printf "${GRAPH}\t${GBWT}_${PARAM_PRESET}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\r${CLOCK_TIME}\t${MEMORY}\n" >> speed_report_giraffe.tsv
+                        printf "${GRAPH}\t${GBWT}_${PARAM_PRESET}\t${READS}\t${PAIRING}\t${SPEED}\t${TOTAL_TIME}\t${CLOCK_TIME}\t${MEMORY}\n" >> speed_report_giraffe.tsv
 
                     done
                 done
