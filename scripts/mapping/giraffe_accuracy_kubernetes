@@ -37,7 +37,7 @@ spec:
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1kg)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1_filter
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
