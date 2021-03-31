@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+    
 kubectl delete job adamnovak-make-1000gp-graphs-minaf ; kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
@@ -23,7 +24,7 @@ spec:
           echo "Making graphs"
           virtualenv --system-site-packages --python python3 venv
           . venv/bin/activate
-          pip3 install git+https://github.com/vgteam/toil-vg.git@d00b307f7739e3904e54d4fa440bb053d7194235#egg=toil-vg
+          pip3 install git+https://github.com/vgteam/toil-vg.git@75b7006380d5762bd520f3ed76055454f8c478d5#egg=toil-vg
           toil-vg generate-config --whole_genome >config.cfg
           sed -i'' config.cfg -e "s/construct-mem: '64G'/construct-mem: '128G'/g" -e "s/construct-disk: '64G'/construct-disk: '128G'/g"
           # VCF order must be 1-22, X, Y, chrM to match FASTA
@@ -35,6 +36,7 @@ spec:
           VCFS+=("s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1-vcfs/CCDG_14151_B01_GRM_WGS_2020-08-05_chrX.filtered.eagle2-phased.noME_filter.vcf.gz" \
             "s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1-vcfs/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_chrY.recalibrated_variants_filter.vcf.gz" \
             "s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1-vcfs/20201028_CCDG_14151_B01_GRM_WGS_2020-08-05_others.recalibrated_variants_filter.vcf.gz")
+          toil clean aws:us-west-2:adamnovak-make-1000gp-graphs-minaf
           toil-vg construct \
               aws:us-west-2:adamnovak-make-1000gp-graphs-minaf \
               aws:us-west-2:vg-k8s/profiling/graphs/v3-5/for-NA19239/1000gp/hs38d1 \
@@ -104,4 +106,3 @@ spec:
       serviceAccountName: vg-svc
   backoffLimit: 0
 EOF
-
