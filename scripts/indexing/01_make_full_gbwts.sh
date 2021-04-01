@@ -1,12 +1,12 @@
 ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter ; do
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/ ; do
 for GBWT_TYPE in full ; do
-kubectl delete job adamnovak-make-gbwt-${ITER}
+kubectl delete job xhchang-make-gbwt-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: adamnovak-make-gbwt-${ITER}
+  name: xhchang-make-gbwt-${ITER}
 spec:
   ttlSecondsAfterFinished: 259200
   template:
@@ -23,6 +23,7 @@ spec:
           mkdir /tmp/work
           cd /tmp/work
           aws s3 cp --no-progress ${GRAPH_BASE}.xg input.xg
+          aws s3 cp --no-progress ${GRAPH_BASE}.dist input.dist
           if [[ "${GBWT_TYPE}" == "cover" ]] ; then
             vg gbwt -p -g output.gg -o output.gbwt -x input.xg -P
           elif [[ "${GBWT_TYPE}" == "sampled" ]] ; then
@@ -34,6 +35,9 @@ spec:
           fi
           aws s3 cp --no-progress output.gbwt ${GRAPH_BASE}.${GBWT_TYPE}.gbwt
           aws s3 cp --no-progress output.gg ${GRAPH_BASE}.${GBWT_TYPE}.gg
+
+          vg minimizer -t 1 -p -i output.min -d input.dist -g output.gbwt -G output.gg
+          aws s3 cp --no-progress output.min ${GRAPH_BASE}.${GBWT_TYPE}.min
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
