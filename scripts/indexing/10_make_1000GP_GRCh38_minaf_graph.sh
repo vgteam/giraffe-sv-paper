@@ -13,7 +13,7 @@ spec:
       containers:
       - name: main
         imagePullPolicy: Always
-        image: quay.io/ucsc_cgl/toil:5.3.0-py3.7
+        image: quay.io/ucsc_cgl/toil:5.4.0a1-89280e66d74948a2ab62c5a4e86153cf8e2fcde2-py3.7
         command:
         - /bin/bash
         - -c
@@ -60,7 +60,6 @@ spec:
               --batchSystem kubernetes \
               --container Singularity \
               --disableCaching false \
-              --defaultDisk 200G --defaultMemory 200G \
               --vg_docker quay.io/vgteam/vg:ci-2890-655a9622c3d60e87f14b88d943fbd8554214a975
         lifecycle:
           preStop:
