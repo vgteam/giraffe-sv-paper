@@ -18,9 +18,10 @@ Re-uses sample code and documentation from
 <http://users.soe.ucsc.edu/~karplus/bme205/f12/Scaffold.html>
 """
 
-import argparse, sys, os, itertools, math, collections, random, re, threading, queue, time
+import argparse, sys, os, itertools, math, collections, random, re, time, multiprocessing, multiprocessing.pool
 from Bio import SeqIO
 import enlighten
+from bloom_filter import BloomFilter
 
 def parse_args(args):
     """
@@ -52,6 +53,8 @@ def parse_args(args):
         help="the length of each k-mer")
     parser.add_argument("--thread_count", type=int, default=10,
         help="number of k-mer counting threads to use")
+    parser.add_argument("--batch_size", type=int, default=10000,
+        help="number of forward-strand k-mer candidates to count in each batch")
    
     return parser.parse_args(args)
     
@@ -69,41 +72,36 @@ def all_ACGT(sequence):
     return True
     
     
-def count_kmers(options, kmers, counts, task_queue, reply_queue):
+def count_kmers(k, acceptable, sequence):
     """
-    Count all the kmers that are in kmers and found in the (sequence, first
-    start, past-last start) batches available from task_queue. Puts counts into
-    counter in counts. Sends back numbers of completed items via reply_queue.
+    Count all the kmers that are in the given bloom filter and found in the
+    given sequence. Returns a Counter of the kmers that match the filter, and
+    the total forward-strand kmers looked at.
     """
-    
-    while True:
-        batch = task_queue.get()
-        if batch is None:
-            # Done!
-            return
-            
-        (sequence, start, past_end) = batch
+   
+    counts = collections.Counter()
+    total = 0
+   
+    for i in range(max(len(sequence) - (k - 1), 0)):
+        # Pull out every candidate kmer, in upper case
+        candidate = sequence[i:i + k].upper()
         
-        for i in range(start, past_end):
-    
-            # Pull out every candidate kmer, in upper case
-            candidate = sequence.seq[i:i + options.k].upper()
+        total += 1
+        
+        if not all_ACGT(candidate):
+            # Reject this one for having unacceptable letters
+            continue
             
-            if not all_ACGT(candidate):
-                # Reject this one for having unacceptable letters
-                continue
-                
-            if candidate in kmers:
-                # Count it
-                counts[candidate] += 1
-                
-            rc_candidate = candidate.reverse_complement()
-            if rc_candidate in kmers:
-                # And its reverse strand
-                counts[rc_candidate] += 1
-                
-        reply_queue.put(past_end - start)
-        task_queue.task_done()
+        if candidate in acceptable:
+            # Count it
+            counts[candidate] += 1
+            
+        rc_candidate = candidate.reverse_complement()
+        if rc_candidate in acceptable:
+            # And its reverse strand
+            counts[rc_candidate] += 1
+    
+    return counts, total
 
 def main(args):
     """
@@ -179,86 +177,75 @@ def main(args):
             kmers_sampled += 1
             bar.update()
             
+    # Make the bloom filter
+    acceptable = BloomFilter(max_elements=options.n, error_rate=1E-6)
+    for kmer in kmers.keys():
+        acceptable.add(kmer)
+            
     sys.stderr.write('Count {}-mers...\n'.format(options.k))
             
     # Now traverse the whole FASTA and count
     counts = collections.Counter()
     
-    # We put regions to do into this queue, as tuples of (sequence object, first start, last start)
-    task_queue = queue.Queue(1000)
-    # We have an unlimited reply queue of processed position counts, so we
-    # don't deadlock and one thread can handle filling one and emptying the
-    # other.
-    reply_queue = queue.Queue()
-    BATCH_SIZE=10000
-        
     with enlighten.Counter(total=sum(sequence_weights), desc='Count', unit='{}-mers'.format(options.k)) as bar:
+    
+        # We will do the counting in processes
+        processes = multiprocessing.pool.Pool(options.thread_count)
         
-        # Start threads to run the tasks
-        threads = []
-        for i in range(options.thread_count):
-            threads.append(threading.Thread(target=count_kmers, args=(options, kmers, counts, task_queue, reply_queue)))
-            threads[-1].start()
+        # We put the AsyncResults in this queue and handle them as they become ready.
+        # A straggler could make it get a bit big.
+        result_queue = collections.deque()
+        
+        def handle_result(result):
+            """
+            Process the return value from a counting job. Runs in main thread.
+            """
             
+            # See if something is done
+            reply_counts, reply_kmers_processed = result
+            # If so, handle it
+            for kmer, count in reply_counts.items():
+                if kmer in kmers:
+                    # Not a bloom filter false positive
+                    counts[kmer] += count
+            bar.update(reply_kmers_processed)
+        
         for sequence in index.values():
-            for i in range(0, max(len(sequence) - (options.k - 1), 0), BATCH_SIZE):
-                # Compose the batch
-                batch = (sequence, i, min(i + BATCH_SIZE, len(sequence) - (options.k - 1)))
+            # Where is the past-end for the k-mer start positions?
+            start_past_end = max(len(sequence) - (options.k - 1), 0)
+        
+            # Where will the next batch start in this sequence
+            cursor = 0
+            
+            while cursor < start_past_end:
+                # Work out how big a batch to make
+                this_batch_size = min(options.batch_size, start_past_end - cursor)
                 
-                while True:
-                    try:
-                        # Send it off
-                        task_queue.put_nowait(batch)
-                        # Go get a new one
-                        break
-                    except queue.Full:
-                        # Check for replies and then try to queue again
-                        try:
-                            while True:
-                                # Update the progress bar with anything completed
-                                number_completed = reply_queue.get_nowait()
-                                bar.update(number_completed)
-                                reply_queue.task_done()
-                        except queue.Empty:
-                            # Until we run out of completions here now.
-                            
-                            # Then there's probably nothing to do.
-                            time.sleep(0)
+                # Find the piece of sequence to process.
+                # Make sure to provide the tail end where k-mer starts aren't.
+                part = sequence.seq[cursor:cursor + this_batch_size + (options.k - 1)]
+                
+                async_result = processes.apply_async(count_kmers, (options.k, acceptable, part))
+                
+                result_queue.append(async_result)
+                
+                cursor += this_batch_size
+                
+                while len(result_queue) > 0 and result_queue[0].ready():
+                    # Pop off tasks that are done
+                    handle_result(result_queue[0].get())
+                    result_queue.popleft()
                     
+                while len(result_queue) > options.thread_count * 4:
+                    # Too many things waiting. Wait and pick some up before continuing.
+                    handle_result(result_queue[0].get())
+                    result_queue.popleft()
+            
+        while len(result_queue) > 0:
+            # Collect all the jobs left at the end
+            handle_result(result_queue[0].get())
+            result_queue.popleft()
                 
-        for t in threads:
-            # Add Nones to tell the threads to stop
-            task_queue.put(None)
-          
-        any_alive = True
-        while any_alive:
-            # Until all the threads stop
-            
-            # Yield
-            time.sleep(0)
-            
-            try:
-                while True:
-                    # Update the progress bar with anything completed.
-                    # It should all be completed now that the threads are done.
-                    number_completed = reply_queue.get_nowait()
-                    bar.update(number_completed)
-            except queue.Empty:
-                # Until we run out of completions here now.
-                pass
-                
-            # Poll the other threads
-            any_alive = False
-            for t in threads:
-                if t.is_alive():
-                    any_alive = True
-                    break
-            
-            
-        for t in threads:
-            # Join all the threads
-            t.join()
-            
     # Bucket k-mers by multiplicity in the genome.
     # We know they all appear at least once.
     kmers_by_multiplicity = collections.defaultdict(list)
