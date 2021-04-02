@@ -143,7 +143,10 @@ def main(args):
         sys.exit(1)
         
     sys.stderr.write('Sample {}-mers...\n'.format(options.k))
-        
+       
+    # Make the bloom filter for kmers and RCs
+    acceptable = BloomFilter(max_elements=options.n, error_rate=options.bloom_error)
+       
     with enlighten.Counter(total=options.n, desc='Sample', unit='{}-mers'.format(options.k)) as bar:
     
         # This will be all the k-mers we want to count.
@@ -171,17 +174,12 @@ def main(args):
             kmers[kmer] += 1
             # And that we sampled one.
             kmers_sampled += 1
+            
+            # Record it and its RC in the Bloom filter
+            acceptable.add(kmer)
+            acceptable.add(kmer.reverse_complement())
+            
             bar.update()
-            
-    kmers_and_rcs = set()
-    for kmer in kmers.keys():
-        kmers_and_rcs.add(kmer)
-        kmers_and_rcs.add(kmer.reverse_complement())
-            
-    # Make the bloom filter for kmers and RCs
-    acceptable = BloomFilter(max_elements=len(kmers_and_rcs), error_rate=options.bloom_error)
-    for kmer in kmers_and_rcs:
-        acceptable.add(kmer)
             
     sys.stderr.write('Count {}-mers...\n'.format(options.k))
             
