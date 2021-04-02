@@ -51,10 +51,12 @@ def parse_args(args):
         help="the number of k-mers to count")
     parser.add_argument("-k", type=int, default=150,
         help="the length of each k-mer")
-    parser.add_argument("--thread_count", type=int, default=10,
+    parser.add_argument("--thread_count", type=int, default=multiprocessing.cpu_count(),
         help="number of k-mer counting threads to use")
     parser.add_argument("--batch_size", type=int, default=10000,
         help="number of forward-strand k-mer candidates to count in each batch")
+    parser.add_argument("--bloom_error", type=int, default=1E-4,
+        help="error rate on the bloom filter")
    
     return parser.parse_args(args)
     
@@ -81,25 +83,32 @@ def count_kmers(k, acceptable, sequence):
    
     counts = collections.Counter()
     total = 0
-   
-    for i in range(max(len(sequence) - (k - 1), 0)):
-        # Pull out every candidate kmer, in upper case
-        candidate = sequence[i:i + k].upper()
+    
+    if len(sequence) >= k:
+        # There is anything to count.
         
-        total += 1
-        
-        if not all_ACGT(candidate):
-            # Reject this one for having unacceptable letters
-            continue
+        # Pre upper case everything
+        sequence = sequence.upper()
+        # And pre reverse complement
+        rc_sequence = sequence.reverse_complement()
+       
+        for i in range(len(sequence) - (k - 1)):
+            # Pull out every candidate kmer, in upper case
+            candidate = sequence[i:i + k]
             
-        if candidate in acceptable:
-            # Count it
-            counts[candidate] += 1
+            total += 1
             
-        rc_candidate = candidate.reverse_complement()
-        if rc_candidate in acceptable:
-            # And its reverse strand
-            counts[rc_candidate] += 1
+            if candidate in acceptable:
+                if all_ACGT(candidate):
+                    # Count it
+                    counts[candidate] += 1
+                
+        for i in range(k, len(sequence) + 1):
+            rc_candidate = rc_sequence[i - k:i]
+            if rc_candidate in acceptable:
+                if all_ACGT(rc_candidate):
+                    # Count it
+                    counts[rc_candidate] += 1
     
     return counts, total
 
@@ -178,7 +187,7 @@ def main(args):
             bar.update()
             
     # Make the bloom filter
-    acceptable = BloomFilter(max_elements=options.n, error_rate=1E-6)
+    acceptable = BloomFilter(max_elements=options.n, error_rate=options.bloom_error)
     for kmer in kmers.keys():
         acceptable.add(kmer)
             
