@@ -55,7 +55,7 @@ def parse_args(args):
         help="number of k-mer counting threads to use")
     parser.add_argument("--batch_size", type=int, default=10000,
         help="number of forward-strand k-mer candidates to count in each batch")
-    parser.add_argument("--bloom_error", type=int, default=1E-4,
+    parser.add_argument("--bloom_error", type=float, default=1E-4,
         help="error rate on the bloom filter")
    
     return parser.parse_args(args)
@@ -79,6 +79,8 @@ def count_kmers(k, acceptable, sequence):
     Count all the kmers that are in the given bloom filter and found in the
     given sequence. Returns a Counter of the kmers that match the filter, and
     the total forward-strand kmers looked at.
+    
+    Only thinks about the forward strand.
     """
    
     counts = collections.Counter()
@@ -87,29 +89,17 @@ def count_kmers(k, acceptable, sequence):
     if len(sequence) >= k:
         # There is anything to count.
         
-        # Pre upper case everything
-        sequence = sequence.upper()
-        # And pre reverse complement
-        rc_sequence = sequence.reverse_complement()
-       
         for i in range(len(sequence) - (k - 1)):
             # Pull out every candidate kmer, in upper case
             candidate = sequence[i:i + k]
             
             total += 1
             
-            if candidate in acceptable:
-                if all_ACGT(candidate):
+            if all_ACGT(candidate):
+                if candidate in acceptable:
                     # Count it
                     counts[candidate] += 1
                 
-        for i in range(k, len(sequence) + 1):
-            rc_candidate = rc_sequence[i - k:i]
-            if rc_candidate in acceptable:
-                if all_ACGT(rc_candidate):
-                    # Count it
-                    counts[rc_candidate] += 1
-    
     return counts, total
 
 def main(args):
@@ -175,10 +165,7 @@ def main(args):
                 # Reject this one for having unacceptable letters
                 continue
             
-            strand = random.choice([False, True])
-            if strand:
-                # Flip half the kmers to the reverse strand
-                kmer = kmer.reverse_complement()
+            # All k-mers shall be forward strand
             
             # Note that we are looking for this k-mer
             kmers[kmer] += 1
@@ -186,9 +173,14 @@ def main(args):
             kmers_sampled += 1
             bar.update()
             
-    # Make the bloom filter
-    acceptable = BloomFilter(max_elements=options.n, error_rate=options.bloom_error)
+    kmers_and_rcs = set()
     for kmer in kmers.keys():
+        kmers_and_rcs.add(kmer)
+        kmers_and_rcs.add(kmer.reverse_complement())
+            
+    # Make the bloom filter for kmers and RCs
+    acceptable = BloomFilter(max_elements=len(kmers_and_rcs), error_rate=options.bloom_error)
+    for kmer in kmers_and_rcs:
         acceptable.add(kmer)
             
     sys.stderr.write('Count {}-mers...\n'.format(options.k))
@@ -217,9 +209,18 @@ def main(args):
                 if kmer in kmers:
                     # Not a bloom filter false positive
                     counts[kmer] += count
+                # Also see if the reverse complement is there.
+                # If we sampled a kmer and its RC then seeing one should count for both.
+                # If we sampled a plaindrome we should count it twice every time we see it on the forward strand.
+                rc = kmer.reverse_complement()
+                if rc in kmers:
+                    counts[rc] += count
             bar.update(reply_kmers_processed)
         
         for sequence in index.values():
+            # Pre upper case everything
+            sequence = sequence.upper()
+        
             # Where is the past-end for the k-mer start positions?
             start_past_end = max(len(sequence) - (options.k - 1), 0)
         
