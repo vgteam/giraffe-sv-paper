@@ -18,7 +18,7 @@ Re-uses sample code and documentation from
 <http://users.soe.ucsc.edu/~karplus/bme205/f12/Scaffold.html>
 """
 
-import argparse, sys, os, itertools, math, collections, random, re
+import argparse, sys, os, itertools, math, collections, random, re, threading, queue, time
 from Bio import SeqIO
 import enlighten
 
@@ -50,6 +50,8 @@ def parse_args(args):
         help="the number of k-mers to count")
     parser.add_argument("-k", type=int, default=150,
         help="the length of each k-mer")
+    parser.add_argument("--thread_count", type=int, default=10,
+        help="number of k-mer counting threads to use")
    
     return parser.parse_args(args)
     
@@ -65,6 +67,43 @@ def all_ACGT(sequence):
         if c not in ACGT:
             return False
     return True
+    
+    
+def count_kmers(options, kmers, counts, task_queue, reply_queue):
+    """
+    Count all the kmers that are in kmers and found in the (sequence, first
+    start, past-last start) batches available from task_queue. Puts counts into
+    counter in counts. Sends back numbers of completed items via reply_queue.
+    """
+    
+    while True:
+        batch = task_queue.get()
+        if batch is None:
+            # Done!
+            return
+            
+        (sequence, start, past_end) = batch
+        
+        for i in range(start, past_end):
+    
+            # Pull out every candidate kmer, in upper case
+            candidate = sequence.seq[i:i + options.k].upper()
+            
+            if not all_ACGT(candidate):
+                # Reject this one for having unacceptable letters
+                continue
+                
+            if candidate in kmers:
+                # Count it
+                counts[candidate] += 1
+                
+            rc_candidate = candidate.reverse_complement()
+            if rc_candidate in kmers:
+                # And its reverse strand
+                counts[rc_candidate] += 1
+                
+        reply_queue.put(past_end - start)
+        task_queue.task_done()
 
 def main(args):
     """
@@ -82,9 +121,15 @@ def main(args):
     if options.n == 0:
         sys.stderr.write("Cannot use no k-mers\n")
         sys.exit(1)
+        
+    sys.stderr.write('Load FASTA...\n')
     
-    # Get a lazy-loadihng dict of all FASTA records by ID
-    index = SeqIO.index(options.fasta, "fasta")
+    # We access the same strings so many times that if we index here we use many times the genome's size in memory.
+    # There may be non-cached string views involved.
+    # Just load the whole FASTA.
+    index = SeqIO.to_dict(SeqIO.parse(options.fasta, "fasta"))
+    
+    sys.stderr.write('Analyze sequence sizes...\n')
     
     # Compute lengths of all sequences, for sampling
     sequence_names = list(index.keys())
@@ -99,6 +144,8 @@ def main(args):
         # We can't sample anything actually
         sys.stderr.write("No long enough sequences in file\n")
         sys.exit(1)
+        
+    sys.stderr.write('Sample {}-mers...\n'.format(options.k))
         
     with enlighten.Counter(total=options.n, desc='Sample', unit='{}-mers'.format(options.k)) as bar:
     
@@ -132,30 +179,86 @@ def main(args):
             kmers_sampled += 1
             bar.update()
             
+    sys.stderr.write('Count {}-mers...\n'.format(options.k))
+            
     # Now traverse the whole FASTA and count
     counts = collections.Counter()
+    
+    # We put regions to do into this queue, as tuples of (sequence object, first start, last start)
+    task_queue = queue.Queue(1000)
+    # We have an unlimited reply queue of processed position counts, so we
+    # don't deadlock and one thread can handle filling one and emptying the
+    # other.
+    reply_queue = queue.Queue()
+    BATCH_SIZE=10000
         
     with enlighten.Counter(total=sum(sequence_weights), desc='Count', unit='{}-mers'.format(options.k)) as bar:
+        
+        # Start threads to run the tasks
+        threads = []
+        for i in range(options.thread_count):
+            threads.append(threading.Thread(target=count_kmers, args=(options, kmers, counts, task_queue, reply_queue)))
+            threads[-1].start()
+            
         for sequence in index.values():
-            for i in range(max(len(sequence) - (options.k - 1), 0)):
-                # Pull out every candidate kmer, in upper case
-                candidate = sequence.seq[i:i + options.k].upper()
+            for i in range(0, max(len(sequence) - (options.k - 1), 0), BATCH_SIZE):
+                # Compose the batch
+                batch = (sequence, i, min(i + BATCH_SIZE, len(sequence) - (options.k - 1)))
                 
-                bar.update()
-                
-                if not all_ACGT(candidate):
-                    # Reject this one for having unacceptable letters
-                    continue
+                while True:
+                    try:
+                        # Send it off
+                        task_queue.put_nowait(batch)
+                        # Go get a new one
+                        break
+                    except queue.Full:
+                        # Check for replies and then try to queue again
+                        try:
+                            while True:
+                                # Update the progress bar with anything completed
+                                number_completed = reply_queue.get_nowait()
+                                bar.update(number_completed)
+                                reply_queue.task_done()
+                        except queue.Empty:
+                            # Until we run out of completions here now.
+                            
+                            # Then there's probably nothing to do.
+                            time.sleep(0)
                     
-                if candidate in kmers:
-                    # Count it
-                    counts[candidate] += 1
-                    
-                rc_candidate = candidate.reverse_complement()
-                if rc_candidate in kmers:
-                    # And its reverse strand
-                    counts[rc_candidate] += 1
                 
+        for t in threads:
+            # Add Nones to tell the threads to stop
+            task_queue.put(None)
+          
+        any_alive = True
+        while any_alive:
+            # Until all the threads stop
+            
+            # Yield
+            time.sleep(0)
+            
+            try:
+                while True:
+                    # Update the progress bar with anything completed.
+                    # It should all be completed now that the threads are done.
+                    number_completed = reply_queue.get_nowait()
+                    bar.update(number_completed)
+            except queue.Empty:
+                # Until we run out of completions here now.
+                pass
+                
+            # Poll the other threads
+            any_alive = False
+            for t in threads:
+                if t.is_alive():
+                    any_alive = True
+                    break
+            
+            
+        for t in threads:
+            # Join all the threads
+            t.join()
+            
     # Bucket k-mers by multiplicity in the genome.
     # We know they all appear at least once.
     kmers_by_multiplicity = collections.defaultdict(list)
