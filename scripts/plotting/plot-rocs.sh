@@ -71,6 +71,9 @@ for SPECIES in human yeast ; do
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
                     Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
                 fi
+                if [ ! -e "${WORKDIR}/qq-plot-${SPECIES}-overall-${READS}-${PAIRING}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-qq-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-overall-${READS}-${PAIRING}.tsv ${WORKDIR}/qq-plot-${SPECIES}-overall-${READS}-${PAIRING}.png
+                fi
             done
         fi
         
@@ -115,6 +118,9 @@ for SPECIES in human yeast ; do
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png" ] ; then
                     Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png
                 fi
+                if [ ! -e "${WORKDIR}/qq-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-qq-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/qq-plot-${SPECIES}-headline_${GRAPH}-${READS}-${PAIRING}.png
+                fi
             done
         done
         
@@ -158,6 +164,9 @@ for SPECIES in human yeast ; do
                 fi
                 if [ ! -e "${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png" ] ; then
                     Rscript ${SCRIPT_DIR}/plot-roc-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/roc-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png
+                fi
+                if [ ! -e "${WORKDIR}/qq-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png" ] ; then
+                    Rscript ${SCRIPT_DIR}/plot-qq-comparing-aligners.R ${WORKDIR}/toplot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.tsv ${WORKDIR}/qq-plot-${SPECIES}-${GRAPH}-${READS}-${PAIRING}.png
                 fi
             done
         done
