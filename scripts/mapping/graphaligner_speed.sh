@@ -21,7 +21,7 @@ for SPECIES in human ; do
     for GRAPH in ${GRAPHS[@]} ; do
         for READS in ${READSETS[@]} ; do
 
-            /usr/bin/time -v timeout -k1 2h bash -c "GraphAligner -g ${GRAPH}.gfa -f ${READS}.fq.gz -a mapped.gam -x vg -t ${THREAD_COUNT} --seeds-mxm-cache-prefix ${GRAPH}_seeds" 2> time-log.txt || true
+            /usr/bin/time -v  bash -c "GraphAligner -g ${GRAPH}.gfa -f ${READS}.fq.gz -a mapped.gam -x vg -t ${THREAD_COUNT} --seeds-mxm-cache-prefix ${GRAPH}_seeds" 2> time-log.txt || true
 
             USER_TIME="$(cat "time-log.txt" | grep "User time" | sed 's/User\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
             SYS_TIME="$(cat "time-log.txt" | grep "System time" | sed 's/System\ time\ (seconds):\ \([0-9]*\.[0-9]*\)/\1/g')"
