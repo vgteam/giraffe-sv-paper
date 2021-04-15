@@ -62,7 +62,7 @@ for SPECIES in human yeast ; do
                 elif [[ ${PAIRING} == "paired" ]] ; then
                     PAIRED="-i"
                 fi
-                /usr/bin/time -v timeout -k1 2h bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt || true
+                /usr/bin/time -v bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt || true
                 LOAD_TIME="$(cat log.txt | grep "Index load time" | sed 's/Index load time:\ \([0-9]*\.[0-9]*\)/\1/g')"
                 SPEED="$(cat log.txt | grep "Mapping speed" | sed 's/Mapping\ speed:\ \([0-9]*\.[0-9]*\)\ reads per second per thread/\1/g')"
 
