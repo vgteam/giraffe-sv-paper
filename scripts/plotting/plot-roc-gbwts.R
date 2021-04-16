@@ -45,7 +45,7 @@ if (length(commandArgs(TRUE)) > 3) {
 }
 
 # Determine the order of aligners, based on sorting in a dash-separated tag aware manner
-aligner.names <- levels(dat$aligner)
+aligner.names <- levels(factor(dat$aligner))
 name.lists <- aligner.names %>% (function(name) map(name,  (function(x) as.list(unlist(strsplit(x, "-"))))))
 # Transpose name fragments into a list of vectors for each position, with NAs when tag lists end early
 max.parts <- max(sapply(name.lists, length))
@@ -59,8 +59,12 @@ dat$aligner <- factor(dat$aligner, levels=aligner.names)
 name.lists <- name.lists[name.order]
 
 # Determine colors for aligners
-bold.colors <- c( "#e31a1c", "#6600cc", "#f8b901", "#d2e703", "#73c604", "#31c606",  "#08c65d", "#09c49d", "#0bacc4", "#0c6dc5") 
-light.colors <- c( "#fb9a99","#e5ccff", "#fedb76", "#f1fd79", "#c5fc7c", "#9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8")
+#1000gp
+bold.colors <-  c(  "#fb9a99","#e5ccff", "#fedb76", "#f1fd79", "#c5fc7c", "#9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8")
+light.colors <- c(  "#fb9a99","#e5ccff", "#fedb76", "#f1fd79", "#c5fc7c", "#9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8")
+#hgsvc
+bold.colors <-  c( "#fedb76", "#f1fd79", "#c5fc7c", "#9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8", "#fb9a99","#e5ccff")
+light.colors <- c( "#fedb76", "#f1fd79", "#c5fc7c", "#9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8", "#fb9a99","#e5ccff")
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1
 
@@ -128,7 +132,9 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     scale_x_log10(limits=c(range.unlogged[1],range.unlogged[length(range.unlogged)]), breaks=range.unlogged, oob=squish) +
     geom_vline(xintercept=1/total.reads) + # vertical line at one wrong read
     theme_bw() + 
-    ggtitle(title)
+    coord_cartesian(ylim=c(0.915, 0.975)) + #(0.915, 0.975) for se, (0.935,0.985) for pe
+    ggtitle(title) +
+    theme(aspect.ratio=1)
     
 if (title != '') {
     # And a title
