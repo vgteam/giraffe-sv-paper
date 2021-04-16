@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run with vg 1.32.0 on out 64 core/1TB memory machine, but this level of hardware is not expected to be necessary.
+# Run with vg v1.32.0 on out 64 core/1TB memory machine, but this level of hardware is not expected to be necessary.
 
 # 1000GPlo
 aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref.vg .

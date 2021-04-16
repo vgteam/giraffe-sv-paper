@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run in screen on a Kubernetes cluster: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-1530a9190357fc058333f3e929049ef9593a6784-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2d adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.00,i3.8xlarge:0.80 --workers 1-4,0-1,0-4,0-3 --keyPairName anovak@soe.ucsc.edu
-# If rerunning, the Toil 5.4 and vg 1.32 releases are probably the right choices.
+# If rerunning, the Toil 5.4 and vg v1.32.0 releases are probably the right choices.
 
 rm -Rf /tmp/work  
 mkdir /tmp/work
