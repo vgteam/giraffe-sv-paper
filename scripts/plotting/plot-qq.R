@@ -7,6 +7,7 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 require("tidyverse")
 require("ggrepel")
+require("scales")
 
 # Read in the combined toil-vg stats.tsv, listing:
 # correct, mapq, aligner (really graph name), read name, count
@@ -33,7 +34,7 @@ if (length(commandArgs(TRUE)) > 3) {
 }
 
 # Determine the order of aligners, based on sorting in a dash-separated tag aware manner
-aligner.names <- levels(dat$aligner)
+aligner.names <- levels(factor(dat$aligner))
 name.lists <- aligner.names %>% (function(name) map(name,  (function(x) as.list(unlist(strsplit(x, "-"))))))
 # Transpose name fragments into a list of vectors for each position, with NAs when tag lists end early
 max.parts <- max(sapply(name.lists, length))
@@ -49,6 +50,18 @@ name.lists <- name.lists[name.order]
 # Determine colors for aligners
 bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
 light.colors <- c("#a6cee3","#fb9a99","#b2df8a","#e5ccff","#ffe5cc","#9a7c9b","#76eec6","#b3ee3a","#00eeee")
+
+#colors for all aligners paired end
+bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+
+#colors for all aligners single end
+#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb", "#dd8899", "#dddddd")
+#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866",  "#ffaabb","#dd8899", "#dddddd")
+
+
+
+
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1
 
@@ -97,7 +110,7 @@ x <- as.data.frame(summarize(group_by(dat, bin, aligner), N=n(), mapq=mean(mq), 
 
 dat.plot <- ggplot(x, aes(1-mapprob+1e-9, 1-observed+1e-9, color=aligner, size=N, weight=N, label=round(mapq,2))) +
     scale_color_manual(values=colors, guide=guide_legend(title=NULL, ncol=2)) +
-    scale_y_log10("measured error", limits=c(5e-7,2), breaks=c(1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0)) +
+    scale_y_log10("measured error", limits=c(5e-7,2), breaks=c(1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0), oob=squish) +
     scale_x_log10("error estimate", limits=c(5e-7,2), breaks=c(1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0)) +
     scale_size_continuous("number", guide=guide_legend(title=NULL, ncol=4)) +
     geom_point() +
