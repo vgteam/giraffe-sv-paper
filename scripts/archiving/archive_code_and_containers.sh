@@ -7,6 +7,7 @@ set -x
 
 TEX_FILES=($HOME/build/giraffe-paper/main.tex $HOME/build/giraffe-paper/supplement.tex)
 DEST_DIR=/nanopore/cgl/data/giraffe
+WORK_DIR="$(mktemp -d)"
 
 function archive_container {
     # Save a Docker container
@@ -16,14 +17,15 @@ function archive_container {
     TAG="$(echo "${CONTAINER_SPEC}" | cut -f2 -d':')"
     
     CONTAINER_DIR="${DEST_DIR}/containers/${TOOL_NAME}"
-    CONTAINER_TAR="${CONTAINER_DIR}/${TAG}.tar"
-    CONTAINER_FILE="${CONTAINER_TAR}.gz"
+    CONTAINER_TAR="${WORK_DIR}/${TAG}.tar"
+    CONTAINER_FILE="${CONTAINER_DIR}/${TAG}.tar.gz"
     
     if [[ ! -e "${CONTAINER_FILE}" ]] ; then
         mkdir -p "${CONTAINER_DIR}"
         docker pull "${CONTAINER_SPEC}"
         docker save "${CONTAINER_SPEC}" -o "${CONTAINER_TAR}"
         pigz "${CONTAINER_TAR}"
+        mv "${CONTAINER_TAR}.gz" "${CONTAINER_FILE}"
     fi
 }
 
@@ -35,18 +37,33 @@ function archive_ref {
     REF="${3}"
     
     TOOL_DIR="${DEST_DIR}/code/${TOOL_NAME}"
-    CLONE_DIR="${TOOL_DIR}/${TOOL_NAME}-${REF}"
+    CLONE_DIR="${WORK_DIR}/${TOOL_NAME}-${REF}"
     TARBALL_DIR="${TOOL_DIR}/${REF}"
-    TARBALL_FILE="${TARBALL_DIR}/${TOOL_NAME}-${REF}.tar.gz"
+    TARBALL_FILE="$(realpath "${TARBALL_DIR}/${TOOL_NAME}-${REF}.tar.gz")"
     
     if [[ ! -e "${TARBALL_FILE}" ]] ; then
-        mkdir -p "${TOOL_DIR}"
-        mkdir -p "${TARBALL_DIR}"
-        git clone "${CLONE_URL}" "${CLONE_DIR}"
-        (cd "${CLONE_DIR}" && git fetch --tags origin && git checkout "${REF}" && git submodule update --init --recursive)
-        rm -Rf "${CLONE_DIR}/.git"
-        find "${CLONE_DIR}/deps" -name ".git" -exec rm -Rf "{}" \;
-        tar -czf "${CLONE_FILE}" "${CLONE_DIR}"
+        if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* ]] ; then
+            # vg ships premade tarballs for real releases
+            curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg-${REF}.tar.gz" > "${TARBALL_FILE}"
+        else
+            # Go make a tarball ourselves
+            mkdir -p "${TOOL_DIR}"
+            mkdir -p "${TARBALL_DIR}"
+            rm -Rf "${CLONE_DIR}"
+            git clone "${CLONE_URL}" "${CLONE_DIR}"
+            (cd "${CLONE_DIR}" && git fetch --tags origin && git checkout "${REF}" && git submodule update --init --recursive)
+            rm -Rf "${CLONE_DIR}/.git"
+            find "${CLONE_DIR}" -name ".git" -exec rm -Rf "{}" \;
+            # Compress with a nice relative path
+            (cd "${CLONE_DIR}/.." && tar -czf "${TARBALL_FILE}" "$(basename "${CLONE_DIR}")")
+            rm -Rf "${CLONE_DIR}"
+        fi
+    fi
+    
+    if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* && ! -e "${TARBALL_DIR}/vg" ]] ; then
+        # vg will also ship static Linux x86_64 binaries for official releases.
+        curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg" > "${TARBALL_DIR}/vg"
+        chmod +x "${TARBALL_DIR}/vg"
     fi
 }
 
@@ -150,5 +167,7 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
     echo "toil docker: ${TOIL_DOCKER}"
     archive_container toil "${TOIL_DOCKER}"
 done
+
+rm -Rf "${WORK_DIR}"
 
 
