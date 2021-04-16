@@ -39,7 +39,7 @@ function archive_ref {
     TOOL_DIR="${DEST_DIR}/code/${TOOL_NAME}"
     CLONE_DIR="${WORK_DIR}/${TOOL_NAME}-${REF}"
     TARBALL_DIR="${TOOL_DIR}/${REF}"
-    TARBALL_FILE="$(realpath "${TARBALL_DIR}/${TOOL_NAME}-${REF}.tar.gz")"
+    TARBALL_FILE="${TARBALL_DIR}/${TOOL_NAME}-${REF}.tar.gz"
     
     if [[ ! -e "${TARBALL_FILE}" ]] ; then
         if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* ]] ; then
@@ -55,7 +55,8 @@ function archive_ref {
             rm -Rf "${CLONE_DIR}/.git"
             find "${CLONE_DIR}" -name ".git" -exec rm -Rf "{}" \;
             # Compress with a nice relative path
-            (cd "${CLONE_DIR}/.." && tar -czf "${TARBALL_FILE}" "$(basename "${CLONE_DIR}")")
+            TARBALL_ABSPATH="$(realpath "${TARBALL_FILE}")"
+            (cd "${CLONE_DIR}/.." && tar -czf "${TARBALL_ABSPATH}" "$(basename "${CLONE_DIR}")")
             rm -Rf "${CLONE_DIR}"
         fi
     fi
