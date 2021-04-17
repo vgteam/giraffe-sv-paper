@@ -50,7 +50,7 @@ function archive_ref {
             # Go make a tarball ourselves
             rm -Rf "${CLONE_DIR}"
             git clone "${CLONE_URL}" "${CLONE_DIR}"
-            (cd "${CLONE_DIR}" && git fetch --tags origin && git checkout "${REF}" && git submodule update --init --recursive)
+            (cd "${CLONE_DIR}" && git fetch --tags origin && (git checkout "${REF}" || git checkout "releases/${REF}") && git submodule update --init --recursive)
             rm -Rf "${CLONE_DIR}/.git"
             find "${CLONE_DIR}" -name ".git" -exec rm -Rf "{}" \;
             # Compress with a nice relative path
