@@ -42,13 +42,12 @@ function archive_ref {
     TARBALL_FILE="${TARBALL_DIR}/${TOOL_NAME}-${REF}.tar.gz"
     
     if [[ ! -e "${TARBALL_FILE}" ]] ; then
+        mkdir -p "${TARBALL_DIR}"
         if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* ]] ; then
             # vg ships premade tarballs for real releases
             curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg-${REF}.tar.gz" > "${TARBALL_FILE}"
         else
             # Go make a tarball ourselves
-            mkdir -p "${TOOL_DIR}"
-            mkdir -p "${TARBALL_DIR}"
             rm -Rf "${CLONE_DIR}"
             git clone "${CLONE_URL}" "${CLONE_DIR}"
             (cd "${CLONE_DIR}" && git fetch --tags origin && git checkout "${REF}" && git submodule update --init --recursive)
