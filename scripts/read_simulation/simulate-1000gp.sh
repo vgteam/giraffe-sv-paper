@@ -16,7 +16,7 @@ then
 fi
 
 echo download graph indexes
-aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1.gwbt ./graph.gbwt
+aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1.gbwt ./graph.gbwt
 aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1.xg ./graph.xg
 aws s3 cp --quiet s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1.vg ./graph.vg
 
