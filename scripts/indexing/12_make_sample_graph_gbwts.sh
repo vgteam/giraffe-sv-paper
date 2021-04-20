@@ -64,7 +64,7 @@ if [[ ! -e HGSVC_hs38d1_NA19240_sample_withref.force.gbwt || ! -e HGSVC_hs38d1_N
 fi
 
 # If we use a local haplotype cover we will introduce switch errors; augment instead.
-vg gbwt -p -g HGSVC_hs38d1_NA19240_sample_withref.force.sampled64.gg -o HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt -x HGSVC_hs38d1_NA19240_sample_withref.xg -a HGSVC_hs38d1_NA19240_sample_withref.augment.gbwt 
+vg gbwt -p -g HGSVC_hs38d1_NA19240_sample_withref.force.augment.gg -o HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt -x HGSVC_hs38d1_NA19240_sample_withref.xg -a HGSVC_hs38d1_NA19240_sample_withref.force.gbwt 
 
 # (Re)Upload everything
 aws s3 cp 1000GPlo_hs38d1_NA19239_sample_withref.xg s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref.xg
