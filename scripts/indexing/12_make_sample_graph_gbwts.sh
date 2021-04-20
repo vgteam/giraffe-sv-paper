@@ -4,8 +4,12 @@
 set -ex
 
 # Download everything
-aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref.vg .
-aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.vg .
+if [[ ! -e 1000GPlo_hs38d1_NA19239_sample_withref.vg ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref.vg .
+fi
+if [[ ! -e HGSVC_hs38d1_NA19240_sample_withref.vg ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.vg .
+fi
 
 if [[ ! -e 1000GPlo_hs38d1_NA19239_sample_withref.xg ]] ; then
     aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref.xg . || true
