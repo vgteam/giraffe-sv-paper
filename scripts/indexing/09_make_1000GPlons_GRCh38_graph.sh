@@ -31,7 +31,7 @@ toil-vg construct \
   --remove_chr_prefix \
   --alt_paths \
   --out_name 1000GPlons_hs38d1 \
-  --xg_index --gbwt_index --snarls_index --trivial_snarls_index --distance_index --minimizer_index \
+  --xg_index --gbwt_index --trivial_snarls_index --distance_index \
   --force_phasing True \
   --filter_samples NA19239 NA19240 \
   --pangenome \
