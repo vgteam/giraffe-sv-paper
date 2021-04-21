@@ -5,7 +5,7 @@
 # git+https://github.com/vgteam/toil-vg.git@8ff5e9cc15b5bd3c5ed260a3d9581210b1090986 and
 # git+https://github.com/vgteam/toil-vg.git@b319a1b22df6dac585b7f95bc1a603577452d443, but
 # git+https://github.com/vgteam/toil-vg.git@b319a1b22df6dac585b7f95bc1a603577452d443 shoudl work alone.
-# If rerunning, the Toil 5.4 and vg v1.32.0 releases are probably the right choices.
+# If rerunning, the Toil 6 and vg v1.33.0 releases are probably the right choices.
 
 cd /tmp/work2
 virtualenv --system-site-packages --python python3 venv
