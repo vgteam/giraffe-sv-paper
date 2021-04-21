@@ -18,10 +18,10 @@ for CHROM in {1..21} X Y ; do
             aws s3 cp s3://vg-data/1kg_GRCh38/variants/ALL.chr${CHROM}_GRCh38.genotypes.20170504.vcf.gz.tbi .
         fi
         if [[ ! -e ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz ]] ; then
-            pbgzip -n 3 -dc ALL.chr${CHROM}_GRCh38.genotypes.20170504.vcf.gz | bcftools view -T ^GRCh38_segdups_gt10kb.nochr.bed -O v | pbgzip -n 3 -c > ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz
+            pbgzip -n 2 -dc ALL.chr${CHROM}_GRCh38.genotypes.20170504.vcf.gz | bcftools view -T ^GRCh38_segdups_gt10kb.nochr.bed -O v | pbgzip -n 2 -c > ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz
         fi
         if [[ ! -e ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz.tbi ]] ; then
-            tabix -p vcf ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz.tbi
+            tabix -p vcf ALL.chr${CHROM}_GRCh38.genotypes.20170504.no_segdups_gt10kb.vcf.gz
         fi
     ) &
 done
