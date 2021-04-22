@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # If rerunning, the Toil 6 and vg v1.33.0 releases are probably the right choices.
-# Run in screen on a Kubernetes cluster: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-1530a9190357fc058333f3e929049ef9593a6784-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2d adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.00,i3.8xlarge:0.80 --workers 1-4,0-1,0-4,0-3 --keyPairName anovak@soe.ucsc.edu
+# Run in screen on a Kubernetes cluster: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-1530a9190357fc058333f3e929049ef9593a6784-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2a adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.50,i3.8xlarge:1.50 --workers 1-4,0-1,0-8,0-6 --keyPairName anovak@soe.ucsc.edu
 # Doesn't build the GCSA indexes for vg map.
 # Does build the sample graph positive control.
 
@@ -23,12 +23,11 @@ export SINGULARITY_CACHEDIR=/var/lib/toil/singularity-cache
 toil-vg construct \
   aws:us-west-2:adamnovak-make-1000gplons-graphs \
   aws:us-west-2:vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1 \
-  --fasta s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz \
+  --fasta s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.renamed.fna.gz \
   --coalesce_regions s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.minor_contigs.tsv \
   --vcf "${VCFS[@]}" \
   --vcf_phasing "${VCFS[@]}" \
   --fasta_regions \
-  --remove_chr_prefix \
   --alt_paths \
   --out_name 1000GPlons_hs38d1 \
   --xg_index --gbwt_index --trivial_snarls_index --distance_index \
