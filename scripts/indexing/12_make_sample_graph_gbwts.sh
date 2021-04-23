@@ -84,5 +84,21 @@ aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.xg s3://vg-k8s/profiling/graphs/v3
 aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.gbwt s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.force.gbwt
 aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt
 aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.augment.gg s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.force.augment.gg
+
+# Also make an NA19240-only GBWT for the full HGSVC graph
+if [[ ! -e HGSVC_hs38d1.gbwt ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.gbwt .
+fi
+if [[ ! -e HGSVC_hs38d1.xg ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg .
+fi
+if [[ ! -e HGSVC_hs38d1.onlyNA19240.gbwt ]] ; then
+    vg gbwt HGSVC_hs38d1.gbwt -o HGSVC_hs38d1.onlyNA19240.gbwt -R HG00514 -R HG00733
+fi
+if [[ ! -e HGSVC_hs38d1.onlyNA19240.augment.gbwt ]] ; then
+    vg gbwt HGSVC_hs38d1.onlyNA19240.gbwt -o HGSVC_hs38d1.onlyNA19240.augment.gbwt -x HGSVC_hs38d1.xg -a
+fi
+aws s3 cp HGSVC_hs38d1.onlyNA19240.augment.gbwt s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.onlyNA19240.augment.gbwt
+            
               
 
