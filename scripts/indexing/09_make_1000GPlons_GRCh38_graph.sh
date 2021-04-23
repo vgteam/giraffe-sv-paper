@@ -3,6 +3,7 @@
 # Run in screen on a Kubernetes cluster: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-1530a9190357fc058333f3e929049ef9593a6784-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2a adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.50,i3.8xlarge:1.50 --workers 1-4,0-1,0-8,0-6 --keyPairName anovak@soe.ucsc.edu
 # Doesn't build the GCSA indexes for vg map.
 # Does build the sample graph positive control.
+# When rerunning, use --defaultPreemptable and/or throw max 5 of the on-demand workers at it
 
 rm -Rf /tmp/work  
 mkdir /tmp/work
