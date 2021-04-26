@@ -10,7 +10,6 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        # TODO: See if 1.27.1 works right and learns a pair distribution in all cases with S288C as the reference
         image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
@@ -20,7 +19,7 @@ spec:
           cd /tmp
           printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
-          for SPECIES in human ; do
+          for SPECIES in human yeast ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(yeast_all yeast_subset)
@@ -28,17 +27,17 @@ spec:
                   GBWTS=(raw)
                   ;;
               human)
-                  GRAPHS=(hgsvc 1kg)
+                  GRAPHS=(1000gp hgsvc)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
-                  GBWTS=("full" "sampled.64" "cover")
+                  GBWTS=("full" "sampled.64" "cover.16")
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
-                      1kg)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1_filter
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                      1000gp)
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
@@ -96,8 +95,9 @@ spec:
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_giraffe.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_giraffe.tsv
+          gzip roc_stats.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_giraffe.tsv
+          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_giraffe.tsv.gz
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume

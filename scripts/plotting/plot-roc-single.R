@@ -65,8 +65,8 @@ bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#4
 light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd")
 
 # colors for everything
-#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
-#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
 
 
 
@@ -143,7 +143,7 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     geom_vline(xintercept=1/total.reads) + # vertical line at one wrong read
     theme_bw() + 
     ggtitle(title) + 
-    coord_cartesian(ylim=c(0.88,0.98)) +
+    coord_cartesian(ylim=c(0.88,0.985)) +
     theme(aspect.ratio=1)
     
 if (title != '') {

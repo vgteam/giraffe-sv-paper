@@ -1,8 +1,8 @@
-(kubectl delete job xhchang-map-all || true) && kubectl apply -f - <<'EOF'
+(kubectl delete job xhchang-map || true) && kubectl apply -f - <<'EOF'
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xhchang-map-all
+  name: xhchang-map
 spec:
   ttlSecondsAfterFinished: 86400
   template:
@@ -26,16 +26,16 @@ spec:
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
                   ;;
               human)
-                  GRAPHS=(hgsvc 1kg)
+                  GRAPHS=(hgsvc 1000gp)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
-                      1kg)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                      1000gp)
+                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
+                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
@@ -81,8 +81,8 @@ spec:
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_map.tsv
-          aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_map.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_map.tsv
+          aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_map.tsv
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume

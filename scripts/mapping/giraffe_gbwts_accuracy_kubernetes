@@ -16,13 +16,13 @@ spec:
         - -c
         - |
           cd /tmp
-          for GRAPH in 1kg hgsvc ; do
-              for READS in novaseq6000 hiseqxten hiseq2500 ; do
+          for GRAPH in 1000gp hgsvc ; do
+              for READS in novaseq6000 ; do
                  printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
                  printf "correct\tmq\tscore\taligner\n" > stats.tsv
-                 if [[ ${GRAPH} == "1kg" ]] ; then
-                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                 if [[ ${GRAPH} == "1000gp" ]] ; then
+                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
+                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                   elif [[ ${GRAPH} == "hgsvc" ]] ; then
                       GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
                       aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
@@ -57,8 +57,9 @@ spec:
                       done
                   done
                   sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' stats.tsv
-                  aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_giraffe_gbwts_${GRAPH}_${READS}.tsv
-                  aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_giraffe_gbwts_${GRAPH}_${READS}.tsv
+                  gzip stats.tsv
+                  aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_giraffe_gbwts_${GRAPH}_${READS}.tsv
+                  aws s3 cp stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_giraffe_gbwts_${GRAPH}_${READS}.tsv.gz
               done
           done
         volumeMounts:

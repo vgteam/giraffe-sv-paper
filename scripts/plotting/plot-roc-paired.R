@@ -61,12 +61,12 @@ name.lists <- name.lists[name.order]
 # Determine colors for aligners
 
 #colors for headline plot
-bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
-light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#ee8866", "#ffaabb", "#dddddd")
+bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#000000","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99","#000000", "#99ddff", "#77aadd" , "#ee8866", "#ffaabb", "#dddddd")
 
 #colors for all aligners
-#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
-#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
 
 
 

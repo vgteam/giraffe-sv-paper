@@ -1,13 +1,13 @@
 ITER=1
 GBWT_TYPE=sampled
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1_filter ; do
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter ; do
 for SAMPLED_PATHS in 1 2 4 8 16 32 64 128 ; do
-kubectl delete job adamnovak-make-gbwt-${ITER}
+kubectl delete job xhchang-make-gbwt-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: adamnovak-make-gbwt-${ITER}
+  name: xhchang-make-gbwt-${ITER}
 spec:
   ttlSecondsAfterFinished: 259200
   template:
