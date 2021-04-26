@@ -75,6 +75,7 @@ function archive_ref {
 function bundle_refs {
     # Save a set of refs of a Git repository as a bundle
     # bundle_refs TOOL_NAME CLONE_URL REF REF REF...
+    # Can't really work with submodules.
     TOOL_NAME="${1}"
     shift
     CLONE_URL="${1}"
@@ -90,11 +91,6 @@ function bundle_refs {
     rm -Rf "${CLONE_DIR}"
     git clone "${CLONE_URL}" "${CLONE_DIR}"
     (cd "${CLONE_DIR}" && git fetch --tags origin)
-    for REF in ${REFS} ; do
-        # Make sure we have all the submodule commits for all submodules that ever existed.
-        # TODO: is there an easier wayu to do this?
-        (cd "${CLONE_DIR}" && git checkout "${REF}" && git submodule update --init --recursive)
-    done
     
     BUNDLE_ABSPATH="$(realpath "${BUNDLE_FILE}")"
     (cd "${CLONE_DIR}" && git bundle create "${BUNDLE_ABSPATH}" ${REFS})
@@ -208,10 +204,8 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
     archive_container toil "${TOIL_DOCKER}"
 done
 
-# Now archive all the paper scripts
-mkdir -p "${DEST_DIR}/giraffe-sv-paper"
-(cd ${SCRIPT_DIR} && git bundle create "${WORK_DIR}/giraffe-sv-paper.bundle" master)
-mv "${WORK_DIR}/giraffe-sv-paper.bundle" "${DEST_DIR}/giraffe-sv-paper/giraffe-sv-paper.bundle"
+# Now archive all the paper scripts and history.
+bundle_refs giraffe-sv-paper ${SCRIPT_DIR}/../.. master
 
 rm -Rf "${WORK_DIR}"
 
