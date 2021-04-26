@@ -6,7 +6,7 @@ set -e
 set -x
 
 TEX_FILES=($HOME/build/giraffe-paper/main.tex $HOME/build/giraffe-paper/supplement.tex)
-DEST_DIR=/nanopore/cgl/data/giraffe
+DEST_DIR=/nanopore/cgl/data/giraffe/software
 WORK_DIR="$(mktemp -d)"
 
 function archive_container {
