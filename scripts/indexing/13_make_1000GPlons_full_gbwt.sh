@@ -13,13 +13,13 @@ if [[ ! -e 1000GPlons_hs38d1_filter.gbwt ]] ; then
 fi
 
 # If we use a local haplotype cover we will introduce switch errors; augment instead.
-if [[ ! -e 1000GPlons_hs38d1_filter.augment.gg || ! -e 1000GPlons_hs38d1_filter.augment.gbwt ]] ; then
-    vg gbwt -p -g 1000GPlons_hs38d1_filter.augment.gg -o 1000GPlons_hs38d1_filter.augment.gbwt -x 1000GPlons_hs38d1_filter.xg -a 1000GPlons_hs38d1_filter.gbwt
+if [[ ! -e 1000GPlons_hs38d1_filter.full.gg || ! -e 1000GPlons_hs38d1_filter.full.gbwt ]] ; then
+    vg gbwt -p -g 1000GPlons_hs38d1_filter.full.gg -o 1000GPlons_hs38d1_filter.full.gbwt -x 1000GPlons_hs38d1_filter.xg -a 1000GPlons_hs38d1_filter.gbwt
 fi
 
 # Upload 
-aws s3 cp 1000GPlons_hs38d1_filter.augment.gbwt s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.augment.gbwt
-aws s3 cp 1000GPlons_hs38d1_filter.augment.gg s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.augment.gg
+aws s3 cp 1000GPlons_hs38d1_filter.full.gbwt s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.full.gbwt
+aws s3 cp 1000GPlons_hs38d1_filter.full.gg s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.full.gg
 
               
 
