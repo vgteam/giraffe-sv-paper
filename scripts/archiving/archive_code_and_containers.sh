@@ -6,7 +6,8 @@ set -e
 set -x
 
 TEX_FILES=($HOME/build/giraffe-paper/main.tex $HOME/build/giraffe-paper/supplement.tex)
-DEST_DIR=/nanopore/cgl/data/giraffe/software
+BASE_DEST_DIR=/nanopore/cgl/data/giraffe
+DEST_DIR=${BASE_DEST_DIR}/software
 WORK_DIR="$(mktemp -d)"
 
 function archive_container {
@@ -173,5 +174,11 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
 done
 
 rm -Rf "${WORK_DIR}"
+
+# Zip all the software together. Use zip because incremental update of touched
+# files is efficient.
+SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
+SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
+(cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
 
 
