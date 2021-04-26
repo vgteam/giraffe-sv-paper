@@ -72,15 +72,14 @@ function archive_ref {
     fi
 }
 
-function bundle_refs {
-    # Save a set of refs of a Git repository as a bundle
-    # bundle_refs TOOL_NAME CLONE_URL REF REF REF...
+function bundle_all {
+    # Save all refs of a Git repository as a bundle
+    # bundle_refs TOOL_NAME CLONE_URL
     # Can't really work with submodules.
     TOOL_NAME="${1}"
     shift
     CLONE_URL="${1}"
     shift
-    REFS="${@}"
     
     TOOL_DIR="${DEST_DIR}/code/${TOOL_NAME}"
     CLONE_DIR="${WORK_DIR}/${TOOL_NAME}"
@@ -89,11 +88,11 @@ function bundle_refs {
     
     mkdir -p "${TARBALL_DIR}"
     rm -Rf "${CLONE_DIR}"
-    git clone "${CLONE_URL}" "${CLONE_DIR}"
+    git clone --mirror "${CLONE_URL}" "${CLONE_DIR}"
     (cd "${CLONE_DIR}" && git fetch --tags origin)
     
     BUNDLE_ABSPATH="$(realpath "${BUNDLE_FILE}")"
-    (cd "${CLONE_DIR}" && git bundle create "${BUNDLE_ABSPATH}" ${REFS})
+    (cd "${CLONE_DIR}" && git bundle create "${BUNDLE_ABSPATH}" --all)
     rm -Rf "${CLONE_DIR}"
     
     chmod 644 "${BUNDLE_FILE}"
@@ -181,19 +180,19 @@ for VG_COMMIT in $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq) ; do
     echo "vg commit: ${VG_COMMIT}"
     archive_ref vg https://github.com/vgteam/vg.git "${VG_COMMIT}"
 done
-bundle_refs vg https://github.com/vgteam/vg.git $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq)
+bundle_all vg https://github.com/vgteam/vg.git
 
 for TOIL_VG_COMMIT in $(printf "%s\n" "${TOIL_VG_COMMITS[@]}" | sort | uniq) ; do
     echo "toil-vg commit: ${TOIL_VG_COMMIT}"
     archive_ref toil-vg https://github.com/vgteam/toil-vg.git "${TOIL_VG_COMMIT}"
 done
-bundle_refs toil-vg https://github.com/vgteam/toil-vg.git $(printf "%s\n" "${TOIL_VG_COMMITS[@]}" | sort | uniq)
+bundle_all toil-vg https://github.com/vgteam/toil-vg.git
 
 for TOIL_COMMIT in $(printf "%s\n" "${TOIL_COMMITS[@]}" | sort | uniq) ; do
     echo "toil commit: ${TOIL_COMMIT}"
     archive_ref toil https://github.com/DataBiosphere/toil.git "${TOIL_COMMIT}"
 done
-bundle_refs toil https://github.com/DataBiosphere/toil.git $(printf "%s\n" "${TOIL_COMMITS[@]}" | sort | uniq)
+bundle_all toil https://github.com/DataBiosphere/toil.git
 
 for VG_DOCKER in $(printf "%s\n" "${VG_DOCKERS[@]}" | sort | uniq) ; do
     echo "vg docker: ${VG_DOCKER}"
@@ -205,7 +204,7 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
 done
 
 # Now archive all the paper scripts and history.
-bundle_refs giraffe-sv-paper ${SCRIPT_DIR}/../.. master
+bundle_all giraffe-sv-paper ${SCRIPT_DIR}/../..
 
 rm -Rf "${WORK_DIR}"
 
