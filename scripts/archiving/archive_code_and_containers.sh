@@ -214,4 +214,15 @@ SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
 SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
 (cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
 
+if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
+    export FILEPATH="${SOFTWARE_ZIP_FILE}"
+    # Upload the completed zip file onto the Zenodo deposition specified by the environment
+    python3 -c 'import requests; 
+    import os; deposition=os.environ["ZENODO_DEPOSITION"]; 
+    filepath=os.environ["FILEPATH"]; 
+    filename=os.path.basename(filepath); 
+    params={"access_token": os.environ["ZENODO_TOKEN"]}; 
+    bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition}", params=params).json()["links"]["bucket"]; 
+    requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
+fi
 
