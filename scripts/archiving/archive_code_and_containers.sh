@@ -26,8 +26,8 @@ function archive_container {
         docker save "${CONTAINER_SPEC}" -o "${CONTAINER_TAR}"
         pigz "${CONTAINER_TAR}"
         mv "${CONTAINER_TAR}.gz" "${CONTAINER_FILE}"
-        chmod 644 "${CONTAINER_FILE}"
     fi
+    chmod 644 "${CONTAINER_FILE}"
 }
 
 function archive_ref {
@@ -59,12 +59,14 @@ function archive_ref {
             (cd "${CLONE_DIR}/.." && tar -czf "${TARBALL_ABSPATH}" "$(basename "${CLONE_DIR}")")
             rm -Rf "${CLONE_DIR}"
         fi
-        chmod 644 "${TARBALL_FILE}"
     fi
+    chmod 644 "${TARBALL_FILE}"
     
-    if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* && ! -e "${TARBALL_DIR}/vg" ]] ; then
+    if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* ]] ; then
         # vg will also ship static Linux x86_64 binaries for official releases.
-        curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg" > "${TARBALL_DIR}/vg"
+        if [[ ! -e "${TARBALL_DIR}/vg" ]] ; then
+            curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg" > "${TARBALL_DIR}/vg"
+        fi
         chmod 755 "${TARBALL_DIR}/vg"
     fi
 }
