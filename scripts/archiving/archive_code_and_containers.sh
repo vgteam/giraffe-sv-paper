@@ -72,6 +72,36 @@ function archive_ref {
     fi
 }
 
+function bundle_refs {
+    # Save a set of refs of a Git repository as a bundle
+    # bundle_refs TOOL_NAME CLONE_URL REF REF REF...
+    TOOL_NAME="${1}"
+    shift
+    CLONE_URL="${1}"
+    shift
+    REFS="${@}"
+    
+    TOOL_DIR="${DEST_DIR}/code/${TOOL_NAME}"
+    CLONE_DIR="${WORK_DIR}/${TOOL_NAME}"
+    BUNDLE_DIR="${TOOL_DIR}"
+    BUNDLE_FILE="${BUNDLE_DIR}/${TOOL_NAME}.bundle"
+    
+    mkdir -p "${TARBALL_DIR}"
+    rm -Rf "${CLONE_DIR}"
+    git clone "${CLONE_URL}" "${CLONE_DIR}"
+    (cd "${CLONE_DIR}" && git fetch --tags origin)
+    for REF in ${REFS} ; do
+        # Make sure we have all the submodule commits for all submodules that ever existed.
+        # TODO: is there an easier wayu to do this?
+        (cd "${CLONE_DIR}" && git checkout "${REF}" && git submodule update --init --recursive)
+    done
+    
+    BUNDLE_ABSPATH="$(realpath "${BUNDLE_FILE}")"
+    (cd "${CLONE_DIR}" && git bundle create "${BUNDLE_ABSPATH}" ${REFS})
+    rm -Rf "${CLONE_DIR}"
+    
+    chmod 644 "${BUNDLE_FILE}"
+}
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
@@ -155,14 +185,19 @@ for VG_COMMIT in $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq) ; do
     echo "vg commit: ${VG_COMMIT}"
     archive_ref vg https://github.com/vgteam/vg.git "${VG_COMMIT}"
 done
+bundle_refs vg https://github.com/vgteam/vg.git $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq)
+
 for TOIL_VG_COMMIT in $(printf "%s\n" "${TOIL_VG_COMMITS[@]}" | sort | uniq) ; do
     echo "toil-vg commit: ${TOIL_VG_COMMIT}"
     archive_ref toil-vg https://github.com/vgteam/toil-vg.git "${TOIL_VG_COMMIT}"
 done
+bundle_refs toil-vg https://github.com/vgteam/toil-vg.git $(printf "%s\n" "${TOIL_VG_COMMITS[@]}" | sort | uniq)
+
 for TOIL_COMMIT in $(printf "%s\n" "${TOIL_COMMITS[@]}" | sort | uniq) ; do
     echo "toil commit: ${TOIL_COMMIT}"
     archive_ref toil https://github.com/DataBiosphere/toil.git "${TOIL_COMMIT}"
 done
+bundle_refs toil https://github.com/DataBiosphere/toil.git $(printf "%s\n" "${TOIL_COMMITS[@]}" | sort | uniq)
 
 for VG_DOCKER in $(printf "%s\n" "${VG_DOCKERS[@]}" | sort | uniq) ; do
     echo "vg docker: ${VG_DOCKER}"
@@ -172,6 +207,11 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
     echo "toil docker: ${TOIL_DOCKER}"
     archive_container toil "${TOIL_DOCKER}"
 done
+
+# Now archive all the paper scripts
+mkdir -p "${DEST_DIR}/giraffe-sv-paper"
+(cd ${SCRIPT_DIR} && git bundle create "${WORK_DIR}/giraffe-sv-paper.bundle" master)
+mv "${WORK_DIR}/giraffe-sv-paper.bundle" "${DEST_DIR}/giraffe-sv-paper/giraffe-sv-paper.bundle"
 
 rm -Rf "${WORK_DIR}"
 
