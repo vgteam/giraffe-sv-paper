@@ -6,7 +6,8 @@ set -e
 set -x
 
 TEX_FILES=($HOME/build/giraffe-paper/main.tex $HOME/build/giraffe-paper/supplement.tex)
-DEST_DIR=/nanopore/cgl/data/giraffe
+BASE_DEST_DIR=/nanopore/cgl/data/giraffe
+DEST_DIR=${BASE_DEST_DIR}/software
 WORK_DIR="$(mktemp -d)"
 
 function archive_container {
@@ -27,6 +28,7 @@ function archive_container {
         pigz "${CONTAINER_TAR}"
         mv "${CONTAINER_TAR}.gz" "${CONTAINER_FILE}"
     fi
+    chmod 644 "${CONTAINER_FILE}"
 }
 
 function archive_ref {
@@ -59,11 +61,14 @@ function archive_ref {
             rm -Rf "${CLONE_DIR}"
         fi
     fi
+    chmod 644 "${TARBALL_FILE}"
     
-    if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* && ! -e "${TARBALL_DIR}/vg" ]] ; then
+    if [[ "${TOOL_NAME}" == "vg" && "${REF}" == v*.*.* ]] ; then
         # vg will also ship static Linux x86_64 binaries for official releases.
-        curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg" > "${TARBALL_DIR}/vg"
-        chmod +x "${TARBALL_DIR}/vg"
+        if [[ ! -e "${TARBALL_DIR}/vg" ]] ; then
+            curl -sSL "https://github.com/vgteam/vg/releases/download/${REF}/vg" > "${TARBALL_DIR}/vg"
+        fi
+        chmod 755 "${TARBALL_DIR}/vg"
     fi
 }
 
@@ -169,5 +174,11 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
 done
 
 rm -Rf "${WORK_DIR}"
+
+# Zip all the software together. Use zip because incremental update of touched
+# files is efficient.
+SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
+SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
+(cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
 
 
