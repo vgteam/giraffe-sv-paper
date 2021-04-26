@@ -30,7 +30,7 @@ aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffl
 #    /usr/bin/time -v bash -c 'gzip '${STRAIN}'_1.fq; gzip '${STRAIN}'_2.fq'
 #done
 
-for SPECIES in human yeast ; do
+for SPECIES in human ; do
     case "${SPECIES}" in
     yeast)
         REFS=(s288c)
@@ -38,11 +38,11 @@ for SPECIES in human yeast ; do
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        REFS=(grch38_snp grch37 grch37_snp grch38 grch38_hgsvc_all)
-        READSETS=(novaseq6000 hiseqxten hiseq2500)
+        REFS=(grch38_snp)
+        READSETS=(novaseq6000)
         ;;
     esac
-    for PARA in def sens vsens ; do
+    for PARA in def ; do
         for REF in ${REFS[@]} ; do
                 
             # Download index

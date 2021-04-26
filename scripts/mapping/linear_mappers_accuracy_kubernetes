@@ -15,24 +15,12 @@ spec:
         - /bin/bash
         - -c
         - |
-          set -ex
           cd /tmp
           
           export DEBIAN_FRONTEND=noninteractive
-          # vg ships bwa already but no bowtie2 or minimap2 or hisat2
-          apt-get update -q && apt-get install git build-essential libz-dev libtbb-dev bwa hisat2 -q -y --force-yes
-          git clone https://github.com/lh3/minimap2
-          cd minimap2 && git checkout 2c52364527268358448e6552923bb12d6f994025 && make
-          cp minimap2 /bin
-          cd ..
-          git clone https://github.com/BenLangmead/bowtie2.git
-          cd bowtie2 && git checkout v2.4.1 && make
-          cp bowtie2 bowtie2-align-s bowtie2-align-l bowtie2-build bowtie2-build-s bowtie2-build-l bowtie2-inspect bowtie2-inspect-s bowtie2-inspect-l /bin
-          cd ..
-          
           
           # Get the read combiner script
-          wget https://raw.githubusercontent.com/vgteam/giraffe-sv-paper/master/scripts/linear_mappers/combine_reads.py
+          wget https://raw.githubusercontent.com/vgteam/giraffe-sv-paper/master/scripts/mapping/combine_reads.py
           
           printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_minimap2.tsv
           printf "graph\talgorithm\treads\tpairing\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report_bwa_mem.tsv
@@ -44,44 +32,24 @@ spec:
           THREADS=16
 
           #Get reference genomes
-          aws s3 cp  s3://vg-k8s/profiling/data/hs37d5.fa ./1kg.fa
-          aws s3 cp s3://vg-k8s/profiling/data/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna.gz ./hgsvc.fa.gz
-          gunzip hgsvc.fa.gz
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.fa ./S288C.fa
-
-          #Fix chromosome names for hgsvc so that they match the graph
-          sed -i -r 's/chr([0-9]*|X|Y) (\s)/\1\2/g' hgsvc.fa
-
-          #Get xgs
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C.xg ./S288C.xg
-
-
-          #Index genomes
-          bwa index 1kg.fa
-          bwa index hgsvc.fa
-          bwa index S288C.fa
-
-          bowtie2-build --large-index 1kg.fa 1kg_bowtie2
-          bowtie2-build --large-index hgsvc.fa hgsvc_bowtie2
-          bowtie2-build --large-index S288C.fa S288C_bowtie2
+          aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/ . --recursive
           
-          # These fail when they get to mapping because there's nothing to map.
-          # But we only want them for indexing.
-          minimap2 -x sr -d 1kg.mmi 1kg.fa || true
-          minimap2 -x sr -d hgsvc.mmi hgsvc.fa || true
-          minimap2 -x sr -d S288C.mmi S288C.fa || true
+          #Get xgs
+          aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter.xg 1000gp.xg
+          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
+
 
           for SPECIES in human yeast ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(S288C)
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
+                  GRAPH_NAME=yeast
                   ;;
               human)
-                  GRAPHS=(hgsvc 1kg)
+                  GRAPHS=(hgsvc 1000gp)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
+                  GRAPH_NAME=hs38d1
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
@@ -90,6 +58,12 @@ spec:
                       1kg)
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
+                          rm -f sim.fq
+                          gunzip sim.fq.gz
+                          ;;
+                      1000gp)
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                           rm -f sim.fq
                           gunzip sim.fq.gz
                           ;;
@@ -108,30 +82,29 @@ spec:
                       esac
                       sed 's/_1$//g' sim.fq | sed 's/_2$//g' > sim.paired.fq
 
-                      for ALGORITHM in bowtie2 minimap2 bwa_mem ; do
+                      for ALGORITHM in minimap2 bwa_mem bowtie2  ; do
                           for PAIRING in single paired ; do 
                               if [[ ${ALGORITHM} == "minimap2" ]] ; then
                                   if [[ ${PAIRING} == "paired" ]] ; then
-                                      minimap2 -ax sr --secondary=no -t ${THREADS} ${GRAPH}.fa sim.paired.fq > mapped.bam
+                                      minimap2 -ax sr --secondary=no -t ${THREADS} ${GRAPH_NAME}.fa.gz sim.paired.fq > mapped.bam
                                   elif [[ ${PAIRING} == "single" ]] ; then 
-                                      minimap2 -ax sr --secondary=no -t ${THREADS} ${GRAPH}.fa sim.fq > mapped.bam
+                                      minimap2 -ax sr --secondary=no -t ${THREADS} ${GRAPH_NAME}.fa.gz sim.fq > mapped.bam
                                   fi
                               elif [[ ${ALGORITHM} == "bwa_mem" ]] ; then
                                   if [[ ${PAIRING} == "paired" ]] ; then
-                                      bwa mem -t ${THREADS} -p ${GRAPH}.fa sim.paired.fq > mapped.bam
+                                      bwa mem -t ${THREADS} -p ${GRAPH_NAME}.fa sim.paired.fq > mapped.bam
                                   elif [[ ${PAIRING} == "single" ]] ; then 
-                                      bwa mem -t ${THREADS} -p ${GRAPH}.fa sim.fq > mapped.bam
+                                      bwa mem -t ${THREADS} -p ${GRAPH_NAME}.fa sim.fq > mapped.bam
                                   fi
 
                               elif [[ ${ALGORITHM} == "bowtie2" ]] ; then
                                   if [[ ${PAIRING} == "paired" ]] ; then
-                                      bowtie2 -t -p ${THREADS} -X 1065 -x ${GRAPH}_bowtie2 --interleaved sim.paired.fq > mapped.bam
+                                      bowtie2 -t -p ${THREADS} -X 1065 -x ${GRAPH_NAME} --interleaved sim.paired.fq > mapped.bam
                                   elif [[ ${PAIRING} == "single" ]] ; then 
-                                      bowtie2 -t -p ${THREADS} -x ${GRAPH}_bowtie2 -U sim.fq > mapped.bam
+                                      bowtie2 -t -p ${THREADS} -x ${GRAPH_NAME} -U sim.fq > mapped.bam
                                   fi
                               fi
                               
-                              aws s3 cp mapped.bam s3://vg-k8s/users/xhchang/giraffe_experiments/bams/${ALGORITHM}_${GRAPH}_${READS}_${PAIRING}.bam
                               
                               samtools view -F 2048 -b mapped.bam > mapped.primary.bam
                               samtools view -f 2048 -b mapped.bam > mapped.secondary.bam
@@ -157,26 +130,23 @@ spec:
                               echo ${GRAPH} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${SCORE}
                               printf "${GRAPH}\t${ALGORITHM}\t${READS}\t${PAIRING}\t-\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report_${ALGORITHM}.tsv
                   
-                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}_${GRAPH}${READS}${PAIRING}/" >> roc_stats_${ALGORITHM}.tsv
+                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\t${ALGORITHM}_${GRAPH}${READS}${PAIRING}/" | sed 's/single//g ; s/paired/-pe/g ; s/null/0/g' >> roc_stats_${ALGORITHM}.tsv
                               
-                              aws s3 cp compared.json s3://vg-k8s/users/xhchang/giraffe_experiments/gams/${ALGORITHM}_${GRAPH}_${READS}_${PAIRING}.json
 
                           done
                       done
                 done
               done
           done
-          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_minimap2.tsv
-          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_bwa_mem.tsv
-          sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats_bowtie2.tsv
           
-          aws s3 cp report_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_minimap2_primary.tsv
-          aws s3 cp report_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_bwa_primary.tsv
-          aws s3 cp report_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_bowtie2_primary.tsv
+          aws s3 cp report_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_minimap2_primary.tsv
+          aws s3 cp report_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_bwa_primary.tsv
+          aws s3 cp report_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_bowtie2_primary.tsv
           
-          aws s3 cp roc_stats_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_minimap2_primary.tsv
-          aws s3 cp roc_stats_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_bwa_primary.tsv
-          aws s3 cp roc_stats_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_bowtie2_primary.tsv
+          aws s3 cp roc_stats_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_minimap2_primary.tsv
+          aws s3 cp roc_stats_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_bwa_primary.tsv
+          aws s3 cp roc_stats_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_bowtie2_primary.tsv
+          
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume

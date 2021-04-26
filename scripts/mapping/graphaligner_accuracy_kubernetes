@@ -22,12 +22,9 @@ spec:
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
           
           #Get graphs
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.gfa ./1kg.gfa
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.gfa ./hgsvc.gfa
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset.gfa ./yeast_subset.gfa
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter.xg ./1kg.xg
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
-          aws s3 cp s3://vg-k8s/profiling/graphs/v2/generic/cactus/yeast_subset/yeast_subset.xg ./yeast_subset.xg
+          aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter.xg ./1000gp.xg
+          vg convert -f -t 23 1000gp.xg 1000gp.gfa
+          aws s3 cp 1000gp.gfa s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter.gfa
           
           THREAD_COUNT=20
           
@@ -38,16 +35,16 @@ spec:
                   READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
                   ;;
               human)
-                  GRAPHS=( 1kg)
+                  GRAPHS=(hgsvc 1000gp)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
-                      1kg)
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
+                      1000gp)
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                           gunzip sim.fq.gz
                           ;;
                       hgsvc)
@@ -64,7 +61,7 @@ spec:
                       GraphAligner -g ${GRAPH}.gfa -f sim.fq.gz -a mapped.gam -x vg -t ${THREAD_COUNT} --seeds-mxm-cache-prefix ${GRAPH}_seeds
           
           
-                      ~/vg annotate -m -x ${GRAPH}.xg -a mapped.gam | ~/vg gamcompare -s -r 100 - sim.gam 2> count | ~/vg view -aj - > compared.json
+                      vg annotate -m -x ${GRAPH}.xg -a mapped.gam | vg gamcompare -s -r 100 - sim.gam 2> count | vg view -aj - > compared.json
           
                       CORRECT_COUNT="$(grep correctly_mapped compared.json | wc -l)"
                       IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
@@ -77,8 +74,8 @@ spec:
                   done
               done
           done
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_graphaligner.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_graphaligner_1kg.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_graphaligner.tsv
+          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_graphaligner_1kg.tsv
           
         volumeMounts:
         - mountPath: /tmp
@@ -88,11 +85,11 @@ spec:
         resources:
           requests:
             cpu: 24
-            memory: "310Gi"
+            memory: "300Gi"
             ephemeral-storage: "300Gi"
           limits:
             cpu: 24
-            memory: "310Gi"
+            memory: "300Gi"
             ephemeral-storage: "300Gi"
       restartPolicy: Never
       volumes:

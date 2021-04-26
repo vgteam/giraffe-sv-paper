@@ -1,5 +1,5 @@
 ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/ ; do
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter ; do
 for GBWT_TYPE in full ; do
 kubectl delete job xhchang-make-gbwt-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
@@ -14,7 +14,7 @@ spec:
       containers:
       - name: main
         imagePullPolicy: Always
-        image: "quay.io/vgteam/vg:ci-2035-42bb4f3123c79006f0d4ffe8e6287627c1dc50ae"
+        image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
         - -c
@@ -46,8 +46,8 @@ spec:
         resources:
           limits:
             cpu: 2
-            memory: "180Gi"
-            ephemeral-storage: "100Gi"
+            memory: "200Gi"
+            ephemeral-storage: "200Gi"
         env:
         - name: DEBIAN_FRONTEND
           value: noninteractive
