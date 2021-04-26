@@ -86,7 +86,7 @@ function bundle_all {
     BUNDLE_DIR="${TOOL_DIR}"
     BUNDLE_FILE="${BUNDLE_DIR}/${TOOL_NAME}.bundle"
     
-    mkdir -p "${TARBALL_DIR}"
+    mkdir -p "${BUNDLE_DIR}"
     rm -Rf "${CLONE_DIR}"
     git clone --mirror "${CLONE_URL}" "${CLONE_DIR}"
     (cd "${CLONE_DIR}" && git fetch --tags origin)
