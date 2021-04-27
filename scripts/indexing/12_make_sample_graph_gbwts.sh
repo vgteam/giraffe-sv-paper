@@ -3,6 +3,27 @@
 
 set -ex
 
+# First make an NA19240-only GBWT for the full HGSVC graph
+if [[ ! -e HGSVC_hs38d1.gbwt ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.gbwt .
+fi
+if [[ ! -e HGSVC_hs38d1.xg ]] ; then
+    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg .
+fi
+if [[ ! -e HGSVC_hs38d1.onlyNA19240.gbwt ]] ; then
+    # Note that vg gbwt accepts multiple -R options in one command but
+    # mishandles tham and will remove the wrong samples. See
+    # https://github.com/vgteam/vg/issues/3284. To work around this we remove
+    # the samples in sequence.
+    vg gbwt HGSVC_hs38d1.gbwt -o HGSVC_hs38d1.onlyNA19240.step1.gbwt -R HG00514
+    vg gbwt HGSVC_hs38d1.onlyNA19240.step1.gbwt -o HGSVC_hs38d1.onlyNA19240.gbwt -R HG00733
+    rm HGSVC_hs38d1.onlyNA19240.step1.gbwt
+fi
+if [[ ! -e HGSVC_hs38d1.onlyNA19240.augment.gbwt ]] ; then
+    vg gbwt HGSVC_hs38d1.onlyNA19240.gbwt -o HGSVC_hs38d1.onlyNA19240.augment.gbwt -x HGSVC_hs38d1.xg -a
+fi
+aws s3 cp HGSVC_hs38d1.onlyNA19240.augment.gbwt s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.onlyNA19240.augment.gbwt
+
 # Download everything
 if [[ ! -e 1000GPlons_hs38d1_NA19239_sample_withref.vg ]] ; then
     aws s3 cp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref.vg .
@@ -85,26 +106,7 @@ aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.gbwt s3://vg-k8s/profiling/g
 aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.force.augment.gbwt
 aws s3 cp HGSVC_hs38d1_NA19240_sample_withref.force.augment.gg s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref.force.augment.gg
 
-# Also make an NA19240-only GBWT for the full HGSVC graph
-if [[ ! -e HGSVC_hs38d1.gbwt ]] ; then
-    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.gbwt .
-fi
-if [[ ! -e HGSVC_hs38d1.xg ]] ; then
-    aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg .
-fi
-if [[ ! -e HGSVC_hs38d1.onlyNA19240.gbwt ]] ; then
-    # Note that vg gbwt accepts multiple -R options in one command but
-    # mishandles tham and will remove the wrong samples. See
-    # https://github.com/vgteam/vg/issues/3284. To work around this we remove
-    # the samples in sequence.
-    vg gbwt HGSVC_hs38d1.gbwt -o HGSVC_hs38d1.onlyNA19240.step1.gbwt -R HG00514
-    vg gbwt HGSVC_hs38d1.gbwt -o HGSVC_hs38d1.onlyNA19240.gbwt -R HG00733
-    rm HGSVC_hs38d1.onlyNA19240.step1.gbwt
-fi
-if [[ ! -e HGSVC_hs38d1.onlyNA19240.augment.gbwt ]] ; then
-    vg gbwt HGSVC_hs38d1.onlyNA19240.gbwt -o HGSVC_hs38d1.onlyNA19240.augment.gbwt -x HGSVC_hs38d1.xg -a
-fi
-aws s3 cp HGSVC_hs38d1.onlyNA19240.augment.gbwt s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.onlyNA19240.augment.gbwt
+
             
               
 
