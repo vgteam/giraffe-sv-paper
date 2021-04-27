@@ -35,10 +35,15 @@ if [[ ! -e 1000GPlons_hs38d1_filter.gcsa || ! -e 1000GPlons_hs38d1_filter.gcsa.l
     vg autoindex -p 1000GPlons_hs38d1_filter -R "GCSA" -R "LCP" -P "VG w/ Variant Paths:1000GPlons_hs38d1_filter.vg" -P "XG:1000GPlons_hs38d1_filter.xg" -P "MaxNodeID:1000GPlons_hs38d1_filter.maxid.txt" -P "GBWT:1000GPlons_hs38d1_filter.gbwt"
 fi
 
-# Upload 
-aws s3 cp 1000GPlons_hs38d1_filter.maxid.txt s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.maxid.txt
-aws s3 cp 1000GPlons_hs38d1_filter.gcsa s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.gcsa
-aws s3 cp 1000GPlons_hs38d1_filter.gcsa.lcp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.gcsa.lcp
+# Upload. But index building will take a while, so don't hang around waiting for MFA if it is expired 
+aws s3 cp --quiet 1000GPlons_hs38d1_filter.maxid.txt s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.maxid.txt &
+aws s3 cp --quiet 1000GPlons_hs38d1_filter.gcsa s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.gcsa &
+aws s3 cp --quiet 1000GPlons_hs38d1_filter.gcsa.lcp s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter.gcsa.lcp &
+
+wait
+wait
+wait
+
 
               
 
