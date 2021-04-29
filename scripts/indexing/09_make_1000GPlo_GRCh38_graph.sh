@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Was run inside a Docker container: quay.io/ucsc_cgl/toil:5.3.0-py3.7
 # If rerunning, the Toil 5.4 and vg v1.32.0 releases are probably the right choices.
-# Should work on an AWS r5d.24xlarge, but would be faster to run with --batchSystem kubernetes against a Kubernetes cluster.
+# Should work on an AWS r5d.24xlarge with lots of EBS storage assigned, but
+# would be faster to run with --batchSystem kubernetes against a Kubernetes
+# cluster.
 
 rm -Rf /tmp/work  
 mkdir /tmp/work
