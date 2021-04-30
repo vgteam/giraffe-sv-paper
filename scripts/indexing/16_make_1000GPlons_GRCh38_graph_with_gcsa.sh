@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # If rerunning, the Toil 6 and vg 1.33 releases are probably the right choices.
-# Run in screen on a Kubernetes cluster like this one: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-3598c735b708062c3e9f6d4896f7ad79cceb0dc4-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2a adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.50,i3.8xlarge:1.50 --workers 1-4,0-1,0-8,0-10 --keyPairName anovak@soe.ucsc.edu
+# Run in screen on a Kubernetes cluster like this one: TOIL_APPLIANCE_SELF=quay.io/ucsc_cgl/toil:5.4.0a1-46f0b22c4edf4dfa127ebcb2b0025dd286b5b874-py3.7 toil launch-cluster --provisioner aws -T kubernetes -z us-west-2a adamnovak-toil-vg --leaderNodeType t3a.medium --nodeTypes=t3a.medium,r5ad.24xlarge,r5d.24xlarge/r5ad.24xlarge:2.50,i3.8xlarge:1.50 --workers 1-4,0-1,0-8,0-10 --keyPairName anovak@soe.ucsc.edu
 # Does build the sample graph positive control.
 
 rm -Rf /tmp/work  
