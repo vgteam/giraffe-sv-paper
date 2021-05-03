@@ -16,49 +16,50 @@ spec:
         - -c
         - |
           cd /tmp
-          for GRAPH in 1kg hgsvc ; do
-              for READS in novaseq6000 hiseqxten hiseq2500 ; do
+          for GRAPH in 1000gp hgsvc ; do
+              for READS in novaseq6000 ; do
                  printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
                  printf "correct\tmq\tscore\taligner\n" > stats.tsv
-                 if [[ ${GRAPH} == "1kg" ]] ; then
-                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                 if [[ ${GRAPH} == "1000gp" ]] ; then
+                      GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+                      aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                      GBWT=sampled
                   elif [[ ${GRAPH} == "hgsvc" ]] ; then
                       GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
                       aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                      GBWT=cover
                   fi
-                  for GBWT in sampled cover ; do
-                      for COVERAGE in 1 2 4 8 16 32 64 128 ; do
-                          rm graph.gbwt
-                          rm graph.gg
-                          aws s3 cp ${GRAPH_BASE}.${GBWT}.${COVERAGE}.gbwt ./graph.gbwt
-                          aws s3 cp ${GRAPH_BASE}.${GBWT}.${COVERAGE}.gg ./graph.gg
-                          aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
-                          aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
-                          for PAIRING in single paired ; do 
-                              if [[ ${PAIRING} == "paired" ]] ; then
-                                  PAIRED="-i"
-                              elif [[ ${PAIRING} == "single" ]] ; then 
-                                  PAIRED=""
-                              fi
-                              SPEED="$(vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam ${PAIRED} -t 23 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
-                              vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count >compared.gam
-                              CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
-                              SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
-                              vg view -aj compared.gam > compared.json
-                              MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
-                              MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
-                              IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
-                              echo ${GRAPH} ${COVERAGE} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
-                              printf "${GRAPH}\t${GBWT}_${COVERAGE}\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
+                  for COVERAGE in 1 2 4 8 16 32 64 128 ; do
+                      rm graph.gbwt
+                      rm graph.gg
+                      aws s3 cp ${GRAPH_BASE}.${GBWT}.${COVERAGE}.gbwt ./graph.gbwt
+                      aws s3 cp ${GRAPH_BASE}.${GBWT}.${COVERAGE}.gg ./graph.gg
+                      aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                      aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
+                      for PAIRING in single paired ; do 
+                          if [[ ${PAIRING} == "paired" ]] ; then
+                              PAIRED="-i"
+                          elif [[ ${PAIRING} == "single" ]] ; then 
+                              PAIRED=""
+                          fi
+                          SPEED="$(vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam ${PAIRED} -t 23 -p 2>&1 >mapped.gam | grep speed | sed 's/[^0-9\.]//g')"
+                          vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count >compared.gam
+                          CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
+                          SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
+                          vg view -aj compared.gam > compared.json
+                          MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                          MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                          IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                          echo ${GRAPH} ${COVERAGE} ${READS} ${PAIRING} ${SPEED} ${CORRECT_COUNT} ${MAPQ} ${MAPQ60} ${IDENTITY} ${SCORE}
+                          printf "${GRAPH}\t${GBWT}_${COVERAGE}\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
 
-                              jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${GRAPH}${GBWT}${COVERAGE}${READS}${PAIRING}/" >> stats.tsv
-                          done
+                          jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_${GRAPH}${GBWT}${COVERAGE}${READS}${PAIRING}/" >> stats.tsv
                       done
                   done
                   sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' stats.tsv
-                  aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_giraffe_gbwts_${GRAPH}_${READS}.tsv
-                  aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_giraffe_gbwts_${GRAPH}_${READS}.tsv
+                  gzip stats.tsv
+                  aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe_gbwts_${GRAPH}_${READS}.tsv
+                  aws s3 cp stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_gbwts_${GRAPH}_${READS}.tsv.gz
               done
           done
         volumeMounts:

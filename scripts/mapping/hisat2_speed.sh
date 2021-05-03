@@ -1,34 +1,36 @@
 set -e
 printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > report_speed_hisat2.tsv
-CPU=16
+THREAD_COUNT=16
 
 
 # Download reads
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz --no-progress
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz --no-progress
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz --no-progress
-for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled.fq.gz ${STRAIN}.fq.gz --no-progress
-done
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz --no-progress
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz --no-progress
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz --no-progress
+#for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
+#    aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled.fq.gz ${STRAIN}.fq.gz --no-progress
+#done
+
+aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz novaseq6000.fq.gz
 
 
 # De-interleave reads (https://gist.github.com/nathanhaigh/3521724)
 /usr/bin/time -v bash -c 'zcat novaseq6000.fq.gz | wc -l; zcat novaseq6000.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > novaseq6000_1.fq) | cut -f 5-8 | tr "\t" "\n" > novaseq6000_2.fq; wc -l novaseq6000_1.fq; wc -l novaseq6000_2.fq'
-/usr/bin/time -v bash -c 'zcat hiseqxten.fq.gz | wc -l; zcat hiseqxten.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > hiseqxten_1.fq) | cut -f 5-8 | tr "\t" "\n" > hiseqxten_2.fq; wc -l hiseqxten_1.fq; wc -l hiseqxten_2.fq'
-/usr/bin/time -v bash -c 'zcat hiseq2500.fq.gz | wc -l; zcat hiseq2500.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > hiseq2500_1.fq) | cut -f 5-8 | tr "\t" "\n" > hiseq2500_2.fq; wc -l hiseq2500_1.fq; wc -l hiseq2500_2.fq'
-for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    /usr/bin/time -v bash -c 'zcat '${STRAIN}'.fq.gz | wc -l; zcat '${STRAIN}'.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > '${STRAIN}'_1.fq) | cut -f 5-8 | tr "\t" "\n" > '${STRAIN}'_2.fq; wc -l '${STRAIN}'_1.fq; wc -l '${STRAIN}'_2.fq'
-done
+#/usr/bin/time -v bash -c 'zcat hiseqxten.fq.gz | wc -l; zcat hiseqxten.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > hiseqxten_1.fq) | cut -f 5-8 | tr "\t" "\n" > hiseqxten_2.fq; wc -l hiseqxten_1.fq; wc -l hiseqxten_2.fq'
+#/usr/bin/time -v bash -c 'zcat hiseq2500.fq.gz | wc -l; zcat hiseq2500.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > hiseq2500_1.fq) | cut -f 5-8 | tr "\t" "\n" > hiseq2500_2.fq; wc -l hiseq2500_1.fq; wc -l hiseq2500_2.fq'
+#for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
+#    /usr/bin/time -v bash -c 'zcat '${STRAIN}'.fq.gz | wc -l; zcat '${STRAIN}'.fq.gz | paste - - - - - - - - | tee >(cut -f 1-4 | tr "\t" "\n" > '${STRAIN}'_1.fq) | cut -f 5-8 | tr "\t" "\n" > '${STRAIN}'_2.fq; wc -l '${STRAIN}'_1.fq; wc -l '${STRAIN}'_2.fq'
+#done
 
 # Compress reads
 /usr/bin/time -v bash -c 'gzip novaseq6000_1.fq; gzip novaseq6000_2.fq'	
-/usr/bin/time -v bash -c 'gzip hiseqxten_1.fq; gzip hiseqxten_2.fq'	
-/usr/bin/time -v bash -c 'gzip hiseq2500_1.fq; gzip hiseq2500_2.fq'
-for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
-    /usr/bin/time -v bash -c 'gzip '${STRAIN}'_1.fq; gzip '${STRAIN}'_2.fq'
-done
+#/usr/bin/time -v bash -c 'gzip hiseqxten_1.fq; gzip hiseqxten_2.fq'	
+#/usr/bin/time -v bash -c 'gzip hiseq2500_1.fq; gzip hiseq2500_2.fq'
+#for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
+#    /usr/bin/time -v bash -c 'gzip '${STRAIN}'_1.fq; gzip '${STRAIN}'_2.fq'
+#done
 
-for SPECIES in human yeast ; do
+for SPECIES in human ; do
     case "${SPECIES}" in
     yeast)
         REFS=(s288c)
@@ -36,11 +38,11 @@ for SPECIES in human yeast ; do
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        REFS=(grch37 grch37_snp grch38 grch38_hgsvc_all)
-        READSETS=(novaseq6000 hiseqxten hiseq2500)
+        REFS=(grch38_1kg_lo_nsd_all_af001)
+        READSETS=(novaseq6000)
         ;;
     esac
-    for PARA in def sens vsens ; do
+    for PARA in def ; do
         for REF in ${REFS[@]} ; do
                 
             # Download index
@@ -56,28 +58,28 @@ for SPECIES in human yeast ; do
                 if [ "${PARA}" = "def" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 
                 # Use sensitive HISAT2
                 elif [ "${PARA}" = "sens" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 
                 # Use very sensitive HISAT2
                 elif [ "${PARA}" = "vsens" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 fi
      
                 #Get the time as reported by the mapper
@@ -100,10 +102,10 @@ for SPECIES in human yeast ; do
                 >&2 cat log_single.txt
 
                 # Compress single-end alignments
-                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_se.sam > ${OUT_PREFIX}_se.bam"
-                
-                # Compress paired-end alignments
-                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_pe.sam > ${OUT_PREFIX}_pe.bam"
+                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${THREAD_COUNT} ${OUT_PREFIX}_se.sam > ${OUT_PREFIX}_se.bam"
+                #
+                ## Compress paired-end alignments
+                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${THREAD_COUNT} ${OUT_PREFIX}_pe.sam > ${OUT_PREFIX}_pe.bam"
 
             done
         done

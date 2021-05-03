@@ -5,14 +5,14 @@ set -ex
 THREAD_COUNT=16
 
 #600million real reads
-#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz novaseq6000.fq.gz
+aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz novaseq6000.fq.gz
 #aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-600m.fq.gz hiseq2500.fq.gz
 #aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-600m.fq.gz hiseqxten.fq.gz
 
 #1million real reads
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
-aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-1m.fq.gz novaseq6000.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz hiseq2500.fq.gz
+#aws s3 cp s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz hiseqxten.fq.gz
 for STRAIN in DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138 ; do
     aws s3 cp s3://vg-k8s/profiling/reads/real/yeast/${STRAIN}-shuffled.fq.gz ${STRAIN}.fq.gz
 done
@@ -26,19 +26,19 @@ for SPECIES in human yeast ; do
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        GRAPHS=(hgsvc 1kg hs37d5 hs38d1)
+        GRAPHS=(hgsvc 1000gp hs38d1)
         READSETS=(novaseq6000 hiseqxten hiseq2500)
         ;; 
     esac
     for GRAPH in ${GRAPHS[@]} ; do
         case ${GRAPH} in
-        1kg)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-            GBWTS=("full" "sampled.64" "cover")
+        1000gp)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+            GBWTS=("sampled.64" "full")
             ;;
         hgsvc)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
-            GBWTS=("full" "sampled.64" "cover")
+            GBWTS=("cover.16" "full")
             ;;
         hs37d5)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
@@ -101,5 +101,7 @@ for SPECIES in human yeast ; do
     done
 done
 
-aws s3 cp speed_report_giraffe.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/speed/speed_report_giraffe.tsv
-aws s3 cp giraffe_speed_log.txt s3://vg-k8s/users/xhchang/giraffe_experiments/speed/giraffe_speed_log.txt
+aws s3 cp speed_report_giraffe.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/speed/speed_report_giraffe.tsv
+aws s3 cp giraffe_speed_log.txt s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/speed/giraffe_speed_log.txt
+
+sudo shutdown -h now

@@ -1,0 +1,106 @@
+(kubectl delete job xhchang-pileup || true) && kubectl apply -f - <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: xhchang-pileup
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+      - name: xhchang-pileup
+        imagePullPolicy: Always
+        image: xhchang/vg:giraffe-paper
+        command:
+        - /bin/bash
+        - -c
+        - |
+          cd /tmp
+          set -x
+
+
+          #get reference
+          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+          aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz ./reads.fq.gz
+          aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.gz .
+          gunzip hs38d1.fa.gz
+          samtools faidx hs38d1.fa
+          
+          for MAPPER in map bwa giraffe  ; do
+          
+              if [[ ${MAPPER} == "giraffe" ]] ; then
+                  aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.gbwt ./graph.gbwt
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.gg ./graph.gg
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.min ./graph.min
+                  aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
+                  vg giraffe -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -f reads.fq.gz -i -t 24 | vg surject -x graph.xg -b -i -t 24 - > mapped.bam
+                  samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp  mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.giraffe.novaseq6000.sorted.bam
+                  
+              elif [[ ${MAPPER} == "bwa" ]] ; then
+                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.amb .
+                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.ann .
+                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.bwt .
+                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.pac .
+                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.sa .
+                  #bwa mem -t 24 -p hs38d1.fa reads.fq.gz > mapped.bam
+                  #samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.bwa_mem.novaseq6000.sorted.bam mapped.sorted.bam
+              elif [[ ${MAPPER} == "map" ]] ; then
+                  #aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                  #aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
+                  #aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
+                  #vg map -x graph.xg -g graph.gcsa -f reads.fq.gz -i -t 20 > mapped.gam
+                  #vg surject -x graph.xg -b -i -t 24 - > mapped.bam
+                  #vg surject -x graph.xg -b -i -t 24 mapped.gam > mapped.bam
+                  #samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.map.novaseq6000.sorted.bam  
+              fi
+              samtools index mapped.sorted.bam
+
+              parallel 'bcftools mpileup -f hs38d1.fa -E -a DP -a SP -a ADF -a ADR -a AD  -O u --region {} mapped.sorted.bam | bcftools call -m -o calls.{}.vcf.gz -O z -v' ::: {1..22} X Y
+
+              for CHR in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y ; do
+                  bcftools sort calls.${CHR}.vcf.gz -O z > calls.${CHR}.sorted.vcf.gz
+                  bcftools index calls.${CHR}.sorted.vcf.gz
+              done
+
+              bcftools concat *.sorted.vcf.gz -O z -o calls.unnamed.vcf.gz
+              rm *.sorted.vcf.gz
+              printf "mapped.sorted.bam\t${MAPPER}" > rename
+              bcftools reheader -s rename calls.unnamed.vcf.gz -o calls.vcf.gz
+              #aws s3 cp calls.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/${MAPPER}.calls.unsorted.vcf.gz
+              bcftools index -f calls.vcf.gz
+              bcftools sort calls.vcf.gz -O z > ${MAPPER}.vcf.gz
+              #aws s3 cp ${MAPPER}.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/${MAPPER}_calls.sorted.vcf.gz
+              bcftools index ${MAPPER}.vcf.gz
+          done
+          bcftools merge giraffe.vcf.gz map.vcf.gz bwa.vcf.gz -O z > merged.vcf.gz
+          aws s3 cp merged.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/all_calls.vcf.gz
+
+          
+
+        volumeMounts:
+        - mountPath: /tmp
+          name: scratch-volume
+        - mountPath: /root/.aws
+          name: s3-credentials
+        resources:
+          requests:
+            cpu: 25
+            memory: "250Gi"
+            ephemeral-storage: "800Gi"
+          limits:
+            cpu: 25
+            memory: "250Gi"
+            ephemeral-storage: "800Gi"
+      restartPolicy: Never
+      volumes:
+      - name: scratch-volume
+        emptyDir: {}
+      - name: s3-credentials
+        secret:
+          secretName: shared-s3-credentials
+  backoffLimit: 0
+EOF

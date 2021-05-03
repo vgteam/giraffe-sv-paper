@@ -1,12 +1,13 @@
+#!/usr/bin/env bash
 ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/ ; do
-for GBWT_TYPE in full ; do
-kubectl delete job xhchang-make-gbwt-${ITER}
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1 ; do
+for GBWT_TYPE in cover ; do
+kubectl delete job adamnovak-make-gbwt-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: xhchang-make-gbwt-${ITER}
+  name: adamnovak-make-gbwt-${ITER}
 spec:
   ttlSecondsAfterFinished: 259200
   template:
@@ -14,7 +15,7 @@ spec:
       containers:
       - name: main
         imagePullPolicy: Always
-        image: "quay.io/vgteam/vg:ci-2035-42bb4f3123c79006f0d4ffe8e6287627c1dc50ae"
+        image: "quay.io/vgteam/vg:ci-2284-dc119fa046aa7131a1a8e026be36da2d79bc2f22"
         command:
         - /bin/bash
         - -c
@@ -22,21 +23,16 @@ spec:
           set -ex
           mkdir /tmp/work
           cd /tmp/work
-          aws s3 cp --no-progress ${GRAPH_BASE}.xg input.xg
-          aws s3 cp --no-progress ${GRAPH_BASE}.dist input.dist
+          aws s3 cp ${GRAPH_BASE}.xg input.xg
           if [[ "${GBWT_TYPE}" == "cover" ]] ; then
             vg gbwt -p -g output.gg -o output.gbwt -x input.xg -P
-          elif [[ "${GBWT_TYPE}" == "sampled" ]] ; then
-            aws s3 cp --no-progress ${GRAPH_BASE}.gbwt input.gbwt
+          else
+            aws s3 cp ${GRAPH_BASE}.gbwt input.gbwt
             vg gbwt -p -g output.gg -o output.gbwt -x input.xg -l input.gbwt
-          elif [[ "${GBWT_TYPE}" == "full" ]] ; then
-            aws s3 cp --no-progress ${GRAPH_BASE}.gbwt input.gbwt
-            vg gbwt -p -g output.gg -o output.gbwt -x input.xg -a input.gbwt
           fi
-          aws s3 cp --no-progress output.gbwt ${GRAPH_BASE}.${GBWT_TYPE}.gbwt
-          aws s3 cp --no-progress output.gg ${GRAPH_BASE}.${GBWT_TYPE}.gg
-
-          vg minimizer -t 1 -p -i output.min -d input.dist -g output.gbwt -G output.gg
+          aws s3 cp output.gbwt ${GRAPH_BASE}.${GBWT_TYPE}.gbwt
+          aws s3 cp output.gg ${GRAPH_BASE}.${GBWT_TYPE}.gg
+          vg minimizer -t 16 -p -i output.min -g output.gbwt -G output.gg
           aws s3 cp --no-progress output.min ${GRAPH_BASE}.${GBWT_TYPE}.min
         volumeMounts:
         - mountPath: /tmp
@@ -45,8 +41,8 @@ spec:
           name: s3-credentials
         resources:
           limits:
-            cpu: 2
-            memory: "180Gi"
+            cpu: 16
+            memory: "120Gi"
             ephemeral-storage: "100Gi"
         env:
         - name: DEBIAN_FRONTEND
@@ -66,3 +62,5 @@ EOF
 ((ITER++))
 done
 done
+              
+

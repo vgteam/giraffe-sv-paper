@@ -24,13 +24,16 @@ for SPECIES in human yeast ; do
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        GRAPHS=(hgsvc 1kg hs38d1 hs37d5)
+        GRAPHS=(hgsvc 1000gp hs38d1 hs37d5)
         READSETS=(novaseq6000 hiseqxten hiseq2500)
         ;;
     esac
     for GRAPH in ${GRAPHS[@]} ; do
         # Find indexes
         case ${GRAPH} in
+        1000gp)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v4/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+            ;;
         1kg)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
             ;;
@@ -62,7 +65,7 @@ for SPECIES in human yeast ; do
                 elif [[ ${PAIRING} == "paired" ]] ; then
                     PAIRED="-i"
                 fi
-                /usr/bin/time -v bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p 2>log.txt >mapped.gam" 2> time-log.txt || true
+                /usr/bin/time -v bash -c "vg map -x ${GRAPH}.xg -g ${GRAPH}.gcsa -f ${READS}.fq.gz ${PAIRED} -t 16 -p --log-time 2>log.txt >mapped.gam" 2> time-log.txt || true
                 LOAD_TIME="$(cat log.txt | grep "Index load time" | sed 's/Index load time:\ \([0-9]*\.[0-9]*\)/\1/g')"
                 SPEED="$(cat log.txt | grep "Mapping speed" | sed 's/Mapping\ speed:\ \([0-9]*\.[0-9]*\)\ reads per second per thread/\1/g')"
 

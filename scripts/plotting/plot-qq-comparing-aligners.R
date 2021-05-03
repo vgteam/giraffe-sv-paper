@@ -33,7 +33,7 @@ if (length(commandArgs(TRUE)) > 3) {
 }
 
 # Determine the order of aligners, based on sorting in a dash-separated tag aware manner
-aligner.names <- levels(dat$aligner)
+aligner.names <- levels(factor(dat$aligner))
 name.lists <- aligner.names %>% (function(name) map(name,  (function(x) as.list(unlist(strsplit(x, "-"))))))
 # Transpose name fragments into a list of vectors for each position, with NAs when tag lists end early
 max.parts <- max(sapply(name.lists, length))
@@ -47,7 +47,7 @@ dat$aligner <- factor(dat$aligner, levels=aligner.names)
 name.lists <- name.lists[name.order]
 
 # Determine colors for aligners
-light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd", "#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d"    ,"#458b74","#698b22","#008b8b")
 bold.colors <- light.colors # Use the same colors for everything
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1

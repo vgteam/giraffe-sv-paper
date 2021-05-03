@@ -1,13 +1,13 @@
-ITER=1
-GBWT_TYPE=sampled
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v3-2/for-NA19239/1000gp/hs38d1/1000GP_hs38d1_filter ; do
-for SAMPLED_PATHS in 1 2 4 8 16 32 64 128 ; do
-kubectl delete job adamnovak-make-gbwt-${ITER}
+# The HGSVC graph wasn't initially made with alternate allele paths in the XG,
+# so replace the XG with one with alternate allele paths, so that simulated
+# reads can be annotated with positions on them.
+GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
+kubectl delete job adamnovak-make-xg
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: adamnovak-make-gbwt-${ITER}
+  name: adamnovak-make-xg
 spec:
   ttlSecondsAfterFinished: 259200
   template:
@@ -15,7 +15,7 @@ spec:
       containers:
       - name: main
         imagePullPolicy: Always
-        image: "quay.io/vgteam/vg:v1.31.0"
+        image: "quay.io/vgteam/vg:ci-2035-42bb4f3123c79006f0d4ffe8e6287627c1dc50ae"
         command:
         - /bin/bash
         - -c
@@ -23,14 +23,9 @@ spec:
           set -ex
           mkdir /tmp/work
           cd /tmp/work
-          aws s3 cp ${GRAPH_BASE}.xg input.xg
-          aws s3 cp ${GRAPH_BASE}.gbwt input.gbwt
-          aws s3 cp ${GRAPH_BASE}.dist input.dist
-          vg gbwt -p -g output.gg -o output.gbwt -x input.xg -l input.gbwt -n ${SAMPLED_PATHS}
-          aws s3 cp output.gbwt ${GRAPH_BASE}.${GBWT_TYPE}.${SAMPLED_PATHS}.gbwt
-          aws s3 cp output.gg ${GRAPH_BASE}.${GBWT_TYPE}.${SAMPLED_PATHS}.gg
-          vg minimizer -t 16 -p -i output.min -d input.dist -g output.gbwt -G output.gg
-          aws s3 cp --no-progress output.min ${GRAPH_BASE}.${GBWT_TYPE}.${SAMPLED_PATHS}.min
+          aws s3 cp --no-progress ${GRAPH_BASE}.vg input.vg
+          vg index -x output.xg -L input.vg
+          aws s3 cp --no-progress output.xg ${GRAPH_BASE}.xg
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
@@ -38,7 +33,7 @@ spec:
           name: s3-credentials
         resources:
           limits:
-            cpu: 16
+            cpu: 2
             memory: "180Gi"
             ephemeral-storage: "100Gi"
         env:
@@ -56,6 +51,3 @@ spec:
           secretName: shared-s3-credentials
   backoffLimit: 0
 EOF
-((ITER++))
-done
-done

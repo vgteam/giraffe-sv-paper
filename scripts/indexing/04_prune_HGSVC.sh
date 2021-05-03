@@ -1,12 +1,11 @@
 ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter ; do
-for GBWT_TYPE in cover sampled ; do
-kubectl delete job adamnovak-make-gbwt-${ITER}
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 ; do
+kubectl delete job adamnovak-make-gcsa-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: adamnovak-make-gbwt-${ITER}
+  name: adamnovak-make-gcsa-${ITER}
 spec:
   ttlSecondsAfterFinished: 259200
   template:
@@ -22,15 +21,14 @@ spec:
           set -ex
           mkdir /tmp/work
           cd /tmp/work
-          aws s3 cp ${GRAPH_BASE}.xg input.xg
-          if [[ "${GBWT_TYPE}" == "cover" ]] ; then
-            vg gbwt -p -g output.gg -o output.gbwt -x input.xg -P
-          else
-            aws s3 cp ${GRAPH_BASE}.gbwt input.gbwt
-            vg gbwt -p -g output.gg -o output.gbwt -x input.xg -l input.gbwt
-          fi
-          aws s3 cp output.gbwt ${GRAPH_BASE}.${GBWT_TYPE}.gbwt
-          aws s3 cp output.gg ${GRAPH_BASE}.${GBWT_TYPE}.gg
+          aws s3 cp ${GRAPH_BASE}.vg input.vg
+          aws s3 cp ${GRAPH_BASE}.gbwt input.gbwt
+          vg prune input.vg --threads 32 --mapping output.pruned.mapping --unfold-paths --gbwt-name input.gbwt --progress > output.pruned.vg
+          aws s3 cp output.pruned.vg ${GRAPH_BASE}.pruned.vg
+          aws s3 cp output.pruned.mapping ${GRAPH_BASE}.pruned.mapping
+          # These steps were in the original script but failed 
+          # vg index -g output.gcsa --threads 32 --mapping output.pruned.mapping output.pruned.vg
+          # aws s3 cp output.gcsa ${GRAPH_BASE}.gcsa
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
@@ -38,9 +36,9 @@ spec:
           name: s3-credentials
         resources:
           limits:
-            cpu: 2
-            memory: "180Gi"
-            ephemeral-storage: "100Gi"
+            cpu: 32
+            memory: "350Gi"
+            ephemeral-storage: "2200G"
         env:
         - name: DEBIAN_FRONTEND
           value: noninteractive
@@ -57,5 +55,4 @@ spec:
   backoffLimit: 0
 EOF
 ((ITER++))
-done
 done

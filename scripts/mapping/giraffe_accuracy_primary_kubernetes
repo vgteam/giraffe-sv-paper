@@ -10,7 +10,6 @@ spec:
       containers:
       - name: xhchang-giraffe-primary
         imagePullPolicy: Always
-        # This is v1.27.1 with a fallback to single-end if it learns a broken paired end distribution
         image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
@@ -20,7 +19,7 @@ spec:
           cd /tmp
           printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
-          for SPECIES in human yeast ; do
+          for SPECIES in human  ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(S288C)
@@ -28,7 +27,7 @@ spec:
                   GBWTS=(raw)
                   ;;
               human)
-                  GRAPHS=(hgsvc 1kg)
+                  GRAPHS=(1000gp hgsvc)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   # We really only need one GBWT because we have no variation
                   GBWTS=(cover)
@@ -37,9 +36,9 @@ spec:
               for GRAPH in ${GRAPHS[@]} ; do
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
-                      1kg)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                      1000gp)
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
@@ -88,8 +87,9 @@ spec:
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/report_giraffe_primary.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments/roc_stats_giraffe_primary.tsv
+          gzip roc_stats.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe_primary.tsv
+          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_primary.tsv.gz
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
