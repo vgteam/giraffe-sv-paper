@@ -30,7 +30,6 @@ spec:
                   aws s3 cp ${GRAPH_BASE}.dist graph.dist
                   aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
               elif [[ "${GRAPH}" == hgsvc ]] ; then
-                  GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1_NA19240_sample_withref
                   aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/novaseq6000/out_sim_gbwt/sim.gam ./sim.gam
                   aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.annotation.xg ./graph.xg
                   aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.onlyNA19240.augment.gbwt ./graph.gbwt
