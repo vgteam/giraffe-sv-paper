@@ -1,12 +1,13 @@
-ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 ; do
-for GBWT_TYPE in full cover sampled ; do
-kubectl delete job adamnovak-make-min-${ITER}
+# The HGSVC graph wasn't initially made with alternate allele paths in the XG,
+# so replace the XG with one with alternate allele paths, so that simulated
+# reads can be annotated with positions on them.
+GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
+kubectl delete job adamnovak-make-xg
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: adamnovak-make-min-${ITER}
+  name: adamnovak-make-xg
 spec:
   ttlSecondsAfterFinished: 259200
   template:
@@ -22,10 +23,9 @@ spec:
           set -ex
           mkdir /tmp/work
           cd /tmp/work
-          aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT_TYPE}.gbwt input.gbwt
-          aws s3 cp --no-progress ${GRAPH_BASE}.${GBWT_TYPE}.gg input.gg
-          vg minimizer -t 16 -p -i output.min -g input.gbwt -G input.gg
-          aws s3 cp --no-progress output.min ${GRAPH_BASE}.${GBWT_TYPE}.min
+          aws s3 cp --no-progress ${GRAPH_BASE}.vg input.vg
+          vg index -x output.xg -L input.vg
+          aws s3 cp --no-progress output.xg ${GRAPH_BASE}.xg
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
@@ -33,9 +33,9 @@ spec:
           name: s3-credentials
         resources:
           limits:
-            cpu: 16
-            memory: "120Gi"
-            ephemeral-storage: "200Gi"
+            cpu: 2
+            memory: "180Gi"
+            ephemeral-storage: "100Gi"
         env:
         - name: DEBIAN_FRONTEND
           value: noninteractive
@@ -51,6 +51,3 @@ spec:
           secretName: shared-s3-credentials
   backoffLimit: 0
 EOF
-((ITER++))
-done
-done

@@ -72,6 +72,31 @@ function archive_ref {
     fi
 }
 
+function bundle_all {
+    # Save all refs of a Git repository as a bundle
+    # bundle_refs TOOL_NAME CLONE_URL
+    # Can't really work with submodules.
+    TOOL_NAME="${1}"
+    shift
+    CLONE_URL="${1}"
+    shift
+    
+    TOOL_DIR="${DEST_DIR}/code/${TOOL_NAME}"
+    CLONE_DIR="${WORK_DIR}/${TOOL_NAME}"
+    BUNDLE_DIR="${TOOL_DIR}"
+    BUNDLE_FILE="${BUNDLE_DIR}/${TOOL_NAME}.bundle"
+    
+    mkdir -p "${BUNDLE_DIR}"
+    rm -Rf "${CLONE_DIR}"
+    git clone --mirror "${CLONE_URL}" "${CLONE_DIR}"
+    (cd "${CLONE_DIR}" && git fetch --tags origin)
+    
+    BUNDLE_ABSPATH="$(realpath "${BUNDLE_FILE}")"
+    (cd "${CLONE_DIR}" && git bundle create "${BUNDLE_ABSPATH}" --all)
+    rm -Rf "${CLONE_DIR}"
+    
+    chmod 644 "${BUNDLE_FILE}"
+}
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
@@ -155,14 +180,19 @@ for VG_COMMIT in $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq) ; do
     echo "vg commit: ${VG_COMMIT}"
     archive_ref vg https://github.com/vgteam/vg.git "${VG_COMMIT}"
 done
+bundle_all vg https://github.com/vgteam/vg.git
+
 for TOIL_VG_COMMIT in $(printf "%s\n" "${TOIL_VG_COMMITS[@]}" | sort | uniq) ; do
     echo "toil-vg commit: ${TOIL_VG_COMMIT}"
     archive_ref toil-vg https://github.com/vgteam/toil-vg.git "${TOIL_VG_COMMIT}"
 done
+bundle_all toil-vg https://github.com/vgteam/toil-vg.git
+
 for TOIL_COMMIT in $(printf "%s\n" "${TOIL_COMMITS[@]}" | sort | uniq) ; do
     echo "toil commit: ${TOIL_COMMIT}"
     archive_ref toil https://github.com/DataBiosphere/toil.git "${TOIL_COMMIT}"
 done
+bundle_all toil https://github.com/DataBiosphere/toil.git
 
 for VG_DOCKER in $(printf "%s\n" "${VG_DOCKERS[@]}" | sort | uniq) ; do
     echo "vg docker: ${VG_DOCKER}"
@@ -173,6 +203,9 @@ for TOIL_DOCKER in $(printf "%s\n" "${TOIL_DOCKERS[@]}" | sort | uniq) ; do
     archive_container toil "${TOIL_DOCKER}"
 done
 
+# Now archive all the paper scripts and history.
+bundle_all giraffe-sv-paper ${SCRIPT_DIR}/../..
+
 rm -Rf "${WORK_DIR}"
 
 # Zip all the software together. Use zip because incremental update of touched
@@ -181,4 +214,15 @@ SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
 SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
 (cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
 
+if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
+    export FILEPATH="${SOFTWARE_ZIP_FILE}"
+    # Upload the completed zip file onto the Zenodo deposition specified by the environment
+    python3 -c 'import requests; 
+import os; deposition=os.environ["ZENODO_DEPOSITION"]; 
+filepath=os.environ["FILEPATH"]; 
+filename=os.path.basename(filepath); 
+params={"access_token": os.environ["ZENODO_TOKEN"]}; 
+bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition}", params=params).json()["links"]["bucket"]; 
+requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
+fi
 

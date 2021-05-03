@@ -18,7 +18,7 @@ for SPECIES in human yeast ; do
         GRAPHS=(yeast_all yeast_subset S288C)
         ;;
     human)
-        GRAPHS=(hgsvc 1kg 1kg-unfiltered 1kg-primary hgsvc-primary)
+        GRAPHS=(hgsvc 1000gplons 1000gplons-unfiltered 1000gplons-sample 1000gplons-sample-withref 1000gplons-formap primary)
         ;;
     esac
     for GRAPH in ${GRAPHS[@]} ; do
@@ -33,25 +33,44 @@ for SPECIES in human yeast ; do
     
         # Most graphs simulated no reads
         READSETS=()
+        # Most graphs have all the indexes except GCSA/LCP and nontrivial snarls (not really used)
+        EXTS=(vg xg trivial.snarls gbwt dist)
     
         case ${GRAPH} in
-        1kg-unfiltered)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5
-            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1kg/hs37d5/1kg_hs37d5
+        1000gplons-unfiltered)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1
+            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1
+            GBWTS=(raw-gbwt)
             # We simulated some reads
             READSETS=(novaseq6000 hiseqxten hiseq2500)
             ;;
-        1kg-primary)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/hs37d5/primaryhs37d5
-            DEST_BASE=${DEST_DIR}/mapping/graphs/generic/primary/hs37d5/primaryhs37d5
+        1000gplons-sample)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample
+            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample
+            GBWTS=()
             ;;
-        hgsvc-primary)
+        1000gplons-sample-withref)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
+            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
+            EXTS=(vg xg)
+            GBWTS=(raw-gbwt force-gbwt force-augment-gbwt-gg)
+            ;;
+        1000gplons-formap)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v4/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter_forvgmap
+            EXTS=(vg xg gcsa gcsa.lcp)
+            GBWTS=(raw-gbwt)
+            ;;
+        primary)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
             DEST_BASE=${DEST_DIR}/mapping/graphs/generic/primary/hs38d1/primaryhs38d1
+            # We set up for map
+            EXTS+=(gcsa gcsa.lcp)
+            GBWTS=(paths cover)
             ;;
-        1kg)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
-            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter
+        1000gplons)
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+            DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
             # Grab all the other sampled GBWTs too
             GBWTS+=("sampled.1" "sampled.2" "sampled.4" "sampled.8" "sampled.16" "sampled.32" "sampled.128")
             ;;
@@ -62,6 +81,8 @@ for SPECIES in human yeast ; do
             GBWTS+=("cover.1" "cover.2" "cover.4" "cover.8" "cover.16" "cover.32" "cover.64" "cover.128")
             # We simulated some reads
             READSETS=(novaseq6000 hiseqxten hiseq2500)
+            # We set up for map
+            EXTS+=(gcsa gcsa.lcp)
             ;;
         S288C)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/generic/primary/S288C/primaryS288C
@@ -79,7 +100,7 @@ for SPECIES in human yeast ; do
             ;;
         esac
         
-        for EXT in vg xg snarls trivial.snarls gcsa gcsa.lcp dist ; do
+        for EXT in "${EXTS[@]}" ; do
             # Copy the graph and all generic indexes
             download ${GRAPH_BASE}.${EXT} ${DEST_BASE}.${EXT}
         done
@@ -90,8 +111,15 @@ for SPECIES in human yeast ; do
             if [[ "${GBWT}" == "raw" ]] ; then
                 download ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
                 download ${GRAPH_BASE}.gg ${DEST_BASE}.gg
-                download ${GRAPH_BASE}.min ${DEST_BASE}.min
+                # Lots of graphs lack a base min because this GBWT isn't useful for mapping
+            elif [[ "${GBWT}" == "raw-gbwt" ]] ; then
+                download ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
+            elif [[ "${GBWT}" == "force-gbwt" ]] ; then
+                download ${GRAPH_BASE}.force.gbwt ${DEST_BASE}.force.gbwt
+            elif [[ "${GBWT}" == "force-augment-gbwt-gg" ]] ; then
+                download ${GRAPH_BASE}.force.augment.gbwt ${DEST_BASE}.force.augment.gbwt
             else
+                # Generated sampled GBWTs come with a min file
                 download ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
                 download ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
                 download ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
@@ -102,27 +130,19 @@ for SPECIES in human yeast ; do
             # Copy each readset simulated from this graph
             
             case ${GRAPH} in
-            1kg-unfiltered)
-                READ_BASE=s3://vg-k8s/profiling/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim
-                READDEST_BASE=${DEST_DIR}/mapping/reads/sim/for-NA19239/1kg/hs37d5/${READS}/out_sim_gbwt/sim
-                ;;
-            1kg)
-                READ_BASE=""
-                READDEST_BASE=""
+            1000gplons-unfiltered)
+                READ_BASE=s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim
+                READDEST_BASE=${DEST_DIR}/mapping/reads/sim/for-NA19239/1000gplons/hs38d1/${READS}/out_sim_gbwt/sim
                 ;;
             hgsvc)
                 READ_BASE=s3://vg-k8s/profiling/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim
                 READDEST_BASE=${DEST_DIR}/mapping/reads/sim/for-NA19240/hgsvc/grch38/${READS}/out_sim_gbwt/sim
                 ;;
-            S288C)
-                READ_BASE=""
-                READDEST_BASE=""
-                ;;
             yeast_all)
                 READ_BASE=s3://vg-k8s/profiling/reads/sim/yeast/sim-${READS}
                 READDEST_BASE=${DEST_DIR}/mapping/reads/sim/yeast/sim-${READS}
                 ;;
-            yeast_subset)
+            *)
                 READ_BASE=""
                 READDEST_BASE=""
                 ;;

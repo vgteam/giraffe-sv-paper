@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run with vg v1.32.0 on out 64 core/1TB memory machine, but this level of hardware is not expected to be necessary.
+# Run with vg v1.32.0 on our 64 core/1TB memory machine, but this level of hardware is not expected to be necessary.
 
 set -ex
 
