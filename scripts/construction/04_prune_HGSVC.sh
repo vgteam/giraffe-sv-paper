@@ -1,5 +1,5 @@
 ITER=1
-for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 s3://vg-k8s/profiling/graphs/v2/for-NA19239/1kg/hs37d5/1kg_hs37d5_filter ; do
+for GRAPH_BASE in s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1 ; do
 kubectl delete job adamnovak-make-gcsa-${ITER}
 cat <<EOF | tee /dev/stderr | kubectl apply -f -
 apiVersion: batch/v1
