@@ -12,6 +12,12 @@ function download() {
     fi
 }
 
+function download_if_exists() {
+    if [ ! -e "${2}" ] ; then
+        aws s3 cp --no-progress "${1}" "${2}" || true
+    fi
+}
+
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
@@ -53,13 +59,13 @@ for SPECIES in human yeast ; do
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
             EXTS=(vg xg)
-            GBWTS=(raw-gbwt force-gbwt force-augment-gbwt-gg)
+            GBWTS=(raw force force.augment)
             ;;
         1000gplons-formap)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v4/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter_forvgmap
             EXTS=(vg xg gcsa gcsa.lcp)
-            GBWTS=(raw-gbwt)
+            GBWTS=(raw)
             ;;
         primary)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
@@ -78,7 +84,7 @@ for SPECIES in human yeast ; do
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
             # Grab all the cover GBWTs too
-            GBWTS+=("cover.1" "cover.2" "cover.4" "cover.8" "cover.16" "cover.32" "cover.64" "cover.128")
+            GBWTS+=("cover.1" "cover.2" "cover.4" "cover.8" "cover.16" "cover.32" "cover.64" "cover.128" "onlyNA19240.augment")
             # We simulated some reads
             READSETS=(novaseq6000 hiseqxten hiseq2500)
             # We set up for map
@@ -110,19 +116,13 @@ for SPECIES in human yeast ; do
             # Copy each GBWT and related file that exists
             if [[ "${GBWT}" == "raw" ]] ; then
                 download ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
-                download ${GRAPH_BASE}.gg ${DEST_BASE}.gg
-                # Lots of graphs lack a base min because this GBWT isn't useful for mapping
-            elif [[ "${GBWT}" == "raw-gbwt" ]] ; then
-                download ${GRAPH_BASE}.gbwt ${DEST_BASE}.gbwt
-            elif [[ "${GBWT}" == "force-gbwt" ]] ; then
-                download ${GRAPH_BASE}.force.gbwt ${DEST_BASE}.force.gbwt
-            elif [[ "${GBWT}" == "force-augment-gbwt-gg" ]] ; then
-                download ${GRAPH_BASE}.force.augment.gbwt ${DEST_BASE}.force.augment.gbwt
+                download_if_exists ${GRAPH_BASE}.gg ${DEST_BASE}.gg
+                download_if_exists ${GRAPH_BASE}.gg ${DEST_BASE}.min
             else
                 # Generated sampled GBWTs come with a min file
                 download ${GRAPH_BASE}.${GBWT}.gbwt ${DEST_BASE}.${GBWT}.gbwt
-                download ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
-                download ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
+                download_if_exists ${GRAPH_BASE}.${GBWT}.gg ${DEST_BASE}.${GBWT}.gg
+                download_if_exists ${GRAPH_BASE}.${GBWT}.min ${DEST_BASE}.${GBWT}.min
             fi
         done
         
