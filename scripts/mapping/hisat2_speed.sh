@@ -1,6 +1,6 @@
 set -e
 printf "graph\talgorithm\treads\tpairing\tload_time\tspeed\n" > report_speed_hisat2.tsv
-CPU=16
+THREAD_COUNT=16
 
 
 # Download reads
@@ -38,7 +38,7 @@ for SPECIES in human ; do
         READSETS=(DBVPG6044 DBVPG6765 N44 UWOPS034614 UWOPS919171 Y12 YPS138)
         ;;
     human)
-        REFS=(grch38_snp)
+        REFS=(grch38_1kg_lo_nsd_all_af001)
         READSETS=(novaseq6000)
         ;;
     esac
@@ -58,28 +58,28 @@ for SPECIES in human ; do
                 if [ "${PARA}" = "def" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 
                 # Use sensitive HISAT2
                 elif [ "${PARA}" = "sens" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 
                 # Use very sensitive HISAT2
                 elif [ "${PARA}" = "vsens" ]; then
                 
                     # Map single-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -U ${READS}.fq.gz -S ${OUT_PREFIX}_se.sam 2> log_single.txt"
                 
                     # Map paired-end reads
-                    /usr/bin/time -v bash -c "hisat2 -p ${CPU} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
+                    /usr/bin/time -v bash -c "hisat2 -p ${THREAD_COUNT} -t --maxins 1065 --no-spliced-alignment --very-sensitive -x ${REF}_index -1 ${READS}_1.fq.gz -2 ${READS}_2.fq.gz -S ${OUT_PREFIX}_pe.sam 2> log_paired.txt"
                 fi
      
                 #Get the time as reported by the mapper
@@ -102,10 +102,10 @@ for SPECIES in human ; do
                 >&2 cat log_single.txt
 
                 # Compress single-end alignments
-                #/usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_se.sam > ${OUT_PREFIX}_se.bam"
+                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${THREAD_COUNT} ${OUT_PREFIX}_se.sam > ${OUT_PREFIX}_se.bam"
                 #
                 ## Compress paired-end alignments
-                #/usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${CPU} ${OUT_PREFIX}_pe.sam > ${OUT_PREFIX}_pe.bam"
+                /usr/bin/time -v bash -c "samtools view -b -O BAM --threads ${THREAD_COUNT} ${OUT_PREFIX}_pe.sam > ${OUT_PREFIX}_pe.bam"
 
             done
         done

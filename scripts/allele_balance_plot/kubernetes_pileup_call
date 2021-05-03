@@ -20,7 +20,7 @@ spec:
 
 
           #get reference
-          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
+          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
           aws s3 cp s3://vg-k8s/profiling/reads/real/NA19239/novaseq6000-ERR3239454-shuffled-600m.fq.gz ./reads.fq.gz
           aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.gz .
           gunzip hs38d1.fa.gz
@@ -29,14 +29,14 @@ spec:
           for MAPPER in map bwa giraffe  ; do
           
               if [[ ${MAPPER} == "giraffe" ]] ; then
-                  #aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
-                  #aws s3 cp ${GRAPH_BASE}.sampled.64.gbwt ./graph.gbwt
-                  #aws s3 cp ${GRAPH_BASE}.sampled.64.gg ./graph.gg
-                  #aws s3 cp ${GRAPH_BASE}.sampled.64.min ./graph.min
-                  #aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
-                  #vg giraffe -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -f reads.fq.gz -i -t 24 | vg surject -x graph.xg -b -i -t 24 - > mapped.bam
-                  #samtools sort mapped.bam > mapped.sorted.bam
-                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/mapped.giraffe.novaseq6000.sorted.bam  mapped.sorted.bam
+                  aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.gbwt ./graph.gbwt
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.gg ./graph.gg
+                  aws s3 cp ${GRAPH_BASE}.sampled.64.min ./graph.min
+                  aws s3 cp ${GRAPH_BASE}.dist ./graph.dist
+                  vg giraffe -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -f reads.fq.gz -i -t 24 | vg surject -x graph.xg -b -i -t 24 - > mapped.bam
+                  samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp  mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.giraffe.novaseq6000.sorted.bam
                   
               elif [[ ${MAPPER} == "bwa" ]] ; then
                   #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.amb .
@@ -46,18 +46,16 @@ spec:
                   #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.sa .
                   #bwa mem -t 24 -p hs38d1.fa reads.fq.gz > mapped.bam
                   #samtools sort mapped.bam > mapped.sorted.bam
-                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/mapped.bwa_mem.novaseq6000.sorted.bam mapped.sorted.bam
+                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.bwa_mem.novaseq6000.sorted.bam mapped.sorted.bam
               elif [[ ${MAPPER} == "map" ]] ; then
                   #aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
                   #aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
                   #aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
                   #vg map -x graph.xg -g graph.gcsa -f reads.fq.gz -i -t 20 > mapped.gam
-                  #aws s3 cp mapped.gam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/mapped.map.gam
                   #vg surject -x graph.xg -b -i -t 24 - > mapped.bam
-                  #aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/map_novaseq6000_paired.gam ./mapped.gam
                   #vg surject -x graph.xg -b -i -t 24 mapped.gam > mapped.bam
                   #samtools sort mapped.bam > mapped.sorted.bam
-                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/mapped.map.novaseq6000.sorted.bam  mapped.sorted.bam
+                  aws s3 cp mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.map.novaseq6000.sorted.bam  
               fi
               samtools index mapped.sorted.bam
 
@@ -72,14 +70,14 @@ spec:
               rm *.sorted.vcf.gz
               printf "mapped.sorted.bam\t${MAPPER}" > rename
               bcftools reheader -s rename calls.unnamed.vcf.gz -o calls.vcf.gz
-              #aws s3 cp calls.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/${MAPPER}.calls.unsorted.vcf.gz
+              #aws s3 cp calls.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/${MAPPER}.calls.unsorted.vcf.gz
               bcftools index -f calls.vcf.gz
               bcftools sort calls.vcf.gz -O z > ${MAPPER}.vcf.gz
-              #aws s3 cp ${MAPPER}.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/${MAPPER}_calls.sorted.vcf.gz
+              #aws s3 cp ${MAPPER}.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/${MAPPER}_calls.sorted.vcf.gz
               bcftools index ${MAPPER}.vcf.gz
           done
           bcftools merge giraffe.vcf.gz map.vcf.gz bwa.vcf.gz -O z > merged.vcf.gz
-          aws s3 cp merged.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/all_calls.vcf.gz
+          aws s3 cp merged.vcf.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/all_calls.vcf.gz
 
           
 

@@ -38,7 +38,7 @@ spec:
                       case ${GRAPH} in
                       1000gp)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2-2/generic/primary/hs38d1/primaryhs38d1
@@ -88,8 +88,8 @@ spec:
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
           gzip roc_stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_giraffe_primary.tsv
-          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_giraffe_primary.tsv.gz
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe_primary.tsv
+          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_primary.tsv.gz
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
