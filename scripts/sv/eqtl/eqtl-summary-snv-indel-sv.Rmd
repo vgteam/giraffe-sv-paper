@@ -1,0 +1,444 @@
+---
+title: SNV/indel/SV-eQTLs summary
+output: github_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r libs}
+library(rtracklayer)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(knitr)
+library(tidyr)
+library(RColorBrewer)
+## list of figures
+ggp = list()
+```
+
+## Read eQTL results
+
+Matrix-eQTL was ran on different sample sets (*all* samples, *Eur*opeans, *YRI*) on the SV genotypes predicted by vg and the SNV/indels called by the NYGC (phased VCF on autosomes).
+
+```{r load.eqtl}
+load('eqtl-test-allvars-results.RData')
+names(ll)
+names(ll) = c('EUR + YRI', 'EUR', 'YRI')
+```
+
+## Gene annotation
+
+```{r load.genec}
+if(!file.exists('../describe-svs/gencode.v35.annotation.gtf.gz')){
+  download.file('ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_35/gencode.v35.annotation.gtf.gz', '../describe-svs/gencode.v35.annotation.gtf.gz')
+}
+
+genc.all = import('../describe-svs/gencode.v35.annotation.gtf.gz')
+genc = subset(genc.all, type=='gene')
+genc$gene_id = gsub('\\..*', '', genc$gene_id)
+genc = genc %>% as.data.frame %>% mutate(gene=gene_id) %>% select(gene, gene_type, gene_name)
+
+pc.geneids = genc %>% filter(gene_type=='protein_coding') %>% .$gene %>% unique
+```
+
+## QC: p-value distribution and QQ plots
+
+```{r qc}
+qqplot_matrixeqtl <- function(me.o){
+  pvs.s = tibble(n=me.o$cis$hist.counts,
+                 pv.s=me.o$cis$hist.bins[-length(me.o$cis$hist.bins)],
+                 pv.e=me.o$cis$hist.bins[-1])
+  pvs.s$pv.s.exp = cumsum(pvs.s$n)/sum(pvs.s$n)
+  pvs.s %>% filter(n>0) %>% 
+    ggplot(aes(x=-log10(pv.s.exp), y=-log10(pv.s))) +
+    geom_step() +
+    ## geom_point(aes(size=cut(n, c(0,1,2,10,Inf), labels=c(1, 2, '3-10', '>10'))), alpha=.5) +
+    theme_bw() +
+    scale_size_manual(values=c(1,1.5,2,3), 'cis-eQTLs') + 
+    geom_abline(linetype=2) +
+    xlab('theoritical null p-value (-log10)') +
+    ylab('p-value (-log10)')
+}
+
+pvhist_matrixeqtl <- function(me.o){
+  pvs.s = tibble(n=me.o$cis$hist.counts,
+                 pv.s=me.o$cis$hist.bins[-length(me.o$cis$hist.bins)])
+  ## pv < 0.01 were split in multiple bins for the qqplot -> aggregate them
+  pvs.h = pvs.s %>% mutate(pv.s=ifelse(pv.s<.01, 0, pv.s)) %>%
+    group_by(pv.s) %>% summarize(n=sum(n))
+  ## histogram
+  ggplot(pvs.h, aes(x=pv.s+.005, y=n)) +
+    geom_bar(stat='identity', width=.01) + theme_bw() +
+    ylim(0, max(pvs.h$n)) +
+    xlab('p-value') + ylab('SV-gene test')
+}
+
+ggp$hist.all = pvhist_matrixeqtl(ll[['EUR + YRI']])
+ggp$hist.all + ggtitle('EUR + YRI')
+ggp$qq.all = qqplot_matrixeqtl(ll[['EUR + YRI']])
+ggp$qq.all + ggtitle('EUR + YRI')
+
+ggp$hist.eur = pvhist_matrixeqtl(ll[['EUR']])
+ggp$hist.eur + ggtitle('EUR')
+ggp$qq.eur = qqplot_matrixeqtl(ll[['EUR']])
+ggp$qq.eur + ggtitle('EUR')
+
+ggp$hist.yri = pvhist_matrixeqtl(ll[['YRI']])
+ggp$hist.yri + ggtitle('YRI')
+ggp$qq.yri = qqplot_matrixeqtl(ll[['YRI']])
+ggp$qq.yri + ggtitle('YRI')
+```
+
+## Number of eQTLs and eGenes
+
+```{r nbs}
+eqtl.df = lapply(names(ll)[1:3], function(nn){
+  ll[[nn]]$cis$eqtls %>% mutate(pop=nn)
+}) %>% bind_rows
+
+svs = read.table('../describe-svs/svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
+svs = svs %>% select(svid, type, seqnames, start, end, size)
+dels.svids = svs %>% filter(type=="DEL") %>% .$svid
+inss.svids = svs %>% filter(type=="INS") %>% .$svid
+
+eqtl.df = eqtl.df %>% mutate(pop=factor(pop, levels=c('EUR + YRI', 'EUR', 'YRI'))) %>%
+  dplyr::rename(svid=snps) %>% 
+  mutate(gene_type=ifelse(gene %in% pc.geneids, 'protein_coding', 'other'),
+         gene_type=factor(gene_type, levels=c('protein_coding', 'other')),
+         type=ifelse(svid %in% dels.svids, 'DEL', 'SNV-indel'),
+         type=ifelse(svid %in% inss.svids, 'INS', type))
+
+eqtl.df %>% filter(FDR<=.01) %>% 
+  group_by(gene_type, pop, type) %>%
+  summarize(eqtl.fdr01=n(),
+            esv.fdr01=length(unique(svid)),
+            egene.fdr01=length(unique(gene))) %>%
+  kable(format.args=list(big.mark=','))
+
+eqtl.df %>% filter(FDR<=.05) %>% 
+  group_by(gene_type, pop, type) %>%
+  summarize(eqtl.fdr05=n(),
+            esv.fdr05=length(unique(svid)),
+            egene.fdr05=length(unique(gene))) %>%
+  kable(format.args=list(big.mark=','))
+```
+
+## Positively or negatively correlated with gene expression
+
+```{r effect.size}
+eqtl.df %>% filter(FDR<=.01) %>%
+  group_by(pop, type) %>% summarize(prop.pos.beta=mean(beta>0),
+                                    mean.beta.pos=mean(beta[beta>0]),
+                                    mean.beta.neg=mean(beta[beta<0])) %>% kable(digits=3)
+
+eqtl.df %>% filter(FDR<=.01) %>%
+  ggplot(aes(beta)) +
+  geom_vline(xintercept=0, linetype=2) + 
+  geom_histogram(position='dodge') +
+  theme_bw() + ylab('SV-eQTL') + 
+  facet_wrap(.~type+pop, scales='free')
+```
+
+## eQTL lead: SNV-indel or SV?
+
+```{r lead}
+eqtl.g = eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>% 
+  group_by(gene) %>%
+  summarize(nb.sv=sum(type!='SNV-indel'),
+            min.qv.sv=min(FDR[which(type!='SNV-indel')]),
+            min.qv.sv=ifelse(nb.sv==0, NA, min.qv.sv),
+            max.beta.sv=max(abs(beta[which(type!='SNV-indel')])),
+            max.beta.sv=ifelse(nb.sv==0, NA, max.beta.sv),
+            nb.snv.indel=sum(type=='SNV-indel'),
+            min.qv.snv.indel=min(FDR[which(type=='SNV-indel')]),
+            min.qv.snv.indel=ifelse(nb.snv.indel==0, NA, min.qv.snv.indel),
+            max.beta.snv.indel=max(abs(beta[which(type=='SNV-indel')])),
+            max.beta.snv.indel=ifelse(nb.snv.indel==0, NA, max.beta.snv.indel))
+
+eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>%
+  mutate(strongest.assoc=ifelse(min.qv.snv.indel<min.qv.sv, 'SNV-indel', 'SV'),
+         strongest.assoc=ifelse(min.qv.snv.indel==min.qv.sv, 'SNV-indel-SV', strongest.assoc)) %>%
+  group_by(strongest.assoc) %>% summarize(n=n()) %>% ungroup %>% mutate(prop=n/sum(n)) %>% arrange(desc(n))
+
+## lead-eQTL
+nb.lead.sv = eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0, min.qv.snv.indel>min.qv.sv) %>% nrow
+nb.lead.all = eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>% nrow
+nb.lead.sv / nb.lead.all
+```
+
+Permute the pvalue/FDR (or pick one variant randomly) within each gene to have an idea of the expected number and compute a permutation p-value.
+
+```{r lead.perm}
+## sample lead assoc within each gene that contains both SV and SNV-indel eQTLs
+genes.both = eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>% .$gene %>% unique
+
+N = 10000
+lead.perm.df = eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01, gene %in% genes.both) %>% 
+  group_by(gene) %>% do({tibble(perm=1:N, type=sample(.$type, N, replace=TRUE))}) %>%
+  group_by(perm) %>% summarize(nb.all=n(), nb.sv=sum(type!='SNV-indel'), prop.sv=nb.sv/nb.all)
+
+summary(lead.perm.df$prop.sv)
+pv.perm = (1+sum(nb.lead.sv/nb.lead.all <= lead.perm.df$prop.sv)) / (1+nrow(lead.perm.df))
+pv.perm
+```
+
+Out of curiosity how many SVs are tested or in eQTLs compared to SNV-indels?
+
+```{r lead.sv.control}
+## out of all variants tested
+pars = ll[['EUR + YRI']]$input
+pars$svs / pars$variants
+
+## out of all eQTLs
+eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>% summarize(prop.sv=mean(type!='SNV-indel'))
+
+## out of all eQTLs in genes with both SV and SNV/indel eQTLs
+eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>% summarize(pop.sv=sum(nb.sv)/sum(nb.sv+nb.snv.indel))
+```
+
+- Only `r round(100 * pars$svs / pars$variants, 2)`% of the variants tested were SVs.
+- Only `r eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>% summarize(prop.sv=100*mean(type!='SNV-indel')) %>% round(2)`% of the eQTLs were SVs.
+- Only `r eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>% summarize(pop.sv=100*sum(nb.sv)/sum(nb.sv+nb.snv.indel)) %>% round(2)`% of the eQTLs with both SNV/indel-eQTLs and SV-eQTLs were SVs.
+- But `r round(nb.lead.sv*100/nb.lead.all, 2)`% of the lead-eQTLs were SVs (permutation pvalue: `r round(pv.perm, 4)`)
+
+### Examples of lead SV-eQTLs
+
+```{r ex}
+load('./eqtl-lead-examples.RData')
+
+ccres = read.table('GRCh38-ccREs.bed.gz', as.is=TRUE, sep='\t')
+ccres = ccres[,c(1:3, 6)]
+colnames(ccres) = c('chr', 'start', 'end', 'regtype')
+ccres = makeGRangesFromDataFrame(ccres, keep.extra.columns=TRUE)
+
+formatEx <- function(df){
+  df %>% select(-type) %>% 
+    dplyr::rename(svid=snps) %>% merge(svs) %>% 
+    mutate(coord=paste0('[', seqnames, ':', start, '-', end,
+                        '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                        seqnames, '%3A', start, '%2D', end, ')')) %>% 
+    select(coord, svid, type, size, gene, gene_name, beta, pvalue, FDR) %>%
+    mutate(pvalue=signif(pvalue, 3), FDR=signif(FDR, 3), beta=signif(beta, 3))
+}
+plotEx <- function(ex){
+  df = merge(
+    tibble(sample=colnames(ge.ex), ge=ge.ex[ex$gene[1],]),
+    tibble(sample=colnames(ac.ex), ac=ac.ex[ex$svid[1],]))
+  df.n = df %>% group_by(ac) %>% summarize(ge=median(ge), n=n())
+  ggplot(df, aes(x=factor(ac), y=ge, group=paste(ac))) +
+    geom_boxplot() +
+    ## geom_label(aes(label=n), data=df.n, position=position_dodge(.75), show.legend=FALSE) + 
+    theme_bw() +
+    xlab('allele count') +
+    ylab('gene expression (RPKM)') +
+    ggtitle(paste(ex$gene_name[1], paste0(ex$size[1], ' bp'), ex$type[1]))
+}
+plotQtls <-function(ex, gene.annotation=FALSE, flank.bp=NULL, reg.annotation=FALSE){
+  ## extract position for each variant associated with this gene
+  ex.pos = eqtl.df %>% filter(pop=='EUR + YRI', gene==ex$gene)
+  ex.pos = svs %>% select(seqnames, start, end, svid) %>%
+    merge(ex.pos, all.y=TRUE) %>%
+    mutate(seqnames=ifelse(is.na(seqnames), gsub('(.*):.*:.*:.*', 'chr\\1', svid), seqnames),
+           start=ifelse(is.na(start), as.numeric(gsub('.*:(.*):.*:.*', '\\1', svid)), start),
+           end=ifelse(is.na(end), start, end),
+           pt.size=ifelse(type=='SNV-indel', 1, 2),
+           type=factor(type,
+                       levels=c('DEL', 'INS', 'SNV-indel'),
+                       labels=c('deletion', 'insertion', 'SNV-indel')))
+  r.start = min(ex.pos$start)
+  r.end = max(ex.pos$start)
+  ## custom region defined by a flank size around the lead eQTL?
+  if(!is.null(flank.bp)){
+    ex = svs %>% select(svid, start) %>% merge(ex)
+    ex.pos = ex.pos %>% filter(end>ex$start-flank.bp, start<ex$start+flank.bp)
+    r.start = ex$start-flank.bp
+    r.end = ex$start+flank.bp
+  }
+  ## prepare consistent color palette for variant types
+  pal = brewer.pal(3, 'Set1')
+  names(pal) = c('deletion', 'insertion', 'SNV-indel')
+  ## if the size should highligh overlap with reg region
+  if(reg.annotation){
+    ex.pos$pt.size = overlapsAny(makeGRangesFromDataFrame(ex.pos), ccres)
+  }
+  ## graph
+  ggp = ggplot(ex.pos) +
+    geom_point(aes(x=start/1e6, y=-log10(pvalue), colour=type, size=pt.size), alpha=.8) + theme_bw() +
+    geom_segment(aes(x=start/1e6, y=-log10(pvalue), colour=type,
+                     xend=end/1e6, yend=-log10(pvalue)), data=subset(ex.pos, type!='SNV-indel')) + 
+    scale_colour_manual(name='variant\ntype', values=pal[levels(ex.pos$type)]) +
+    xlab('position (Mbp)') +
+    theme(legend.position=c(.99,.99), legend.justification=c(1,1), legend.title=element_blank()) + 
+    ylim(0, max(-log10(ex.pos$pvalue)))
+  ## show the size legend or not
+  if(reg.annotation){
+    ggp = ggp + scale_size_discrete(name='overlaps candidate-cis\nregulatory element', range=c(1,3))
+  } else {
+    ## size is just to highlight SVs, no legend
+    ggp = ggp + scale_size_continuous(range=c(1,3)) + guides(size=FALSE)
+  }
+  ## gene body and coding regions display?
+  if(gene.annotation){
+    body.gr = subset(genc.all, gene_name==ex$gene_name[1] & type=='gene')
+    cds.gr = subset(genc.all, gene_name==ex$gene_name[1] & type=='CDS')
+    tss.gr = resize(body.gr, 1)
+    gene.y.position = 0 ## slighty below y=0
+    ggp = ggp + geom_segment(aes(x=start/1e6, xend=end/1e6, y=gene.y.position, yend=gene.y.position),
+                             data=as.data.frame(body.gr), size=1) +
+      geom_segment(aes(x=start/1e6, xend=end/1e6, y=gene.y.position, yend=gene.y.position),
+                   data=as.data.frame(cds.gr), size=4) +
+      geom_label(aes(x=start/1e6, y=gene.y.position, label=gene_name),
+                 data=as.data.frame(tss.gr), size=4, hjust=0, vjust=.5)
+  }
+  ## force the range to be the custom region (if defined)
+  if(!is.null(flank.bp)){
+    ggp = ggp + xlim(r.start/1e6, r.end/1e6)
+  }
+  ## return final graph
+  ggp
+}
+
+genes.sv.lead = eqtl.g %>% filter(nb.sv>0, nb.snv.indel>20, min.qv.snv.indel>min.qv.sv) %>% .$gene %>% as.character %>% unique
+
+## positive association
+ex = ex.lead %>% merge(genc) %>% filter(beta>0, gene_type=='protein_coding', gene %in% genes.sv.lead) %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
+ggp$ex.lead.pos.ge = plotEx(ex)
+ggp$ex.lead.pos.ge
+ggp$ex.lead.pos.pos = plotQtls(ex, gene.annotation=TRUE, flank.bp=28000)
+ggp$ex.lead.pos.pos
+
+## positive association
+ex = ex.lead %>% merge(genc) %>% filter(beta<0, gene_type=='protein_coding', gene %in% genes.sv.lead) %>%
+  arrange(FDR) %>% head(1) %>% formatEx
+ex %>% select(-gene) %>% kable
+ggp$ex.lead.neg.ge = plotEx(ex)
+ggp$ex.lead.neg.ge
+ggp$ex.lead.neg.pos = plotQtls(ex, gene.annotation=TRUE, flank.bp=3e5)
+ggp$ex.lead.neg.pos
+```
+
+
+## Effect size stronger for SV-eQTL?
+
+```{r sv.effect.size}
+eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>% group_by(type) %>% summarize(beta=mean(abs(beta)))
+```
+
+Not really when we look at the beta values after standardization.
+We used to see a stronger effect before, most likely because SVs were associated with genes that were more expressed (hence larger betas).
+
+## More SV-eQTLs in genes with higher expression?
+
+```{r sv.ge}
+ge.df = read.table('geuvadis.median.ge.tsv.gz', header=TRUE, as.is=TRUE)
+
+n.quant = 20
+ge.df = ge.df %>%
+  mutate(ge=cut(median.ge, quantile(ge.df$median.ge, seq(0,1,1/n.quant)), include.lowest=TRUE)) %>%
+  select(-median.ge)
+
+eqtl.ge = eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>%
+  mutate(type=ifelse(type!='SNV-indel', 'SV', type)) %>% 
+  merge(ge.df) %>%
+  group_by(type) %>% mutate(n=n()) %>%
+  group_by(type, ge) %>% summarize(prop=n()/n[1])
+
+## permute gene expression levels
+ge.sum.for.perm = eqtl.df %>% filter(pop=='EUR + YRI', FDR<=.01) %>%
+  mutate(type=ifelse(type!='SNV-indel', 'SV', type)) %>% 
+  merge(ge.df) %>%
+  group_by(gene, ge) %>%
+  summarize(nb.sv=sum(type=='SV'), nb.snv=sum(type=='SNV-indel')) %>% ungroup
+
+eqtl.ge.perm = lapply(1:10000, function(ii){
+  ge.sum.for.perm %>% mutate(ge=sample(ge)) %>% 
+    group_by(ge) %>% summarize(nb.sv=sum(nb.sv), nb.snv=sum(nb.snv)) %>%
+    ungroup %>% mutate(SV=nb.sv/sum(nb.sv), SNV=nb.snv/sum(nb.snv)) %>%
+    mutate(perm=ii)
+}) %>% bind_rows
+
+eqtl.ge.perm = eqtl.ge.perm %>%
+  select(perm, ge, SV, SNV) %>%
+  pivot_longer(cols=c(SV, SNV), names_to='type', values_to='prop.perm') %>% 
+  mutate(type=ifelse(type=='SNV', 'SNV-indel', type))
+
+## enrichment in any expression class?
+sig.df = eqtl.ge.perm %>% merge(eqtl.ge) %>%
+  group_by(ge, type) %>% summarize(pv=(1+sum(prop<=prop.perm))/(1+n()),
+                                   fc=prop[1]/median(prop.perm)) %>%
+  ungroup %>% mutate(qv=p.adjust(pv, 'BH'))
+sig.df %>% filter(qv<.05) %>% kable
+
+## graph
+ggp$ge.enr = eqtl.ge %>% merge(sig.df) %>% mutate(sig=cut(qv, c(0,.01,.05,1))) %>% 
+  ggplot(aes(x=ge, colour=type)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=45, hjust=1),
+        legend.justification=c(0,1), legend.position=c(.01,.99)) +
+  geom_hline(yintercept=1/n.quant, linetype=2) +
+  geom_point(aes(y=prop, size=sig)) + geom_line(aes(y=prop, group=type), size=1, alpha=.5) +
+  scale_y_continuous(breaks=seq(0, 10/n.quant, 1/(2*n.quant))) +
+  scale_colour_brewer(name='variant type', palette='Set1') +
+  scale_size_manual(values=c(4,2,1), name='adjusted permuted p-value') + 
+  xlab(paste0('gene expression (RPKM, ', n.quant, ' quantiles)')) +
+  ylab('proportion of eQTLs')
+ggp$ge.enr
+```
+
+Enrichment in the genes with highest expression.
+
+## eGenes with SV-eQTLs only
+
+```{r sv.eqtl.only}
+eqtl.sv.only = eqtl.df %>% filter(FDR<=.01) %>% 
+  group_by(gene) %>%
+  filter(all(type!='SNV-indel'))
+
+length(unique(eqtl.sv.only$gene))
+
+merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
+  arrange(gene_type, gene_name, pop) %>%
+  select(gene_type, gene_name, pop, beta, FDR, svid, type, size, seqnames, start, end) %>% 
+  kable
+```
+
+## Figure
+
+```{r fig}
+## adds a legend title: a), b), etc
+plot_list <- function(ggp.l, gg.names=NULL, gg.titles=NULL){
+  if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
+  if(is.null(gg.names)) gg.names = names(ggp.l)
+  if(is.null(gg.titles)){
+    gg.titles = rep('', length(gg.names))
+  } else {
+    gg.titles = paste0(' ', gg.titles)
+  }
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')', gg.titles[ii])))
+}
+
+grid.arrange(grobs=plot_list(ggp, gg.names=c('ex.lead.pos.ge', 'ex.lead.pos.pos', 'ex.lead.neg.ge', 'ex.lead.neg.pos')),
+             layout_matrix=matrix(1:4, 2, byrow=TRUE),
+             widths=c(2, 5))
+
+pdf('fig-sv-snv-indel-eqtl.pdf', 9, 5)
+ggp$ge.enr
+grid.arrange(grobs=plot_list(ggp, gg.names=c('ex.lead.pos.ge', 'ex.lead.pos.pos', 'ex.lead.neg.ge', 'ex.lead.neg.pos')),
+             layout_matrix=matrix(1:4, 2, byrow=TRUE),
+             widths=c(2, 5))
+dev.off()
+```
+
+## Save genes with only SV-eQTLs 
+
+```{r tab}
+merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
+  arrange(gene_type, gene_name, pop) %>%
+  select(gene_type, gene_name, gene, pop, beta, FDR, svid, type, size, seqnames, start, end) %>% 
+  write.table(file='eqtl-sv-only-genes.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+```

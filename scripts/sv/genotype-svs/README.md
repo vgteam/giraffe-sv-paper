@@ -5,6 +5,13 @@ We evaluated the performance across different graphs (new combined SV graph vs H
 The [sv-evaluation.md report](sv-evaluation.md) contains commands to make the figures used in the manuscript.
 Compile with `Rscript -e "rmarkdown::render('sv-evaluation.Rmd')"`.
 
+## Genotype evaluation using trios
+
+```
+Rscript -e "rmarkdown::render('sv-trio-evaluation.Rmd')"
+```
+
+
 ## SV genotyping on Terra
 
 The SVs were genotyped on Terra using [a WDL deposited on Dockstore](https://dockstore.org/workflows/github.com/vgteam/vg_wdl/vg_mapgaffe_call_sv_cram:sv-giraffe-paper?tab=info).

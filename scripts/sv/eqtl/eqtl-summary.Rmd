@@ -25,8 +25,11 @@ Matrix-eQTL was ran on different sample sets (*all* samples, *Eur*opeans, *YRI*)
 load('eqtl-test-results.RData')
 names(ll)
 names(ll) = paste(
-  rep(c('No additional normalization', 'Quantile normalization'),each=3),
+  rep(c('Standardization', 'Quantile normalization'),each=3),
   rep(c('EUR + YRI', 'EUR', 'YRI'), 2), sep=' - ')
+
+## list of all genes tested
+genes.tested = scan('eqtl-genes.txt', '', quiet=TRUE)
 ```
 
 ## Gene annotation
@@ -40,6 +43,27 @@ genc = import('../describe-svs/gencode.v35.annotation.gtf.gz')
 genc = subset(genc, type=='gene')
 genc$gene_id = gsub('\\..*', '', genc$gene_id)
 genc = genc %>% as.data.frame %>% mutate(gene=gene_id) %>% select(gene, gene_type, gene_name)
+```
+
+## Gene families
+
+The gene families were downloaded from [HGNC](https://biomart.genenames.org/martform/#!/default/HGNC?datasets=hgnc_family_mart).
+
+```{r genefam}
+genef = read.table('hgnc-families.txt', sep='\t', header=TRUE, quote='')
+genef = genef %>% mutate(gene_name=Approved.symbol, gene_family=Family.name) %>%
+  select(gene_name, gene_family) %>%
+  merge(genc) %>% select(gene, gene_name, gene_family) %>%
+  group_by(gene_family) %>%
+  mutate(genes.fam=n(), genes.fam.tested=length(unique(intersect(genes.tested, gene))))
+```
+
+It contain `r length(unique(genef$gene_family))` gene families. 
+For example, a few of the families with more than 100 genes:
+
+```{r genefam2}
+genef %>% select(gene_family, genes.fam, genes.fam.tested) %>% unique %>% as.data.frame %>% 
+  filter(genes.fam.tested>100) %>% sample_n(10) %>% kable
 ```
 
 ## QC: p-value distribution and QQ plots
@@ -74,19 +98,19 @@ pvhist_matrixeqtl <- function(me.o){
     xlab('p-value') + ylab('SV-gene test')
 }
 
-ggp$hist.all = pvhist_matrixeqtl(ll[['No additional normalization - EUR + YRI']])
+ggp$hist.all = pvhist_matrixeqtl(ll[['Standardization - EUR + YRI']])
 ggp$hist.all + ggtitle('EUR + YRI')
-ggp$qq.all = qqplot_matrixeqtl(ll[['No additional normalization - EUR + YRI']])
+ggp$qq.all = qqplot_matrixeqtl(ll[['Standardization - EUR + YRI']])
 ggp$qq.all + ggtitle('EUR + YRI')
 
-ggp$hist.eur = pvhist_matrixeqtl(ll[['No additional normalization - EUR']])
+ggp$hist.eur = pvhist_matrixeqtl(ll[['Standardization - EUR']])
 ggp$hist.eur + ggtitle('EUR')
-ggp$qq.eur = qqplot_matrixeqtl(ll[['No additional normalization - EUR']])
+ggp$qq.eur = qqplot_matrixeqtl(ll[['Standardization - EUR']])
 ggp$qq.eur + ggtitle('EUR')
 
-ggp$hist.yri = pvhist_matrixeqtl(ll[['No additional normalization - YRI']])
+ggp$hist.yri = pvhist_matrixeqtl(ll[['Standardization - YRI']])
 ggp$hist.yri + ggtitle('YRI')
-ggp$qq.yri = qqplot_matrixeqtl(ll[['No additional normalization - YRI']])
+ggp$qq.yri = qqplot_matrixeqtl(ll[['Standardization - YRI']])
 ggp$qq.yri + ggtitle('YRI')
 ```
 
@@ -105,7 +129,8 @@ svs = read.table('../describe-svs/svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, he
 eqtl.df = svs %>% select(seqnames, start, end, type, size, svid) %>% merge(eqtl.df)
 
 eqtl.df %>% mutate(type='all') %>% rbind(eqtl.df) %>%
-  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type),
+         gene_type=factor(gene_type, levels=c('protein_coding', 'other'))) %>% 
   group_by(gene_type, pop, type) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
             esv.fdr01=length(unique(svid[FDR<=.01])),
@@ -114,6 +139,82 @@ eqtl.df %>% mutate(type='all') %>% rbind(eqtl.df) %>%
             esv.fdr05=length(unique(svid[FDR<=.05])),
             egene.fdr05=length(unique(gene[FDR<=.05]))) %>%
   kable(format.args=list(big.mark=','))
+```
+
+## Positively or negatively correlated with gene expression
+
+```{r effect.size}
+eqtl.df %>% filter(FDR<=.01) %>%
+  group_by(pop, type) %>% summarize(prop.pos.beta=mean(beta>0),
+                                    mean.beta.pos=mean(beta[beta>0]),
+                                    mean.beta.neg=mean(beta[beta<0])) %>% kable(digits=3)
+
+eqtl.df %>% filter(FDR<=.01) %>%
+  ggplot(aes(beta, fill=type)) +
+  geom_histogram(position='dodge') +
+  theme_bw() + ylab('SV-eQTL') + 
+  facet_grid(pop~., scales='free')
+```
+
+More eQTL are associated with an increase in gene expression than a decrease.
+The effect size is also stronger.
+
+## Families with eGenes
+
+```{r egene.fam}
+## ordered by proportion of family with eQTL
+eqtl.fam.df = eqtl.df %>% filter(FDR<=.01) %>% merge(genef) %>%
+  group_by(pop) %>% 
+  mutate(ntot.egenes=length(unique(gene_name))) %>% 
+  group_by(pop, gene_family) %>% summarize(egenes=length(unique(gene_name)),
+                                           esvs=length(unique(svid)),
+                                           prop=egenes/genes.fam[1],
+                                           pv.hyper=1-phyper(q=egenes, m=genes.fam.tested[1],
+                                                           n=length(genes.tested)-genes.fam.tested[1],
+                                                           k=ntot.egenes[1]),
+                                           .groups='drop'
+                                           ) %>%
+  filter(egenes>1) %>% 
+  group_by(pop) %>% mutate(qv.hyper=p.adjust(pv.hyper, method='BH'))
+
+eqtl.fam.df %>% group_by(pop) %>% summarize(qv01=sum(qv.hyper<.01), qv05=sum(qv.hyper<.05))
+
+## top families enriched in the EUR+YRI analysis
+eqtl.fam.df %>% filter(qv.hyper<.01, pop=='EUR + YRI', egenes>2, prop>.1) %>%
+  arrange(qv.hyper, desc(prop)) %>% ungroup %>% select(-pop) %>% kable
+```
+
+Mostly families around immunity (histocompatibility complex, immunoglobulin) and zinc fingers. 
+Also anoctamins, mucins, tetraspanins, apolipoproteins.
+
+```{r fam.ex}
+eqtl.df %>% filter(FDR<=.01, pop=='EUR + YRI') %>% merge(genef) %>%
+  filter(gene_family %in% c('Anoctamins', 'Tetraspanins', 'Apolipoproteins', 'Mucins', 'Aldehyde dehydrogenases')) %>%
+  select(gene_family, gene_name, seqnames, start, type, size, beta) %>%
+  arrange(gene_family, seqnames, gene_name) %>% 
+  kable
+```
+
+## SVs associated with multiple genes
+
+```{r multi.genes.qtl}
+eqtl.df %>% filter(FDR<=.01, gene_type=='protein_coding') %>% 
+  group_by(pop, svid) %>%
+  mutate(egenes=length(unique(gene_name))) %>%
+  filter(egenes>1) %>%
+  group_by(pop) %>% summarize(svs=length(unique(svid)), genes=length(unique(gene_name)))
+
+eqtl.df %>% filter(FDR<=.01, gene_type=='protein_coding') %>% 
+  group_by(pop, svid) %>%
+  mutate(egenes=length(unique(gene_name))) %>%
+  filter(pop=='EUR + YRI', egenes>1, !any(grepl('HLA', gene_name))) %>%
+  arrange(desc(egenes), svid) %>%
+  ungroup %>%
+    mutate(svid=paste0('[', svid,
+                        '](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=',
+                        seqnames, '%3A', start, '%2D', end, ')')) %>% 
+    select(egenes, svid, type, size, gene_name, beta) %>% 
+    head(20) %>% kable
 ```
 
 ### Specific to EUR or YRI
@@ -138,7 +239,8 @@ rbind(
   eqtl.eur %>% mutate(pop='EUR', pop.af=svid %in% pop.spec$svsite),
   eqtl.yri %>% mutate(pop='YRI', pop.af=svid %in% pop.spec$svsite)) %>%
   merge(genc) %>% 
-  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type),
+         gene_type=factor(gene_type, levels=c('protein_coding', 'other'))) %>% 
   group_by(gene_type, pop) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
             esv.fdr01=length(unique(svid[FDR<=.01])),
@@ -151,16 +253,16 @@ rbind(
 
 ## Effect of different normalization on the gene expression
 
-
 ```{r norm}
 eqtl.all.df = lapply(names(ll), function(nn){
   print(qqplot_matrixeqtl(ll[[nn]]) + ggtitle(nn))
   print(pvhist_matrixeqtl(ll[[nn]]) + ggtitle(nn))
-  return(ll[[nn]]$cis$eqtls %>% mutate(exp=nn) %>% filter(FDR<.01))
+  return(ll[[nn]]$cis$eqtls %>% mutate(exp=nn) %>% filter(FDR<=.01))
 }) %>% bind_rows %>% dplyr::rename(svid=snps)
 
 eqtl.all.df %>% merge(genc) %>%
-  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type)) %>% 
+  mutate(gene_type=ifelse(gene_type!='protein_coding', 'other', gene_type),
+         gene_type=factor(gene_type, levels=c('protein_coding', 'other'))) %>% 
   group_by(gene_type, exp) %>%
   summarize(eqtl.fdr01=sum(FDR<=.01),
             esv.fdr01=length(unique(svid[FDR<=.01])),
@@ -177,11 +279,11 @@ plotEx <- function(ex){
   df = merge(
     tibble(sample=colnames(ge.ex), ge=ge.ex[ex$gene[1],]),
     tibble(sample=colnames(ac.ex), ac=ac.ex[ex$svid[1],])) %>%
-    mutate(pop=ifelse(sample%in% yri.samples, 'YRI', 'EUR'))
+    mutate(pop=ifelse(sample %in% yri.samples, 'YRI', 'EUR'))
   df.n = df %>% group_by(ac, pop) %>% summarize(ge=median(ge), n=n())
   ggplot(df, aes(x=factor(ac), y=ge, group=paste(ac, pop))) +
     geom_boxplot(aes(fill=pop)) +
-    geom_label(aes(label=n), data=df.n, position=position_dodge(.75)) + 
+    geom_label(aes(label=n, fill=pop), data=df.n, position=position_dodge(.75)) + 
     theme_bw() +
     scale_fill_brewer(palette='Set2', name='population') +
     xlab('allele count') +
@@ -285,4 +387,9 @@ eqtl.df %>% filter(FDR<=.01) %>%
          gene, gene_name, gene_type, statistic, beta, pvalue, FDR) %>%
   arrange(FDR) %>% 
   write.table(file='eqtl-svs.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+
+## enriched families
+eqtl.fam.df %>% filter(qv.hyper<=.01, pop=='EUR + YRI', egenes>1) %>%
+  arrange(qv.hyper, desc(prop)) %>% ungroup %>% select(-pop) %>%
+    write.table(file='eqtl-enriched-gene-families.tsv', sep='\t', quote=FALSE, row.names=FALSE)
 ```

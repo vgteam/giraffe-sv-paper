@@ -17,6 +17,8 @@ library(gridExtra)
 library(knitr)
 library(GenomicRanges)
 library(rtracklayer)
+library(msa)
+library(RColorBrewer)
 winsor <- function(x, u){
   if(any(x>u)) x[x>u] = u
   x
@@ -354,8 +356,13 @@ plotSVs <-function(svs.cl, label.svs=TRUE){
   }
   ## allele frequencies
   ggp.af = svs.cl %>% as.data.frame %>%
-    mutate(svid=factor(svid, levels=levels(df$seqn))) %>% 
+    mutate(svid=factor(svid, levels=levels(df$seqn)),
+           hj=ifelse(af>max(af)/2, 1, 0),
+           label=ifelse(af>max(af)/2, paste0(signif(af, 2), ' '), paste0(' ', signif(af, 2)))) %>% 
     ggplot(aes(x=svid, y=af)) + geom_bar(stat='identity') +
+    geom_text(aes(label=label, hjust=hj, color=factor(hj)), size=3) +
+    scale_color_manual(values=c('black', 'white')) +
+    guides(color=FALSE) + 
     theme_bw() +
     ylab('allele frequency') +
     coord_flip() + 
@@ -365,7 +372,10 @@ plotSVs <-function(svs.cl, label.svs=TRUE){
   list(ggp.3, ggp.af)
 }
 
-ggpf = c(ggp[c("af", "size", "loc.al")], subset(svs, svsite==ex.l$ins.5.maj) %>% plotSVs)
+ex.sv = locs %>% filter(type=='INS', clique, loc.n==5, size>100) %>%
+  arrange(desc(af.top.fc)) %>% head(1) %>% .$svsite
+
+ggpf = c(ggp[c("af", "size", "loc.al")], subset(svs, svsite==ex.sv) %>% plotSVs)
 names(ggpf) = 1:length(ggpf)
 
 grid.arrange(grobs=plot_list(ggpf),
@@ -373,7 +383,6 @@ grid.arrange(grobs=plot_list(ggpf),
 
 grid.arrange(grobs=plot_list(ggp, c("loc.cl", "af.top")),
              layout_matrix=matrix(1:2,1))
-
 
 pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
 grid.arrange(grobs=plot_list(ggpf),

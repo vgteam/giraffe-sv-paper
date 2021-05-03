@@ -1,19 +1,6 @@
 Summary stats for SVs in the MESA cohort
 ================
 
-  - [Read population stats for each SV
-    allele](#read-population-stats-for-each-sv-allele)
-  - [Allele/site numbers](#allelesite-numbers)
-  - [Size](#size)
-  - [Overlap with simple repeats, satellites or low-complexity
-    regions](#overlap-with-simple-repeats-satellites-or-low-complexity-regions)
-  - [Gene annotation](#gene-annotation)
-  - [Allele frequency](#allele-frequency)
-  - [Alleles per SV sites](#alleles-per-sv-sites)
-  - [Multi-panel figure](#multi-panel-figure)
-  - [Save TSV with SV site
-    information](#save-tsv-with-sv-site-information)
-
 ``` r
 library(dplyr)
 library(ggplot2)
@@ -21,6 +8,8 @@ library(gridExtra)
 library(knitr)
 library(GenomicRanges)
 library(rtracklayer)
+library(msa)
+library(RColorBrewer)
 winsor <- function(x, u){
   if(any(x>u)) x[x>u] = u
   x
@@ -146,7 +135,7 @@ locs %>% mutate(type='all') %>% rbind(locs) %>%
 
     ## # A tibble: 3 x 5
     ##   type  min.size max.size size.lt1kbp size.lt500
-    ##   <chr>    <int>    <int>       <dbl>      <dbl>
+    ## * <chr>    <int>    <int>       <dbl>      <dbl>
     ## 1 all         50   125187       0.944      0.897
     ## 2 DEL         50   114201       0.945      0.908
     ## 3 INS         50   125187       0.943      0.888
@@ -421,16 +410,103 @@ plot_list <- function(ggp.l, gg.names=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
-grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top")),
+## combined graph for a subset of SVs (e.g. SVs in particular locus)
+plotSVs <-function(svs.cl, label.svs=TRUE){
+  ## MSA
+  seqs = ifelse(svs.cl$type=='INS', svs.cl$alt , svs.cl$ref)
+  seqs = substr(seqs, 2, nchar(seqs)) # remove padding base
+  seqs = DNAStringSet(seqs)
+  names(seqs) = svs.cl$svid
+  ## flag non-canonical SVs that might appear similar in MSA
+  canonical = nchar(ifelse(svs.cl$type=='INS', svs.cl$ref , svs.cl$alt)) == 1
+  names(seqs) = ifelse(canonical, names(seqs), paste0(names(seqs), '*'))
+  capture.output({msa.o = msa(seqs, gapOpening=-1)})
+  msa.o = as.matrix(msa.o)
+  consSeq <- function(x) head(names(sort(table(x), decreasing=TRUE)), 1)
+  df = lapply(1:ncol(msa.o), function(alc.ii){
+    alc = msa.o[,alc.ii]
+    tibble(position=alc.ii, seqn=rownames(msa.o), seq=alc, cons=alc==consSeq(alc))
+  }) %>% bind_rows
+  svids = svs.cl %>% as.data.frame %>%
+    mutate(seqn=svid,
+           svid=paste0(type, '-', size, 'bp')) %>%
+    select(seqn, svid) %>%
+    group_by(svid) %>% mutate(n=1:n(), svid=ifelse(n>1, paste(svid, n, sep='-'), svid)) %>%
+    select(-n)
+  df = df %>% mutate(seqn=factor(seqn, levels=unique(seqn)),
+                     seq=factor(seq, levels=c('A','T','C','G','-'))) %>%
+    merge(svids) %>% 
+    arrange(seqn) %>%
+    mutate(svid=factor(svid, levels=unique(svid)))
+  pal = c(brewer.pal(4, 'Set1'), 'black')
+  ggp.3 = ggplot(df, aes(x=position, y=svid)) +
+    geom_tile(aes(fill=seq, alpha=cons)) +
+    scale_alpha_manual(values=c(1,.3)) +
+    guides(alpha=FALSE) +
+    scale_fill_manual(values=pal, breaks=levels(df$seq)) +
+    xlab('multiple-sequence alignment position') + 
+    theme_bw() +
+    guides(fill=guide_legend(keyheight=.5, ncol=5)) + 
+    theme(axis.title.y=element_blank(), legend.position=c(.99,1.2), legend.justification=c(1,1),
+          legend.title=element_blank())
+  if(any(!canonical)){
+    ggp.3 = ggp.3 + labs(caption='*non-canonical SV')
+  }
+  if(!label.svs){
+    ggp.3 = ggp.3 + theme(axis.text.y=element_blank(), axis.title.y=element_text()) + ylab('SV')
+  }
+  ## allele frequencies
+  ggp.af = svs.cl %>% as.data.frame %>%
+    mutate(svid=factor(svid, levels=levels(df$seqn)),
+           hj=ifelse(af>max(af)/2, 1, 0),
+           label=ifelse(af>max(af)/2, paste0(signif(af, 2), ' '), paste0(' ', signif(af, 2)))) %>% 
+    ggplot(aes(x=svid, y=af)) + geom_bar(stat='identity') +
+    geom_text(aes(label=label, hjust=hj, color=factor(hj)), size=3) +
+    scale_color_manual(values=c('black', 'white')) +
+    guides(color=FALSE) + 
+    theme_bw() +
+    ylab('allele frequency') +
+    coord_flip() + 
+    theme(axis.text.y=element_blank(),
+          axis.title.y=element_blank())  
+  ## combine graphs
+  list(ggp.3, ggp.af)
+}
+
+ex.sv = locs %>% filter(type=='INS', clique, loc.n==5, size>100) %>%
+  arrange(desc(af.top.fc)) %>% head(1) %>% .$svsite
+
+ggpf = c(ggp[c("af", "size", "loc.al")], subset(svs, svsite==ex.sv) %>% plotSVs)
+names(ggpf) = 1:length(ggpf)
+
+grid.arrange(grobs=plot_list(ggpf),
              layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
 ```
 
 ![](summary-sv-stats-mesa_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
+grid.arrange(grobs=plot_list(ggp, c("loc.cl", "af.top")),
+             layout_matrix=matrix(1:2,1))
+```
+
+![](summary-sv-stats-mesa_files/figure-gfm/fig-2.png)<!-- -->
+
+``` r
 pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
-grid.arrange(grobs=plot_list(ggp, c("af", "size", "loc.al", "loc.cl", "af.top")),
-             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
+grid.arrange(grobs=plot_list(ggpf),
+             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE),
+             widths=c(2,3,1))
+dev.off()
+```
+
+    ## png 
+    ##   2
+
+``` r
+pdf('figs/fig-sv-mesa-stats-2.pdf', 9, 4)
+grid.arrange(grobs=plot_list(ggp, c("loc.cl", "af.top")),
+             layout_matrix=matrix(1:2,1))
 dev.off()
 ```
 

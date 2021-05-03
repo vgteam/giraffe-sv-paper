@@ -2,19 +2,6 @@ Summary stats for SVs in the 2,504 unrelated samples from the 1000
 Genomes Project
 ================
 
-  - [Read population stats for each SV
-    allele](#read-population-stats-for-each-sv-allele)
-  - [Allele/site numbers](#allelesite-numbers)
-  - [Size](#size)
-  - [Overlap with simple repeats, satellites or low-complexity
-    regions](#overlap-with-simple-repeats-satellites-or-low-complexity-regions)
-  - [Gene annotation](#gene-annotation)
-  - [Allele frequency](#allele-frequency)
-  - [Alleles per SV sites](#alleles-per-sv-sites)
-  - [Multi-panel figure](#multi-panel-figure)
-  - [Save TSV with SV site
-    information](#save-tsv-with-sv-site-information)
-
 ``` r
 library(dplyr)
 library(ggplot2)
@@ -159,7 +146,7 @@ locs %>% mutate(type='all') %>% rbind(locs) %>%
 
     ## # A tibble: 3 x 5
     ##   type  min.size max.size size.lt1kbp size.lt500
-    ##   <chr>    <int>    <int>       <dbl>      <dbl>
+    ## * <chr>    <int>    <int>       <dbl>      <dbl>
     ## 1 all         50   125187       0.943      0.896
     ## 2 DEL         50   114201       0.944      0.907
     ## 3 INS         50   125187       0.942      0.886

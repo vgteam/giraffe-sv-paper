@@ -5,4 +5,5 @@ The [eqtl-summary.md](eqtl-summary.md) report shows p-value distribution, QQ plo
 
 ```
 Rscript -e "rmarkdown::render('eqtl-summary.Rmd')"
+Rscript -e "rmarkdown::render('eqtl-summary-snv-indel-sv.Rmd')"
 ```

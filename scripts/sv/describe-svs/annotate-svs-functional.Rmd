@@ -102,7 +102,7 @@ ps.ol = merge(pop.spec, ol.genc, all.x=TRUE) %>%
   mutate(impact=ifelse(is.na(impact), 'intergenic', as.character(impact)))
 
 ## control: SVs with similar frequencies
-null = merge(freq.all, pop.spec, all.x=TRUE) %>%
+null = freq.all %>% filter(svsite %in% kgp.s$svsite) %>% merge(., pop.spec, all.x=TRUE) %>%
   mutate(target=!is.na(af.med), af.c=cut(af, seq(0,1,.01))) %>%
   group_by(Superpopulation, af.c) %>% mutate(n=sum(target)) %>%
   filter(!target, n>0) %>% 
@@ -129,7 +129,7 @@ ps.enr = rbind(ps.ol,
   mutate(impact=reorder(impact, prop, sum)) %>% 
   arrange(exp, desc(impact))
 
-kable(ps.enr)
+ps.enr %>% arrange(impact) %>% kable
 
 ggp$ps = ggplot(ps.enr, aes(x=exp, y=prop, fill=exp)) +
   geom_bar(stat='identity') +
@@ -185,7 +185,8 @@ ol.genc = findOverlaps(kgp.eqtl, genc) %>% as.data.frame %>%
   arrange(impact) %>% 
   group_by(svid, gene, gene.name, gene_type) %>%
   summarize(impact=head(impact, 1))
-eqtls.ol = merge(eqtls, ol.genc, all.x=TRUE) %>%
+kgp.c = subset(kgp.s, af>.01) ## use same set of common variants for the observed number and the control genes/SVs (see below)
+eqtls.ol = eqtls %>% filter(svid %in% kgp.c$svsite) %>%  merge(., ol.genc, all.x=TRUE) %>%
   mutate(impact=ifelse(is.na(impact), 'intergenic', as.character(impact)),
          impact=ifelse(impact=='intergenic' & svid %in% svids.cres, 'regulatory element', impact))
 ```
@@ -215,14 +216,15 @@ subset(genc, type=='gene' & gene_type=='protein_coding') %>% as.data.frame %>%
   ggplot(aes(x=width, fill=class)) + geom_histogram(position='dodge', bins=50) + theme_bw() +
   xlab('gene size (bp)') + ylab('gene')
 
-## Find common SVs around control genes
-kgp.c = subset(kgp.s, af>.05)
+## Find common SVs around control genes that are not eQTLs
 svids.cres = subsetByOverlaps(kgp.c, cres)$svsite
 kgp.null = findOverlaps(kgp.c, genc.null, maxgap=1e6) %>%
   as.data.frame %>%
   mutate(svid=kgp.c$svsite[queryHits], gene=genc.null$gene_id[subjectHits]) %>% 
-  select(svid, gene) %>% unique
+  select(svid, gene) %>% unique %>%
+  filter(!(svid %in% eqtls$svid))
 
+## Annotate them
 null.ol = findOverlaps(kgp.c, genc.null) %>% as.data.frame %>%
   mutate(svid=kgp.c$svsite[queryHits],
          gene.name=genc.null$gene_name[subjectHits],
@@ -254,7 +256,7 @@ eqtl.enr = rbind(eqtls.ol %>% select(statistic, impact),
   mutate(impact=reorder(impact, prop, sum)) %>% 
   arrange(direction, desc(impact))
 
-kable(eqtl.enr)
+eqtl.enr %>% arrange(impact, direction) %>% kable
 
 ggp$eqtl = ggplot(eqtl.enr, aes(x=direction, y=prop, fill=direction)) +
   geom_bar(stat='identity') +
