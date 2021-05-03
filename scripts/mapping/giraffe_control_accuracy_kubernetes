@@ -25,7 +25,7 @@ spec:
           for GRAPH in  hgsvc ; do
               if [[ "${GRAPH}" == 1000gp ]] ; then
                   GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref
-                  aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/novaseq6000/out_sim_gbwt/sim.gam ./sim.gam
+                  aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/novaseq6000/out_sim_gbwt/sim.gam ./sim.gam
                   aws s3 cp ${GRAPH_BASE}.force.augment.gbwt ./graph.gbwt
                   aws s3 cp ${GRAPH_BASE}.dist graph.dist
                   aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
