@@ -39,7 +39,7 @@ spec:
           aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg ./hgsvc.xg
 
 
-          for SPECIES in human yeast ; do
+          for SPECIES in human  ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(S288C)
@@ -47,7 +47,7 @@ spec:
                   GRAPH_NAME=yeast
                   ;;
               human)
-                  GRAPHS=(hgsvc 1000gp)
+                  GRAPHS=(1000gp)
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
                   GRAPH_NAME=hs38d1
                   ;;
@@ -62,8 +62,8 @@ spec:
                           gunzip sim.fq.gz
                           ;;
                       1000gp)
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.fq.gz ./sim.fq.gz
                           rm -f sim.fq
                           gunzip sim.fq.gz
                           ;;
@@ -143,9 +143,12 @@ spec:
           aws s3 cp report_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_bwa_primary.tsv
           aws s3 cp report_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_bowtie2_primary.tsv
           
-          aws s3 cp roc_stats_minimap2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_minimap2_primary.tsv
-          aws s3 cp roc_stats_bwa_mem.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_bwa_primary.tsv
-          aws s3 cp roc_stats_bowtie2.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_bowtie2_primary.tsv
+          gzip roc_stats_minimap2.tsv
+          gzip roc_statsbwa_mem.tsv
+          gzip roc_stats_bowtie2.tsv
+          aws s3 cp roc_stats_minimap2.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_minimap2_primary.tsv.gz
+          aws s3 cp roc_stats_bwa_mem.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_bwa_primary.tsv.gz
+          aws s3 cp roc_stats_bowtie2.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_bowtie2_primary.tsv.gz
           
         volumeMounts:
         - mountPath: /tmp

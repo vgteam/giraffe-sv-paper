@@ -33,7 +33,7 @@ for SPECIES in human yeast ; do
     for GRAPH in ${GRAPHS[@]} ; do
         case ${GRAPH} in
         1000gp)
-            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
+            GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
             GBWTS=("sampled.64" "full")
             ;;
         hgsvc)
@@ -101,7 +101,7 @@ for SPECIES in human yeast ; do
     done
 done
 
-aws s3 cp speed_report_giraffe.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/speed/speed_report_giraffe.tsv
-aws s3 cp giraffe_speed_log.txt s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/speed/giraffe_speed_log.txt
+aws s3 cp speed_report_giraffe.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/speed/speed_report_giraffe.tsv
+aws s3 cp giraffe_speed_log.txt s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/speed/giraffe_speed_log.txt
 
 sudo shutdown -h now

@@ -19,7 +19,7 @@ spec:
           cd /tmp
           printf "graph\tgbwt\treads\tpairing\tspeed\tcorrect\tmapq60\twrong_mapq60\tidentity\tscore\n" > report.tsv
           printf "correct\tmq\tscore\taligner\n" > roc_stats.tsv
-          for SPECIES in human yeast ; do
+          for SPECIES in human  ; do
               case "${SPECIES}" in
               yeast)
                   GRAPHS=(yeast_all yeast_subset)
@@ -27,17 +27,17 @@ spec:
                   GBWTS=(raw)
                   ;;
               human)
-                  GRAPHS=(1000gp hgsvc)
+                  GRAPHS=(1000gp )
                   READSETS=(novaseq6000 hiseqxten hiseq2500)
-                  GBWTS=("full" "sampled.64" "cover.16")
+                  GBWTS=("full" "sampled.64")
                   ;;
               esac
               for GRAPH in ${GRAPHS[@]} ; do
                   for READS in ${READSETS[@]} ; do
                       case ${GRAPH} in
                       1000gp)
-                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_filter
-                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover/${READS}/out_sim_gbwt/sim.gam ./sim.gam
+                          GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
+                          aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                           ;;
                       hgsvc)
                           GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
@@ -78,7 +78,7 @@ spec:
                                   elif [[ ${PAIRING} == "single" ]] ; then 
                                       PAIRED=""
                                   fi
-                                  vg giraffe -x graph.xg -H graph.gbwt -g graph.gg -m graph.min -d graph.dist -G sim.gam -b ${PARAM_PRESET} ${PAIRED} -t 22 > mapped.gam 
+                                  vg giraffe -x graph.xg -H graph.gbwt -m graph.min -d graph.dist -G sim.gam -b ${PARAM_PRESET} ${PAIRED} -t 22 > mapped.gam 
                                   vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
                                   CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
                                   SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
@@ -96,8 +96,8 @@ spec:
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
           gzip roc_stats.tsv
-          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/report_giraffe.tsv
-          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/roc_stats_giraffe.tsv.gz
+          #aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe.tsv
+          #aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe.tsv.gz
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
