@@ -18,6 +18,12 @@ function wget_download() {
     fi
 }
 
+function copy() {
+    if [ ! -e "${2}" ] ; then
+        cp "${1}" "${2}"
+    fi
+}
+
 CONSTRUCTION_DIR="${DEST_DIR}/construction"
 mkdir -p "${CONSTRUCTION_DIR}"
 
@@ -42,3 +48,11 @@ mkdir -p "${READS_DIR}/NA19240"
 download s3://vg-k8s/profiling/reads/real/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz "${READS_DIR}/NA19240/hiseq2500-ERR309934-shuffled-1m.fq.gz"
 download s3://vg-k8s/profiling/reads/real/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz "${READS_DIR}/NA19240/hiseqxten-SRR6691663-shuffled-1m.fq.gz"
 
+# And the HAL files for the yeast experiments
+mkdir -p "${CONSTRUCTION_DIR}/yeast/cactus_all"
+mkdir -p "${CONSTRUCTION_DIR}/yeast/cactus_four"
+copy /public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_all/cactusoutput.hal "${CONSTRUCTION_DIR}/yeast/cactus_all/cactusoutput.hal"
+copy /public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_four/cactusoutput.hal "${CONSTRUCTION_DIR}/yeast/cactus_four/cactusoutput.hal"
+mkdir -p "${READS_DIR}/yeast"
+copy /public/groups/cgl/users/daheller/yeast_graph/illumina_reads/SRR4074257.fastq.gz "${READS_DIR}/yeast/SRR4074257.fastq.gz"
+copy /public/groups/cgl/users/daheller/yeast_graph/assemblies/assemblies_raw/S288C.genome.fa "${CONSTRUCTION_DIR}/yeast/S288C.genome.fa"
