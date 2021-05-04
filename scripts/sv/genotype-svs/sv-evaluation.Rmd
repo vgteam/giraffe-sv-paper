@@ -13,6 +13,7 @@ library(dplyr)
 library(ggplot2)
 library(knitr)
 library(sveval)
+library(RColorBrewer)
 ## graph list
 ggp = list()
 ```
@@ -128,6 +129,56 @@ ggp$depth = pr.df %>%
   theme_bw() + 
   guides(fill=guide_legend(keyheight=1))
 ggp$depth
+```
+
+## Comparison with GraphTyper
+
+[GraphTyper](https://github.com/DecodeGenetics/graphtyper) was not published yet when we benchmarked vg and different existing SV genotypers in [Hickey et al. 2020](https://doi.org/10.1186/s13059-020-1941-7).
+We genotyped SVs with GraphTyper on the same benchmarking dataset:
+- 3 samples from HGSVC
+- simulated reads for one individual from HGSVC
+- HG002 from the GIAB dataset.
+
+Of note, GraphTyper's output includes multiple entries for the same variant.
+That leads to a drop in genotyping accuracy due to "over-genotyping".
+Hence, we also include the benchmarking results when filtering out these duplicates, which improves the "genotyping" evaluation.
+
+```{r vg_graphtyper}
+pr.vggt.df = rbind(
+  read.table('hgsvc-vg_graphtyper-sveval-prcurve.tsv', as.is=TRUE, header=TRUE),
+  read.table('hgsvcsim-vg_graphtyper-sveval-prcurve.tsv', as.is=TRUE, header=TRUE),
+  read.table('giab-vg_graphtyper-sveval-prcurve.tsv', as.is=TRUE, header=TRUE)
+)
+
+pr.vggt.df = pr.vggt.df %>% filter(type!='Total', min.cov==.5, 
+                         region%in%c('all', 'highconf')) %>% arrange(qual)
+
+qual.bestf1.vggt = pr.vggt.df %>% group_by(exp, type, qual, method, region, eval) %>%
+  select(TP, TP.baseline, FN, FP) %>% summarize_all(sum) %>% prf %>%
+  group_by(exp, method, type, region, eval) %>%
+  arrange(desc(F1)) %>% do(head(., 1))
+
+gt.pal = c(brewer.pal(3,'Set1')[1], brewer.pal(3, 'Paired')[2:1])
+
+ggp$graphtyper = qual.bestf1.vggt %>%
+  mutate(exp=factor(exp,
+                    levels=c('hgsvc', 'hgsvcsim', 'giab5'),
+                    labels=c('HGSVC graph', 'HGSVC graph\n(simulated reads)', 'GIAB graph')),
+         method=factor(method, levels=c('vg', 'graphtyper_nodup', 'graphtyper'),
+                       labels=c('vg', 'GraphTyper', 'GraphTyper (all calls)')),
+         type=factor(type, levels=c('INS', 'DEL')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=F1, fill=method, alpha=eval, group=method)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(type~exp, scales='free', space='free') +
+  scale_fill_manual(values=gt.pal, name='method') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$graphtyper
 ```
 
 ## Figures
