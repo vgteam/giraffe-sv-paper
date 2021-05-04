@@ -8,9 +8,9 @@ You will also need `kubectl` set up to access a Kubernetes cluster which has a s
 
 These scripts expect to read files from the `s3://vg-data` and `s3://glennhickey` buckets. You will need to have access to this bucket, or else replace reads from it with reads from a different bucket where you have placed the archived input data from our data archive.
 
-These scripts expect to read files from the mount point `/public/groups/cgl/users/daheller/yeast_graph`. You will need to provide this mount point, with the relevant files from the data archive, or else edit the scripts to reference a different local path for these files. 
-
 These scripts expect to write to the `s3://vg-k8s` bucket. You will need to have write access to this bucket, or you will need to replace these writes with writes to a bucket where you intend to store your generated artifacts.
+
+The yeast graph construction script expect to read files from the mount point `/public/groups/cgl/users/daheller/yeast_graph`. You will need to provide this mount point, with the relevant files from the data archive, or else edit the script to reference a different local path for these files. 
 
 ## Running the scripts
 
@@ -127,11 +127,10 @@ After that finishes, disconnect from the cluster, and then tear it down:
 toil destroy-cluster -z us-west-2a adamnovak-toil-vg
 ```
 
-Finally, run the last script locally:
+Finally, you can run the yeast graph constructiohn script locally:
 ```
 ./06_yeast_graphs_and_reads.sh
 ```
-
 
 
 
