@@ -10,6 +10,7 @@ The scripts expect to be run in roughly this order:
     * [Indexing scripts to prepare the constructed graphs for mapping](scripts/indexing)
     * [Read simulation scripts to produce simulated reads with known graph positions, for evaluating mapping correctness](scripts/read_simulation)
     * [Mapping scripts, for assessing the speed and accuracy of Giraffe against competing mappers](scripts/mapping)
+    * [Genotyping scripts, for assessing competing genotyping methods](scripts/genotyping)
     * [Plotting scripts, for plotting the results of the mapping scripts](scripts/plotting)
     * [Dedicated allele balance plotting scripts, for producing plots of how length-changing variants affect read coverage at variable sites](scripts/allele_balance_plot)
 * [Structural variant calling workflow](scripts/sv)
