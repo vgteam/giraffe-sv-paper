@@ -24,6 +24,6 @@ This archive contains the software developed for the manuscript *Genotyping comm
     * `toil`: Docker containers of Toil versions used in the manuscript
         * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via docker export` and compressed.
     * `vg`: Docker containers of vg used in the manuscript.
-        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via docker export` and compressed.
+        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via docker export` and compressed. Note that tag `giraffe-paper` corresponds to vg v1.31.0, commit 08faee067037ece539a237a008bcdefc84b681b0.
 
 
