@@ -19,6 +19,8 @@ To actually make the archive available, you will need `ZENODO_DEPOSITION` and `Z
 These scripts aren't really meant to be run by anyone but the authors, but they
 serve as an explaination of how the archive was assembled.
 
+Information about the resulting archive is available in the [overall archive readme](archive-readme.md) and the [software archive readme](software-readme.md).
+
 ## Running the scripts
 
 Run each script in turn locally:
@@ -36,4 +38,3 @@ ipfs add -r --nocopy /nanopore/cgl/data/giraffe
 ```
 
 You will also went to publish the Zenodo deposition you uploaded the software archive to, so it becomes visible under its assigned DOI.
-

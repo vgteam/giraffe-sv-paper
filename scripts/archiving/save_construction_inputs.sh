@@ -56,3 +56,7 @@ copy /public/groups/cgl/users/daheller/yeast_graph/graphs/cactus_four/cactusoutp
 mkdir -p "${READS_DIR}/yeast"
 copy /public/groups/cgl/users/daheller/yeast_graph/illumina_reads/SRR4074257.fastq.gz "${READS_DIR}/yeast/SRR4074257.fastq.gz"
 copy /public/groups/cgl/users/daheller/yeast_graph/assemblies/assemblies_raw/S288C.genome.fa "${CONSTRUCTION_DIR}/yeast/S288C.genome.fa"
+
+# Put the README in place
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cp "${SCRIPT_DIR}/archive-readme.md" "${DEST_DIR}/README.md"
