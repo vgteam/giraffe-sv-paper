@@ -79,7 +79,7 @@ Additionally, the simulated reads used in the mapping experiments are available.
    * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/novaseq6000/out_sim_gbwt/sim.gam)
 * For the yeast graph, reads simulated to resemble different yeast strains as sequenced by a single Illumina sequencing technology are available:
    * [For strain DBVPG6044](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-DBVPG6044.gam)
-   * [For strain DBVPG6765](https://cgl.gi.ucsc.edu/data/giraffe/(reads/sim/yeast/sim-DBVPG6765.gam)
+   * [For strain DBVPG6765](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-DBVPG6765.gam)
    * [For strain N44](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-N44.gam)
    * [For strain UWOPS034614](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-UWOPS034614.gam)
    * [For strain UWOPS919171](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-UWOPS919171.gam)
