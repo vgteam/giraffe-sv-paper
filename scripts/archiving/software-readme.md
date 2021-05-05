@@ -22,8 +22,8 @@ This archive contains the software developed for the manuscript *Genotyping comm
         * `vg.bundle`: a [Git bundle](https://git-scm.com/docs/git-bundle) containing the history of the vg codebase up to the latest version when the archive was created. Does not include the contents of submodules.
 * `containers`: Contains Docker containers, organized by project and then Docker tag. Source repository information is not included as tags are unique across the manuscript's workflows.
     * `toil`: Docker containers of Toil versions used in the manuscript
-        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via docker export` and compressed.
+        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via `docker export` and compressed.
     * `vg`: Docker containers of vg used in the manuscript.
-        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via docker export` and compressed. Note that tag `giraffe-paper` corresponds to vg v1.31.0, commit 08faee067037ece539a237a008bcdefc84b681b0.
+        * `<tag>.tar.gz`: Container of version identified by `<tag>`, exported via `docker export` and compressed. Note that tag `giraffe-paper` corresponds to vg v1.31.0, commit 08faee067037ece539a237a008bcdefc84b681b0.
 
 
