@@ -72,7 +72,7 @@ Additionally, the simulated reads used in the mapping experiments are available.
 * For the 1000GPlons graph, reads simulated to resemble sample NA19239 as sequenced by different Illumina sequencing technologies are available:
    * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19239/1000gplons/hs38d1/hiseq2500/out_sim_gbwt/sim.gam)
    * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/1000gplons/hs38d1/hs37d5/hiseqxten/out_sim_gbwt/sim.gam)
-   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/1000gplons/hs38d1/hs37d5/novaseq6000/out_sim_gbwt/sim.gam).
+   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/1000gplons/hs38d1/hs37d5/novaseq6000/out_sim_gbwt/sim.gam)
 * For the HGSVC graph, reads simulated to resemble sample NA19240 as sequenced by different Illumina sequencing technologies are available:
    * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/hiseq2500/out_sim_gbwt/sim.gam)
    * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/hiseqxten/out_sim_gbwt/sim.gam)
