@@ -4,10 +4,42 @@ These data files were used in preparing the manuscript for *Genotyping common, l
 
 <!-- The archiving pipeline will turn links under the following URL into relative links: https://cgl.gi.ucsc.edu/data/giraffe/ -->
 
-## Code
-All files should be readable by vg v1.32.0, with commit SHA1 hash 095c529f8c70521ca60cf0435bac1b0b4ffd1f6d. The tool is available on Github at https://github.com/vgteam/vg/releases/tag/v1.32.0. A [fully static binary for GNU/Linux 3.2.0](https://cgl.gi.ucsc.edu/data/giraffe/code/vg/v1.32.0/vg) and a [gzip-compressed source tar file](https://cgl.gi.ucsc.edu/data/giraffe/code/vg/v1.32.0/vg-v1.32.0.tar.gz) are available.
+## Basic layout
 
-The code to reproduce the analysis in the paper can be found [on the web](https://github.com/vgteam/giraffe-sv-paper) or [in the archive](software/code/giraffe-sv-paper/).
+The archive is laid out as follows:
+
+* `calling`: files for the [structural variant genotyping analysis](#structural-variant-genotyping)
+* `construction`: Input files used by the `giraffe-sv-paper` graph construction scripts
+    * `yeast`: Input files related specifically to constructing graphs for the yeast experiments
+* `mapping`: Files related to [mapping experiments with Giraffe and other mappers](#read-mapping)
+    * `reads`: Reads for mapping
+        * `real`: Real reads for mapping or training the read simulator
+            * `NA19239` and `NA19240`: Real reads from those human samples
+            * `yeast`: Real reads from yeast for the yeast experiments
+        * `sim`: Simulated reads for mapping accuracy analysis
+            * `for-NA19239` and `for-NA19230`: Reads simulated to match each sample's haplotypes
+                * `1000gplons` or `hgsvc`: Reads simulated for the 1000GPlons graph or the HGSVC graph
+                    * `hs38d1`: All reads were simulated from graphs using this reference
+                        * `hiseq2500`, `hiseqxten`, and `novaseq6000`: Illumina sequencing technology whose reaqds are used to train the error model
+                            * `out_sim_gbwt`: All reads were simulated using GBWT haplotypes
+                                * `sim.gam`: File with simulated reads in vg Graph Alignment/Map format
+    * `graphs`: Graphs to map to
+        * `for-NA19239` and `for-NA19240`: Sample used for the subgraph or sub-GBWT to simulate reads from for the graph
+            * `1000gplons` or `hgsvc`: data source used to obtain the variants to build the graph
+                * `hs38d1`: All graphs were built up from this linear reference
+        * `generic`: Graphs with no associated sample
+            * `cactus`: Graphs built fom [Cactus](https://github.com/ComparativeGenomicsToolkit/cactus#readme) alignments, for the yeast experiments
+                * `yeast_all`: Graphs using a full set of yeast samples
+                * `yeast_subset`: Graphs using a subset of the yeast samples used in the manuscript
+            * `primary`: stick-shaped graphs containing only the linear "primary" reference contigs, with no variation
+                * `S288C`: Yeast primary reference graph
+                * `hs38d1`: Human primary reference graph
+* `software`: Contains [code](#code) used in the manuscript, organized according to [its own README](https://cgl.gi.ucsc.edu/data/giraffe/software/README.md)
+
+## Code
+All files should be readable by vg v1.32.0, with commit SHA1 hash 095c529f8c70521ca60cf0435bac1b0b4ffd1f6d. The tool is available on Github at https://github.com/vgteam/vg/releases/tag/v1.32.0. A [fully static binary for GNU/Linux 3.2.0](https://cgl.gi.ucsc.edu/data/giraffe/software/code/vg/v1.32.0/vg) and a [gzip-compressed source tar file](https://cgl.gi.ucsc.edu/data/giraffe/software/code/vg/v1.32.0/vg-v1.32.0.tar.gz) are available.
+
+The code to reproduce the analysis in the paper can be found [on the web](https://github.com/vgteam/giraffe-sv-paper) or [in the archive](https://cgl.gi.ucsc.edu/data/giraffe/software/code/giraffe-sv-paper/).
 
 ## Read Mapping
 For the mapping experiments, we used a series of graphs.
