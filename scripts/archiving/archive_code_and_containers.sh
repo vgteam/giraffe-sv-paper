@@ -206,6 +206,9 @@ done
 # Now archive all the paper scripts and history.
 bundle_all giraffe-sv-paper ${SCRIPT_DIR}/../..
 
+# And put the software README in place
+cp "${SCRIPT_DIR}/software-readme.md" "${DEST_DIR}/README.md"
+
 rm -Rf "${WORK_DIR}"
 
 # Zip all the software together. Use zip because incremental update of touched
