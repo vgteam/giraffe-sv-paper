@@ -1,6 +1,6 @@
 # Giraffe Paper Data
 
-These data files were used in preparing the manuscript for *Genotyping common, large structural variations in 5,202 genomes using pangenomes, the Giraffe mapper, and the vg toolkit*, and will be useful for anyone looking to repeat or build on the experiments.
+These data files were used in preparing the manuscript for *Pangenomics enables genotyping common structural variants in 5,202 diverse genomes*, and will be useful for anyone looking to repeat or build on the experiments.
 
 <!-- The archiving pipeline will turn links under the following URL into relative links: https://cgl.gi.ucsc.edu/data/giraffe/ -->
 
