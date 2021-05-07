@@ -81,8 +81,8 @@ spec:
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' stats.tsv
-          #aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_map.tsv
-          #aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegsups/roc_stats_map.tsv
+          aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_map.tsv
+          aws s3 cp stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_map.tsv
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume

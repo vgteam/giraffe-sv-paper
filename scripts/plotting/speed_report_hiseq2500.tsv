@@ -1,43 +1,47 @@
-graph   algorithm   reads   pairing speed   total_cpu_sec   total_wall_clock_time   max_resident_set_size(kbytes)
-hgsvc	bwa_mem	hiseq2500	single	1139.225    0   0:0:0   0
-hgsvc	bwa_mem	hiseq2500	paired	919.16875    0   0:0:0   0
-1kg	bwa_mem	hiseq2500	single	1433.025    0   0:0:0   0
-1kg	bwa_mem	hiseq2500	paired	1243.3875    0   0:0:0   0
-hgsvc	minimap2	hiseq2500	single	3715.759278    0   0:0:0   0
-hgsvc	minimap2	hiseq2500	paired	2710.835208    0   0:0:0   0
-1kg	minimap2	hiseq2500	single	4296.640027    0   0:0:0   0
-1kg	minimap2	hiseq2500	paired	3424.094669    0   0:0:0   0
-hgsvc	bowtie2	hiseq2500	single	905.7971014    0   0:0:0   0
-hgsvc	bowtie2	hiseq2500	paired	856.1643836    0   0:0:0   0
-1kg	bowtie2	hiseq2500	single	892.8571429    0   0:0:0   0
-1kg	bowtie2	hiseq2500	paired	833.3333333    0   0:0:0   0
-hgsvc	vg_map	hiseq2500	single	174.554    0   0:0:0   0
-hgsvc	vg_map	hiseq2500	paired	160.006    0   0:0:0   0
-1kg	vg_map	hiseq2500	single	210.738    0   0:0:0   0
-1kg	vg_map	hiseq2500	paired	148.54    0   0:0:0   0
-hgsvc	giraffe_primary	hiseq2500	single	2867.91    0   0:0:0   0
-hgsvc	giraffe_primary	hiseq2500	paired	2560.33    0   0:0:0   0
-1kg	giraffe_primary	hiseq2500	single	3149.96    0   0:0:0   0
-1kg	giraffe_primary	hiseq2500	paired	2720.81    0   0:0:0   0
-hgsvc	hisat2	hiseq2500	single	3906.25    0   0:0:0   0
-hgsvc	hisat2	hiseq2500	paired	3676.470588    0   0:0:0   0
-1kg hisat2	hiseq2500	single	4166.666667    0   0:0:0   0
-1kg hisat2	hiseq2500	paired	4166.666667    0   0:0:0   0
-hgsvc	giraffe	hiseq2500	single	2673.91    0   0:0:0   0
-hgsvc	giraffe	hiseq2500	paired	2246.11    0   0:0:0   0
-1kg	giraffe	hiseq2500	single	2111    0   0:0:0   0
-1kg	giraffe	hiseq2500	paired	1973.44    0   0:0:0   0
-1kg	giraffe_full	hiseq2500	single	1701.48    0   0:0:0   0
-1kg	giraffe_full	hiseq2500	paired	1654.95    0   0:0:0   0
-hgsvc	giraffe_fast	hiseq2500	single	4218.58    0   0:0:0   0
-hgsvc	giraffe_fast	hiseq2500	paired	3579.49    0   0:0:0   0
-1kg	giraffe_fast	hiseq2500	single	3206.8    0   0:0:0   0
-1kg	giraffe_fast	hiseq2500	paired	2814.83    0   0:0:0   0
-hgsvc	hisat2_sens	hiseq2500	single	1893.939394    0   0:0:0   0
-hgsvc	hisat2_sens	hiseq2500	paired	1838.235294    0   0:0:0   0
-1kg	hisat2_sens	hiseq2500	single	1689.189189    0   0:0:0   0
-1kg	hisat2_sens	hiseq2500	paired	1953.125    0   0:0:0   0
-hgsvc	hisat2_vsens	hiseq2500	single	762.195122    0   0:0:0   0
-hgsvc	hisat2_vsens	hiseq2500	paired	686.8131868    0   0:0:0   0
-1kg	hisat2_vsens	hiseq2500	single	718.3908046    0   0:0:0   0
-1kg	hisat2_vsens	hiseq2500	paired	672.0430108    0   0:0:0   0
+graph   algorithm   reads   pairing speed   total_cpu_sec   max_resident_set_size(kbytes)
+hgsvc	bwa_mem	hiseq2500	single	1139.225   0:0:0   0
+hgsvc	bwa_mem	hiseq2500	paired	919.16875   0:0:0   0
+1000gp	bwa_mem	hiseq2500	single	1139.225   0:0:0   0
+1000gp	bwa_mem	hiseq2500	paired	919.16875   0:0:0   0
+hgsvc	minimap2	hiseq2500	single	3715.759278   0:0:0   0
+hgsvc	minimap2	hiseq2500	paired	2710.835208   0:0:0   0
+1000gp	minimap2	hiseq2500	single	3715.759278   0:0:0   0
+1000gp	minimap2	hiseq2500	paired	2710.835208   0:0:0   0
+hgsvc	bowtie2	hiseq2500	single	905.7971014   0:0:0   0
+hgsvc	bowtie2	hiseq2500	paired	856.1643836   0:0:0   0
+1000gp	bowtie2	hiseq2500	single	905.7971014   0:0:0   0
+1000gp	bowtie2	hiseq2500	paired	856.1643836   0:0:0   0
+hgsvc	vg_map	hiseq2500	single	174.554    0:0:0   0
+hgsvc	vg_map	hiseq2500	paired	160.006    0:0:0   0
+1000gp	vg_map	hiseq2500	single  164.118   0:0:0   0	
+1000gp	vg_map	hiseq2500	paired	133.464   0:0:0   0
+hgsvc   vg_map_primary  hiseq2500	single	176.652 0:0:0   0
+hgsvc   vg_map_primary  hiseq2500	paired	164.152 0:0:0   0
+1000gp   vg_map_primary  hiseq2500	single	176.652 0:0:0   0
+1000gp   vg_map_primary  hiseq2500	paired	164.152 0:0:0   0
+hgsvc	giraffe_primary	hiseq2500	single	2932.25    0:0:0   0
+hgsvc	giraffe_primary	hiseq2500	paired	2538.71    0:0:0   0
+1000gp	giraffe_primary	hiseq2500	single	2932.25    0:0:0   0
+1000gp	giraffe_primary	hiseq2500	paired	2538.71    0:0:0   0
+hgsvc	hisat2	hiseq2500	single	3906.25    0:0:0   0
+hgsvc	hisat2	hiseq2500	paired	3676.470588    0:0:0   0
+1000gp hisat2	hiseq2500	single	4166.66   0:0:0   0
+1000gp hisat2	hiseq2500	paired	3676.47   0:0:0   0
+hgsvc	giraffe_full	hiseq2500	single	2634.67    0:0:0   0
+hgsvc	giraffe_full	hiseq2500	paired	2189.14    0:0:0   0
+1000gp	giraffe_sampled	hiseq2500	single	2036.96   0:0:0   0
+1000gp	giraffe_sampled	hiseq2500	paired	1814.35   0:0:0   0
+1000gp	giraffe_full	hiseq2500	single	1309.87   0:0:0   0
+1000gp	giraffe_full	hiseq2500	paired	1299.68   0:0:0   0
+hgsvc	giraffe_fast	hiseq2500	single	4376.63    0:0:0   0
+hgsvc	giraffe_fast	hiseq2500	paired	3469.21    0:0:0   0
+1000gp	giraffe_fast	hiseq2500	single	3091.04   0:0:0   0
+1000gp	giraffe_fast	hiseq2500	paired	2633.05   0:0:0   0
+hgsvc	hisat2_sens	hiseq2500	single	1893.939394    0:0:0   0
+hgsvc	hisat2_sens	hiseq2500	paired	1838.235294    0:0:0   0
+1000gp	hisat2_sens	hiseq2500	single	1785.71   0:0:0   0
+1000gp	hisat2_sens	hiseq2500	paired	1785.71   0:0:0   0
+hgsvc	hisat2_vsens	hiseq2500	single	762.195122    0:0:0   0
+hgsvc	hisat2_vsens	hiseq2500	paired	686.8131868    0:0:0   0
+1000gp	hisat2_vsens	hiseq2500	single	781.25   0:0:0   0
+1000gp	hisat2_vsens	hiseq2500	paired	702.24   0:0:0   0
