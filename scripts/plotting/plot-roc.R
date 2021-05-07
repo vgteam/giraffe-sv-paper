@@ -61,12 +61,12 @@ name.lists <- name.lists[name.order]
 # Determine colors for aligners
 
 #Colors for all single end mappers
-bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb    cc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
-light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb    cc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
 
 #Colors for headline single end mappers
-#bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d"    ,"#458b74","#698b22","#008b8b")
-#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#ee8866", "#ffaabb", "#dddddd")
+bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d"    ,"#458b74","#698b22","#008b8b")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#ee8866", "#ffaabb", "#dddddd")
 #
 ##Colors for all paired end mappers
 #bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb    5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
@@ -153,7 +153,7 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     theme_bw() + 
     ggtitle(title) + 
     theme(aspect.ratio=1) +
-    coord_cartesian(ylim(0.9,0.98)) #(0.88, 0.985) for single, (0.92, 1.0) paired. For gbwts, (0.915, 0.975) for se, (0.935,0.985) for pe
+    coord_cartesian(ylim=c(0.88,0.985)) #(0.88, 0.985) for single, (0.92, 1.0) paired. For gbwts, (0.915, 0.975) for se, (0.935,0.985) for pe
     
 if (title != '') {
     # And a title
