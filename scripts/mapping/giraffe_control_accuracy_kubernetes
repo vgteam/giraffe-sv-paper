@@ -10,7 +10,6 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        # TODO: See if 1.27.1 works right and learns a pair distribution in all cases with S288C as the reference
         image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
@@ -24,7 +23,7 @@ spec:
 
           for GRAPH in  hgsvc ; do
               if [[ "${GRAPH}" == 1000gp ]] ; then
-                  GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref
+                  GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
                   aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                   aws s3 cp ${GRAPH_BASE}.force.augment.gbwt ./graph.gbwt
                   aws s3 cp ${GRAPH_BASE}.dist graph.dist
@@ -59,8 +58,9 @@ spec:
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
+          gzip roc_stats.tsv
           aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe_control.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_control.tsv
+          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_control.tsv
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
