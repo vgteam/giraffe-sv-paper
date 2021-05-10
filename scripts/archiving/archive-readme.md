@@ -34,6 +34,7 @@ The archive is laid out as follows:
             * `primary`: stick-shaped graphs containing only the linear "primary" reference contigs, with no variation
                 * `S288C`: Yeast primary reference graph
                 * `hs38d1`: Human primary reference graph
+* `products`: Contains output files recommended for re-use, if any, organized according to [its own README](https://cgl.gi.ucsc.edu/data/giraffe/products/README.md)
 * `software`: Contains [code](#code) used in the manuscript, organized according to [its own README](https://cgl.gi.ucsc.edu/data/giraffe/software/README.md)
 
 ## Code
