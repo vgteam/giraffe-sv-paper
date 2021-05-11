@@ -7,6 +7,8 @@ import numpy as np
 from scipy import stats
 import re
 import functools
+import gzip
+import argparse
 
 INDEL_SIZE_LIMIT = 40
 colors_original={ "bowtie2":"#aaaa00", "bwa_mem":"#eedd88", "giraffe":"#44bb99", "giraffe_fast":"#99ddff", "giraffe_primary":"#77aadd", "graphaligner":"#bbcc33", "hisat2":"#ee8866", "vg_map":"#ffaabb", "minimap2":"#dddddd"}
@@ -116,75 +118,82 @@ def get_fractions(filename):
         return (all_fractions_giraffe, all_fractions_map, all_fractions_bwa)
 
 
-(all_fractions_giraffe, all_fractions_map, all_fractions_bwa) = get_fractions("all_calls.vcf")
-with open("indel_fractions.json", "r") as in_file:
-    all_fractions = json.load(in_file)
+def main():
+    parser = argparse.ArgumentParser(description="Make allele balance plot from vcf file")
+    parser.add_argument("vcf_file", help="input vcf file")
+    parser.add_argument("out_file", help="name of output plot")
+    args =parser.parse_args()
 
-
-#[indel len, avg of read counts, avg of fractions, error, number of sites]
-all_fractions_giraffe = all_fractions[0]
-all_fractions_map = all_fractions[1]
-all_fractions_bwa = all_fractions[2]
-
-indel_lengths_giraffe   = [x[0] for x in all_fractions_giraffe]
-indel_fractions_giraffe = [x[1] for x in all_fractions_giraffe]
-indel_error_giraffe     = [x[3] for x in all_fractions_giraffe]
-indel_lengths_map       = [x[0] for x in all_fractions_map]
-indel_fractions_map     = [x[1] for x in all_fractions_map]
-indel_error_map         = [x[3] for x in all_fractions_map]
-indel_lengths_bwa       = [x[0] for x in all_fractions_bwa]
-indel_fractions_bwa     = [x[1] for x in all_fractions_bwa]
-indel_error_bwa         = [x[3] for x in all_fractions_bwa]
-
-
-#Plot figure
-
-
-#Make this look more like the R roc plots
-
-matplotlib.rcParams["font.family"]="sans-serif"
-matplotlib.rcParams['font.sans-serif']="Arial"
-matplotlib.rcParams['font.size']=12.0
-matplotlib.rcParams['axes.grid'] = True
-matplotlib.rcParams['axes.titlesize']="x-large"
-matplotlib.rcParams['axes.labelsize']="large"
-matplotlib.rcParams['axes.labelcolor'] = "black"
-
-fig_width = 15
-fig_height = 5
-plt.figure(figsize=(fig_width,fig_height))
-panel_width=0.9
-panel_height=0.8
-panel=plt.axes([0.05, 0.1, panel_width, panel_height])
-
-
-
-panel.plot([-90, 50], [0.5, 0.5], color='black',linestyle='dashed') #Line at 0.5
-
-#Combine indels > 40bp
-
-panel.scatter(indel_lengths_bwa, indel_fractions_bwa, label="bwa mem", color=colors_original["bwa_mem"])
-panel.plot(indel_lengths_bwa, indel_fractions_bwa, color=colors_original["bwa_mem"])
-panel.errorbar(indel_lengths_bwa, indel_fractions_bwa, yerr=indel_error_bwa, color=colors_original["bwa_mem"])
-
-panel.scatter(indel_lengths_map, indel_fractions_map, label="vg map", color=colors_original["vg_map"])
-panel.plot(indel_lengths_map, indel_fractions_map, color=colors_original["vg_map"])
-panel.errorbar(indel_lengths_map, indel_fractions_map, yerr=indel_error_map, color=colors_original["vg_map"])
-
-panel.scatter(indel_lengths_giraffe, indel_fractions_giraffe, label="vg giraffe", color=colors_original["giraffe"])
-panel.plot(indel_lengths_giraffe, indel_fractions_giraffe, color=colors_original["giraffe"])
-panel.errorbar(indel_lengths_giraffe, indel_fractions_giraffe, yerr=indel_error_giraffe, color=colors_original["giraffe"])
-
-
-
-panel.legend(loc="lower left",frameon=False)
-
-
-panel.set_xlabel("Insertion or deletion length")
-panel.set_ylabel("Fraction of alternate allele")
-#panel.set_ylim(0,1)
-panel.set_xlim(-INDEL_SIZE_LIMIT-2, INDEL_SIZE_LIMIT+2)
-panel.set_xticks([-40,-30,-20,-10,0,10,20,30,40])
-panel.set_xticklabels(["<-40", "-30", "-20", "-10", "0","10","20","30",">40"])
+    (all_fractions_giraffe, all_fractions_map, all_fractions_bwa) = get_fractions(args.vcf_file)
+    with open("indel_fractions.json", "r") as in_file:
+        all_fractions = json.load(in_file)
     
-plt.savefig("allele_balance.svg")
+    
+    #[indel len, avg of read counts, avg of fractions, error, number of sites]
+    all_fractions_giraffe = all_fractions[0]
+    all_fractions_map = all_fractions[1]
+    all_fractions_bwa = all_fractions[2]
+    
+    indel_lengths_giraffe   = [x[0] for x in all_fractions_giraffe]
+    indel_fractions_giraffe = [x[1] for x in all_fractions_giraffe]
+    indel_error_giraffe     = [x[3] for x in all_fractions_giraffe]
+    indel_lengths_map       = [x[0] for x in all_fractions_map]
+    indel_fractions_map     = [x[1] for x in all_fractions_map]
+    indel_error_map         = [x[3] for x in all_fractions_map]
+    indel_lengths_bwa       = [x[0] for x in all_fractions_bwa]
+    indel_fractions_bwa     = [x[1] for x in all_fractions_bwa]
+    indel_error_bwa         = [x[3] for x in all_fractions_bwa]
+    
+    
+    #Plot figure
+    
+    
+    #Make this look more like the R roc plots
+    
+    matplotlib.rcParams["font.family"]="sans-serif"
+    matplotlib.rcParams['font.sans-serif']="Arial"
+    matplotlib.rcParams['font.size']=12.0
+    matplotlib.rcParams['axes.grid'] = True
+    matplotlib.rcParams['axes.titlesize']="x-large"
+    matplotlib.rcParams['axes.labelsize']="large"
+    matplotlib.rcParams['axes.labelcolor'] = "black"
+    
+    fig_width = 15
+    fig_height = 5
+    plt.figure(figsize=(fig_width,fig_height))
+    panel_width=0.9
+    panel_height=0.8
+    panel=plt.axes([0.05, 0.1, panel_width, panel_height])
+    
+    
+    
+    panel.plot([-90, 50], [0.5, 0.5], color='black',linestyle='dashed') #Line at 0.5
+    
+    #Combine indels > 40bp
+    
+    panel.scatter(indel_lengths_bwa, indel_fractions_bwa, label="bwa mem", color=colors_original["bwa_mem"])
+    panel.plot(indel_lengths_bwa, indel_fractions_bwa, color=colors_original["bwa_mem"])
+    panel.errorbar(indel_lengths_bwa, indel_fractions_bwa, yerr=indel_error_bwa, color=colors_original["bwa_mem"])
+    
+    panel.scatter(indel_lengths_map, indel_fractions_map, label="vg map", color=colors_original["vg_map"])
+    panel.plot(indel_lengths_map, indel_fractions_map, color=colors_original["vg_map"])
+    panel.errorbar(indel_lengths_map, indel_fractions_map, yerr=indel_error_map, color=colors_original["vg_map"])
+    
+    panel.scatter(indel_lengths_giraffe, indel_fractions_giraffe, label="vg giraffe", color=colors_original["giraffe"])
+    panel.plot(indel_lengths_giraffe, indel_fractions_giraffe, color=colors_original["giraffe"])
+    panel.errorbar(indel_lengths_giraffe, indel_fractions_giraffe, yerr=indel_error_giraffe, color=colors_original["giraffe"])
+    
+    
+    
+    panel.legend(loc="lower left",frameon=False)
+    
+    
+    panel.set_xlabel("Insertion or deletion length")
+    panel.set_ylabel("Fraction of alternate allele")
+    #panel.set_ylim(0,1)
+    panel.set_xlim(-INDEL_SIZE_LIMIT-2, INDEL_SIZE_LIMIT+2)
+    panel.set_xticks([-40,-30,-20,-10,0,10,20,30,40])
+    panel.set_xticklabels(["<-40", "-30", "-20", "-10", "0","10","20","30",">40"])
+        
+    plt.savefig(args.out_file)
+main()

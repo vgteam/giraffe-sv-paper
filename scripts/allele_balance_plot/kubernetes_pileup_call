@@ -39,22 +39,22 @@ spec:
                   aws s3 cp  mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.giraffe.novaseq6000.sorted.bam
                   
               elif [[ ${MAPPER} == "bwa" ]] ; then
-                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.amb .
-                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.ann .
-                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.bwt .
-                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.pac .
-                  #aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.sa .
-                  #bwa mem -t 24 -p hs38d1.fa reads.fq.gz > mapped.bam
-                  #samtools sort mapped.bam > mapped.sorted.bam
-                  aws s3 cp s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.bwa_mem.novaseq6000.sorted.bam mapped.sorted.bam
+                  aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.amb .
+                  aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.ann .
+                  aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.bwt .
+                  aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.pac .
+                  aws s3 cp s3://vg-k8s/profiling/data/hs38d1_renamed/hs38d1.fa.sa .
+                  bwa mem -t 24 -p hs38d1.fa reads.fq.gz > mapped.bam
+                  samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.bwa_mem.novaseq6000.sorted.bam
               elif [[ ${MAPPER} == "map" ]] ; then
-                  #aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
-                  #aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
-                  #aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
-                  #vg map -x graph.xg -g graph.gcsa -f reads.fq.gz -i -t 20 > mapped.gam
-                  #vg surject -x graph.xg -b -i -t 24 - > mapped.bam
-                  #vg surject -x graph.xg -b -i -t 24 mapped.gam > mapped.bam
-                  #samtools sort mapped.bam > mapped.sorted.bam
+                  aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
+                  aws s3 cp ${GRAPH_BASE}.gcsa ./graph.gcsa
+                  aws s3 cp ${GRAPH_BASE}.gcsa.lcp ./graph.gcsa.lcp
+                  vg map -x graph.xg -g graph.gcsa -f reads.fq.gz -i -t 20 > mapped.gam
+                  vg surject -x graph.xg -b -i -t 24 - > mapped.bam
+                  vg surject -x graph.xg -b -i -t 24 mapped.gam > mapped.bam
+                  samtools sort mapped.bam > mapped.sorted.bam
                   aws s3 cp mapped.sorted.bam s3://vg-k8s/users/xhchang/giraffe_experiments_2/allele_balance/nosegdups/mapped.map.novaseq6000.sorted.bam  
               fi
               samtools index mapped.sorted.bam

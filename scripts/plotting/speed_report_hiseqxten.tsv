@@ -1,43 +1,47 @@
-graph   algorithm   reads   pairing speed   total_cpu_sec   total_wall_clock_time   max_resident_set_size(kbytes)
-1kg	giraffe	hiseqxten	single	3606.48 0   0:0:0   0
-1kg	giraffe	hiseqxten	paired	3430.66 0   0:0:0   0
-hgsvc	giraffe	hiseqxten	single	4693.92 0    0:0:0   0
-hgsvc	giraffe	hiseqxten	paired	4021.7 0    0:0:0   0
-1kg	giraffe_full	hiseqxten	single	3174.23 0   0:0:0   0
-1kg	giraffe_full	hiseqxten	paired	2711.52 0   0:0:0   0
-hgsvc	giraffe_fast	hiseqxten	single	7060.98 0    0:0:0   0
-hgsvc	giraffe_fast	hiseqxten	paired	5811.84 0    0:0:0   0
-1kg	giraffe_fast	hiseqxten	single	5446.25 0    0:0:0   0
-1kg	giraffe_fast	hiseqxten	paired	4664.28 0    0:0:0   0
-hgsvc	bwa_mem	hiseqxten	single	2195.525	0    0:0:0   0
-hgsvc	bwa_mem	hiseqxten	paired	1774.8625	0    0:0:0   0
-1kg	bwa_mem	hiseqxten	single	2571.7 0    0:0:0   0
-1kg	bwa_mem	hiseqxten	paired	2205.2062 0    0:0:0   0
-hgsvc	minimap2	hiseqxten	single	6134.818777 0    0:0:0   0
-hgsvc	minimap2	hiseqxten	paired	5896.226415 0    0:0:0   0
-1kg	minimap2	hiseqxten	single	7026.616825 0    0:0:0   0
-1kg	minimap2	hiseqxten	paired	7287.673629 0    0:0:0   0
-hgsvc	bowtie2	hiseqxten	single	1785.714286 0    0:0:0   0
-hgsvc	bowtie2	hiseqxten	paired	1785.714286 0    0:0:0   0
-1kg	bowtie2	hiseqxten	single	1838.235294 0    0:0:0   0
-1kg	bowtie2	hiseqxten	paired	1838.235294 0    0:0:0   0
-hgsvc	vg_map	hiseqxten	single	337.938 0    0:0:0   0
-hgsvc	vg_map	hiseqxten	paired	273.375 0    0:0:0   0
-1kg	vg_map	hiseqxten	single	359.966 0    0:0:0   0
-1kg	vg_map	hiseqxten	paired	182.359 0    0:0:0   0
-hgsvc	giraffe_primary	hiseqxten	single	5041.55 0    0:0:0   0
-hgsvc	giraffe_primary	hiseqxten	paired	4480.48 0    0:0:0   0
-1kg	giraffe_primary	hiseqxten	single	5220.36 0    0:0:0   0
-1kg	giraffe_primary	hiseqxten	paired	4560.17 0    0:0:0   0
-hgsvc	hisat2	hiseqxten	single	6250 0    0:0:0   0
-hgsvc	hisat2	hiseqxten	paired	5681.81818 0    0:0:0   0
-1kg	hisat2	hiseqxten	single	6250 0    0:0:0   0
-1kg	hisat2	hiseqxten	paired	5681.818182 0    0:0:0   0
-hgsvc	hisat2_sens	hiseqxten	single	3472.222222 0    0:0:0   0
-hgsvc	hisat2_sens	hiseqxten	paired	3289.473684 0    0:0:0   0
-1kg	hisat2_sens	hiseqxten	paired	3289.473684 0    0:0:0   0
-1kg	hisat2_sens	hiseqxten	single	3125 0    0:0:0   0
-hgsvc	hisat2_vsens	hiseqxten	single	1689.189189 0    0:0:0   0
-hgsvc	hisat2_vsens	hiseqxten	paired	1524.390244 0    0:0:0   0
-1kg	hisat2_vsens	hiseqxten	single	1689.189189 0    0:0:0   0
-1kg	hisat2_vsens	hiseqxten	paired	1524.390244 0    0:0:0   0
+graph   algorithm   reads   pairing speed   total_cpu_sec   max_resident_set_size(kbytes)
+1000gp	giraffe_sampled	hiseqxten	single	3592.12    0:0:0   0
+1000gp	giraffe_sampled	hiseqxten	paired	3293.96    0:0:0   0
+hgsvc	giraffe_full	hiseqxten	single	4794.79    0:0:0   0
+hgsvc	giraffe_full	hiseqxten	paired	3977.96    0:0:0   0
+1000gp	giraffe_full	hiseqxten	single	2307.69    0:0:0   0
+1000gp	giraffe_full	hiseqxten	paired	2216.82    0:0:0   0
+hgsvc	giraffe_fast	hiseqxten	single	7361.28    0:0:0   0
+hgsvc	giraffe_fast	hiseqxten	paired	5659.1    0:0:0   0
+1000gp	giraffe_fast	hiseqxten	single	5621.63    0:0:0   0
+1000gp	giraffe_fast	hiseqxten	paired	4412.3    0:0:0   0
+hgsvc	bwa_mem	hiseqxten	single	2195.525	0:0:0   0
+hgsvc	bwa_mem	hiseqxten	paired	1774.8625	0:0:0   0
+1000gp	bwa_mem	hiseqxten	single	2195.525	0:0:0   0
+1000gp	bwa_mem	hiseqxten	paired	1774.8625	0:0:0   0
+hgsvc	minimap2	hiseqxten	single	6134.818777 0:0:0   0
+hgsvc	minimap2	hiseqxten	paired	5896.226415 0:0:0   0
+1000gp	minimap2	hiseqxten	single	6134.818777 0:0:0   0
+1000gp	minimap2	hiseqxten	paired	5896.226415 0:0:0   0
+hgsvc	bowtie2	hiseqxten	single	1785.714286 0:0:0   0
+hgsvc	bowtie2	hiseqxten	paired	1785.714286 0:0:0   0
+1000gp	bowtie2	hiseqxten	single	1785.714286 0:0:0   0
+1000gp	bowtie2	hiseqxten	paired	1785.714286 0:0:0   0
+hgsvc	vg_map	hiseqxten	single	337.938 0:0:0   0
+hgsvc	vg_map	hiseqxten	paired	273.375 0:0:0   0
+1000gp	vg_map	hiseqxten	single	303.472 0:0:0   0
+1000gp	vg_map	hiseqxten	paired	182.814 0:0:0   0
+hgsvc   vg_map_primary  hiseqxten	single	342.016 0:0:0   0
+hgsvc   vg_map_primary  hiseqxten	paired	285.459 0:0:0   0
+1000gp   vg_map_primary  hiseqxten	single	342.016 0:0:0   0
+1000gp   vg_map_primary  hiseqxten	paired	285.459 0:0:0   0
+hgsvc	giraffe_primary	hiseqxten	single	5072.26 0:0:0   0
+hgsvc	giraffe_primary	hiseqxten	paired	4316.99 0:0:0   0
+1000gp	giraffe_primary	hiseqxten	single	5072.26 0:0:0   0
+1000gp	giraffe_primary	hiseqxten	paired	4316.99 0:0:0   0
+hgsvc	hisat2	hiseqxten	single	6250 0:0:0   0
+hgsvc	hisat2	hiseqxten	paired	5681.81818    0:0:0   0
+1000gp	hisat2	hiseqxten	single	5681.81    0:0:0   0
+1000gp	hisat2	hiseqxten	paired	5208.33    0:0:0   0
+hgsvc	hisat2_sens	hiseqxten	single	3472.222222 0:0:0   0
+hgsvc	hisat2_sens	hiseqxten	paired	3289.473684 0:0:0   0
+1000gp	hisat2_sens	hiseqxten	paired	3289.47 0:0:0   0
+1000gp	hisat2_sens	hiseqxten	single	3289.47 0:0:0   0
+hgsvc	hisat2_vsens	hiseqxten	single	1689.189189    0:0:0   0
+hgsvc	hisat2_vsens	hiseqxten	paired	1524.390244    0:0:0   0
+1000gp	hisat2_vsens	hiseqxten	single	1785.71 0:0:0   0
+1000gp	hisat2_vsens	hiseqxten	paired	1602.56 0:0:0   0

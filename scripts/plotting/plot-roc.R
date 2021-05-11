@@ -45,7 +45,7 @@ if (length(commandArgs(TRUE)) > 3) {
 }
 
 # Determine the order of aligners, based on sorting in a dash-separated tag aware manner
-aligner.names <- levels(dat$aligner)
+aligner.names <- levels(factor(dat$aligner))
 name.lists <- aligner.names %>% (function(name) map(name,  (function(x) as.list(unlist(strsplit(x, "-"))))))
 # Transpose name fragments into a list of vectors for each position, with NAs when tag lists end early
 max.parts <- max(sapply(name.lists, length))
@@ -59,11 +59,31 @@ dat$aligner <- factor(dat$aligner, levels=aligner.names)
 name.lists <- name.lists[name.order]
 
 # Determine colors for aligners
-bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d","#458b74","#698b22","#008b8b")
-#light.colors <- c("#a6cee3","#fb9a99","#b2df8a","#e5ccff","#ffe5cc","#9a7c9b","#76eec6","#b3ee3a","#00eeee")
-#light.colors <- c("#e69f00", "#56b4e9", "#009e73", "#efff42", "#0072b2","#000000", "#dd5c00", "#cc79a7","#332288")
-#light.colors <- c("#88ccee", "#44aa99", "#117733", "#999933", "#ddcc77", "#332288","#cc6677", "#882255","#aa4499")
-light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bbcc33", "#ee8866", "#ffaabb", "#dddddd")
+
+#Colors for all single end mappers
+#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb    cc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#bb5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+
+#Colors for headline single end mappers
+bold.colors <- c("#1f78b4","#e31a1c","#33a02c","#6600cc","#ff8000","#5c415d"    ,"#458b74","#698b22","#008b8b")
+light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    bcc33", "#ee8866", "#ffaabb", "#dddddd")
+#
+##Colors for all paired end mappers
+#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#bb    5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+#light.colors <- c("#aaaa00", "#eedd88", "#44bb99", "#99ddff", "#77aadd", "#b    b5544", "#882211", "#ee8866", "#ffaabb","#dd8899",  "#dddddd")
+#
+#
+##Colors for headline paired end mappers
+#bold.colors <- c("#aaaa00", "#eedd88", "#44bb99","#000000", "#99ddff", "#77    aadd" , "#ee8866", "#ffaabb", "#dddddd")
+#light.colors <- c("#aaaa00", "#eedd88", "#44bb99","#000000", "#99ddff", "#77    aadd" , "#ee8866", "#ffaabb", "#dddddd")
+#
+##Colors for gbwt rocs
+#bold.colors <-  c("#fb9a99","#e5ccff", "#fedb76", "#f1fd79", "#c5fc7c", "#    9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8")
+#light.colors <- c("#fb9a99","#e5ccff", "#fedb76", "#f1fd79", "#c5fc7c", "#    9bfb7f", "#84fab9", "#86f9e1", "#89eaf8", "#8cc5f8")
+
+
+
+
 # We have to go through both lists together when assigning colors, because pe and non-pe versions of a condition need corresponding colors.
 cursor <- 1
 
@@ -132,7 +152,8 @@ dat.plot <- ggplot(dat.roc, aes( x= FPR, y = TPR, color = aligner, label=mq)) +
     geom_vline(xintercept=1/total.reads) + # vertical line at one wrong read
     theme_bw() + 
     ggtitle(title) + 
-    ylim(0.9,0.98)
+    theme(aspect.ratio=1) +
+    coord_cartesian(ylim=c(0.88,0.985)) #(0.88, 0.985) for single, (0.92, 1.0) paired. For gbwts, (0.915, 0.975) for se, (0.935,0.985) for pe
     
 if (title != '') {
     # And a title

@@ -10,7 +10,6 @@ spec:
       containers:
       - name: xhchang-giraffe
         imagePullPolicy: Always
-        # TODO: See if 1.27.1 works right and learns a pair distribution in all cases with S288C as the reference
         image: xhchang/vg:giraffe-paper
         command:
         - /bin/bash
@@ -24,8 +23,8 @@ spec:
 
           for GRAPH in  hgsvc ; do
               if [[ "${GRAPH}" == 1000gp ]] ; then
-                  GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplo/hs38d1/1000GPlo_hs38d1_NA19239_sample_withref
-                  aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/novaseq6000/out_sim_gbwt/sim.gam ./sim.gam
+                  GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_NA19239_sample_withref
+                  aws s3 cp s3://vg-k8s/profiling/reads/sim/for-NA19239/1000gp/hs38d1/liftover_nosegdups/${READS}/out_sim_gbwt/sim.gam ./sim.gam
                   aws s3 cp ${GRAPH_BASE}.force.augment.gbwt ./graph.gbwt
                   aws s3 cp ${GRAPH_BASE}.dist graph.dist
                   aws s3 cp ${GRAPH_BASE}.xg ./graph.xg
@@ -35,30 +34,33 @@ spec:
                   aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.onlyNA19240.augment.gbwt ./graph.gbwt
                   aws s3 cp s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.annotation.dist graph.dist
               fi
+              for READS in novaseq6000 hiseqxten hiseq2500 ; do
     
               
-              for PAIRING in single paired ; do 
-                  if [[ ${PAIRING} == "paired" ]] ; then
-                  PAIRED="-i"
-                  elif [[ ${PAIRING} == "single" ]] ; then 
-                  PAIRED=""
-                  fi
-                  vg giraffe -x graph.xg -H graph.gbwt  -d graph.dist -G sim.gam ${PAIRED} -c 100 -C 5000 -F 1.0 -e 10000 -a 1000 -s 0 -u 0 -v 0 -w 0 -t 22 > mapped.gam 
-                  vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
-                  CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
-                  SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
-                  MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
-                  MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
-                  IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                  for PAIRING in single paired ; do 
+                      if [[ ${PAIRING} == "paired" ]] ; then
+                      PAIRED="-i"
+                      elif [[ ${PAIRING} == "single" ]] ; then 
+                      PAIRED=""
+                      fi
+                      vg giraffe -x graph.xg -H graph.gbwt  -d graph.dist -G sim.gam ${PAIRED} -c 100 -C 5000 -F 1.0 -e 10000 -a 1000 -s 0 -u 0 -v 0 -w 0 -t 22 > mapped.gam 
+                      vg gamcompare -r 100 -s <(vg annotate -m -x graph.xg -a mapped.gam) sim.gam 2>count | vg view -aj - > compared.json
+                      CORRECT_COUNT="$(sed -n '1p' count | sed 's/[^0-9]//g')"
+                      SCORE="$(sed -n '2p' count | sed 's/[^0-9\.]//g')"
+                      MAPQ="$(grep mapping_quality\":\ 60 compared.json | wc -l)"
+                      MAPQ60="$(grep -v correctly_mapped compared.json | grep mapping_quality\":\ 60 | wc -l)"
+                      IDENTITY="$(jq '.identity' compared.json | awk '{sum+=$1} END {print sum/NR}')"
+                      
+                      printf "${GRAPH}_control\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
+                      jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_control-nocaps_${GRAPH}${READS}${PAIRING}/" >> roc_stats.tsv
                   
-                  printf "${GRAPH}_control\t${READS}\t${PAIRING}\t${SPEED}\t${CORRECT_COUNT}\t${MAPQ}\t${MAPQ60}\t${IDENTITY}\t${SCORE}\n" >> report.tsv
-                  jq -r '(if .correctly_mapped then 1 else 0 end|tostring) + "," + (.mapping_quality|tostring) + "," + (.score|tostring)' compared.json | sed 's/,/\t/g' | sed "s/$/\tgiraffe_control-nocaps_${GRAPH}${PAIRING}/" >> roc_stats.tsv
-               
+                  done
               done
           done
           sed -i 's/single//g ; s/paired/-pe/g ; s/null/0/g' roc_stats.tsv
+          gzip roc_stats.tsv
           aws s3 cp report.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/report_giraffe_control.tsv
-          aws s3 cp roc_stats.tsv s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_control.tsv
+          aws s3 cp roc_stats.tsv.gz s3://vg-k8s/users/xhchang/giraffe_experiments_2/liftover/nosegdups/roc_stats_giraffe_control.tsv
         volumeMounts:
         - mountPath: /tmp
           name: scratch-volume
