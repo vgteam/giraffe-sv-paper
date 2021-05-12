@@ -230,5 +230,5 @@ bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition
 requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
 fi
 
-chmod -R g+rw "${DEST_DIR}"
-chmod  g+rw "${SOFTWARE_ZIP_FILE}"
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
+chmod  g+rw "${SOFTWARE_ZIP_FILE}" 2>/dev/null || true

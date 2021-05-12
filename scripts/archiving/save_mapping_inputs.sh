@@ -153,4 +153,5 @@ for SPECIES in human yeast ; do
         done
     done
 done
-            
+
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true

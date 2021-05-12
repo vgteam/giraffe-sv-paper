@@ -61,3 +61,5 @@ copy /public/groups/cgl/users/daheller/yeast_graph/assemblies/assemblies_raw/S28
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 # Fix the links to the archive data to be relative
 cat "${SCRIPT_DIR}/archive-readme.md" | sed 's_https://cgl.gi.ucsc.edu/data/giraffe/__g' > "${DEST_DIR}/README.md"
+
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true

@@ -48,4 +48,4 @@ requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).r
     fi
 done
 
-chmod -R g+rw "${DEST_DIR}"
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
