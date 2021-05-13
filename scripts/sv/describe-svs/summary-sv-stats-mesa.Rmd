@@ -45,7 +45,7 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             loc.n=n(),
             size.min=min(size), size.max=max(size), size=size[1],
             .groups='drop') %>%
-  filter(size>=50)
+  filter(size.max>=50)
 
 set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
@@ -227,11 +227,13 @@ rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
 ggp$af = locs %>% as.data.frame %>%
   ggplot(aes(x=af, fill=type)) +
   geom_histogram(position='dodge') +
-  scale_fill_brewer(palette='Set1', name='SV type') + 
+  scale_fill_brewer(palette='Set1', name='SV type') +
+  scale_y_log10() + 
   theme_bw() +
   xlab('allele frequency') +
   ylab('number of SV loci') +
-  theme(legend.position=c(.99, .99), legend.justification=c(1,1))
+  theme(legend.position=c(.99, .99), legend.justification=c(1,1)) +
+  guides(fill=guide_legend(direction='horizontal'))
 ggp$af
 
 ## comparing allele frequency between top 2 most frequent alleles in SV loci
@@ -375,18 +377,18 @@ plotSVs <-function(svs.cl, label.svs=TRUE){
 ex.sv = locs %>% filter(type=='INS', clique, loc.n==5, size>100) %>%
   arrange(desc(af.top.fc)) %>% head(1) %>% .$svsite
 
-ggpf = c(ggp[c("af", "size", "loc.al")], subset(svs, svsite==ex.sv) %>% plotSVs)
+ggpf = c(ggp["loc.al"], subset(svs, svsite==ex.sv) %>% plotSVs, ggp[c("af", "size")])
 names(ggpf) = 1:length(ggpf)
 
 grid.arrange(grobs=plot_list(ggpf),
-             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
+             layout_matrix=matrix(c(1,2,3,4,4,4,5,5,5), nrow=3, byrow=TRUE))
 
 grid.arrange(grobs=plot_list(ggp, c("loc.cl", "af.top")),
              layout_matrix=matrix(1:2,1))
 
 pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
 grid.arrange(grobs=plot_list(ggpf),
-             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE),
+             layout_matrix=matrix(c(1,2,3,4,4,4,5,5,5), nrow=3, byrow=TRUE),
              widths=c(2,3,1))
 dev.off()
 

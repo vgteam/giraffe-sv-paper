@@ -44,7 +44,7 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             loc.n=n(),
             size.min=min(size), size.max=max(size), size=size[1],
             .groups='drop') %>%
-  filter(size>=50)
+  filter(size.max>=50)
 
 set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
@@ -227,10 +227,12 @@ ggp$af = locs %>% as.data.frame %>%
   ggplot(aes(x=af, fill=type)) +
   geom_histogram(position='dodge') +
   scale_fill_brewer(palette='Set1', name='SV type') + 
+  scale_y_log10() + 
   theme_bw() +
   xlab('allele frequency') +
   ylab('number of SV loci') +
-  theme(legend.position=c(.99, .99), legend.justification=c(1,1))
+  theme(legend.position=c(.99, .99), legend.justification=c(1,1)) +
+  guides(fill=guide_legend(direction='horizontal'))
 ggp$af
 
 ## comparing allele frequency between top 2 most frequent alleles in SV loci
