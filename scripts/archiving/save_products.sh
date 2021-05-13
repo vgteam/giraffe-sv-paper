@@ -6,6 +6,12 @@ set -x
 
 DEST_DIR=/nanopore/cgl/data/giraffe
 
+function web_download() {
+    if [ ! -e "${2}" ] ; then
+        wget "${1}" -O "${2}"
+    fi
+}
+
 function download() {
     if [ ! -e "${2}" ] ; then
         aws s3 cp --no-progress "${1}" "${2}"
@@ -24,8 +30,12 @@ mkdir -p "${PRODUCTS_DIR}"
 
 
 # TODO: add lines here to actually save the product files:
-#download https://google-storage.gov/whatever.dat "${PRODUCTS_DIR}/whatever.dat"
+#web_download https://google-storage.gov/whatever.dat "${PRODUCTS_DIR}/whatever.dat"
 # Also document each in products-readme.md
+
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.full.gbwt "${PRODUCTS_DIR}/HGSVC_hs38d1.full.gbwt"
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.dist "${PRODUCTS_DIR}/HGSVC_hs38d1.dist"
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg "${PRODUCTS_DIR}/HGSVC_hs38d1.xg"
 
 # Put the README in place
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
@@ -44,7 +54,7 @@ filepath=os.environ["FILEPATH"];
 filename=os.path.basename(filepath); 
 params={"access_token": os.environ["ZENODO_TOKEN"]}; 
 bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition}", params=params).json()["links"]["bucket"]; 
-requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
+requests.put(f"{bucket}/products/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
     fi
 done
 
