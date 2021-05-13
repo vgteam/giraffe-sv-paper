@@ -14,7 +14,7 @@ You will need the `.tex` files for the paper checked out from the Overleaf git r
 
 You will also need a local mountpoint in which to deposit the archive, at `/nanopore/cgl/data/giraffe`.
 
-To actually make the archive available, you will need `ZENODO_DEPOSITION` and `ZENODO_TOKEN` environment variables populated with a Zenodo deposition ID to upload the software archive and product files to, and a Zenodo access token to authenticate the upload. You will also need `ipfs` version 0.8.0 to hash and share the data.
+To actually make the archive available, you will need `ZENODO_DEPOSITION` and `ZENODO_TOKEN` environment variables populated with a Zenodo deposition ID to upload the software archive and product files to, and a Zenodo access token to authenticate the upload. Note that Zenodo does not reliably support in-place update; exitsing files will need to be deleted on the Zenodo side. You will also need `ipfs` version 0.8.0 to hash and share the data.
 
 These scripts aren't really meant to be run by anyone but the authors, but they
 serve as an explaination of how the archive was assembled.
