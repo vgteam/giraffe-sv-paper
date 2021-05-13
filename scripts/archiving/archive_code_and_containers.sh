@@ -177,6 +177,10 @@ for URL in "${ALL_GIT_URLS[@]}" ; do
 done
 
 for VG_COMMIT in $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq) ; do
+    if [[ "${VG_COMMIT}" == "file" ]] ; then
+        # Not sure how this go in
+        continue
+    fi
     echo "vg commit: ${VG_COMMIT}"
     archive_ref vg https://github.com/vgteam/vg.git "${VG_COMMIT}"
 done
