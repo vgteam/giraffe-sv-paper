@@ -108,7 +108,7 @@ locs = svs %>% as.data.frame %>% arrange(desc(af), desc(size)) %>%
             loc.n=n(),
             size.min=min(size), size.max=max(size), size=size[1],
             .groups='drop') %>%
-  filter(size>=50)
+  filter(size.max>=50)
 ```
 
 ## Deletions in clique formation

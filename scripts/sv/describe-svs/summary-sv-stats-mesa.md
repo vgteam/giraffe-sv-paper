@@ -36,34 +36,34 @@ locs = svs %>% arrange(desc(af), desc(size)) %>%
             loc.n=n(),
             size.min=min(size), size.max=max(size), size=size[1],
             .groups='drop') %>%
-  filter(size>=50)
+  filter(size.max>=50)
 
 set.seed(123)
 sample_n(locs, 10) %>% as.data.frame
 ```
 
     ##    seqnames       svsite type clique     start       end ac.tot   ac  af.tot
-    ## 1      chr6 sv_1411495_0  DEL   TRUE 170246886 170247024      7    7 0.00175
-    ## 2      chr5 sv_1528143_0  DEL   TRUE 179313456 179313710     74   74 0.01850
-    ## 3      chrX   sv_18563_0  DEL   TRUE    551424    551484    949  949 0.23725
-    ## 4      chr3 sv_1712852_0  DEL  FALSE 195502445 195502633     36   26 0.00900
-    ## 5      chr5 sv_1532605_0  DEL   TRUE 181385141 181385295   2134 2134 0.53350
-    ## 6     chr16  sv_506558_0  INS   TRUE    961040    961040     23   23 0.00575
-    ## 7     chr18  sv_378775_0  INS   TRUE  79765462  79765462    118  118 0.02950
-    ## 8     chr16  sv_529988_0  DEL   TRUE  14689406  14695486      1    1 0.00025
-    ## 9      chr7 sv_1234346_0  DEL   TRUE 107422090 107422154      1    1 0.00025
-    ## 10    chr17  sv_466009_0  INS  FALSE  80744271  80744271    204   46 0.05100
+    ## 1      chr6 sv_1404088_0  DEL   TRUE 169918945 169919031   1210 1210 0.30250
+    ## 2      chr5 sv_1517844_0  INS   TRUE 177703680 177703680    349  349 0.08725
+    ## 3      chr9  sv_995307_0  INS   TRUE    400563    400563      2    2 0.00050
+    ## 4      chr3 sv_1710591_0  INS  FALSE 195499124 195499124      6    2 0.00150
+    ## 5      chr5 sv_1525026_0  INS   TRUE 178395247 178395247      3    3 0.00075
+    ## 6     chr16  sv_502516_0  DEL   TRUE    903402    903542    570  570 0.14250
+    ## 7     chr18  sv_370731_0  INS   TRUE  79620447  79620447     55   53 0.01375
+    ## 8     chr16  sv_525849_0  INS   TRUE   9573835   9573835     62   62 0.01550
+    ## 9      chr7 sv_1228775_0  INS   TRUE  83610445  83610445      3    3 0.00075
+    ## 10    chr17  sv_462090_0  DEL   TRUE  80314366  80314455      1    1 0.00025
     ##    af.top2      af af.top.fc loc.n size.min size.max size
-    ## 1  0.00175 0.00175      1.00     1      138      138  138
-    ## 2  0.01850 0.01850      1.00     1      254      254  254
-    ## 3  0.23725 0.23725      1.00     1       60       60   60
-    ## 4  0.00125 0.00650      5.20     4      152      190  188
-    ## 5  0.53350 0.53350      1.00     1      154      154  154
-    ## 6  0.00575 0.00575      1.00     1      263      263  263
-    ## 7  0.02950 0.02950      1.00     1       86       86   86
-    ## 8  0.00025 0.00025      1.00     1     6080     6080 6080
-    ## 9  0.00025 0.00025      1.00     1       64       64   64
-    ## 10 0.00625 0.01150      1.84    47       67      162  121
+    ## 1  0.30250 0.30250       1.0     1       86       86   86
+    ## 2  0.08725 0.08725       1.0     1      208      208  208
+    ## 3  0.00050 0.00050       1.0     1       51       51   51
+    ## 4  0.00025 0.00050       2.0     5     1505     1973 1505
+    ## 5  0.00075 0.00075       1.0     1       88       88   88
+    ## 6  0.14250 0.14250       1.0     1      140      140  140
+    ## 7  0.00050 0.01325      26.5     2       59       59   59
+    ## 8  0.01550 0.01550       1.0     1       74       74   74
+    ## 9  0.00075 0.00075       1.0     1      155      155  155
+    ## 10 0.00025 0.00025       1.0     1       89       89   89
 
 ## Allele/site numbers
 
@@ -77,9 +77,9 @@ rbind(locs %>% mutate(type='all') %>% group_by(type) %>% summarize(alleles=sum(l
 
 | type |   alleles |   sites | prop.alleles | prop.sites |
 | :--- | --------: | ------: | -----------: | ---------: |
-| all  | 1,662,301 | 166,959 |        1.000 |      1.000 |
-| DEL  |   180,814 |  75,520 |        0.109 |      0.452 |
-| INS  | 1,481,487 |  91,439 |        0.891 |      0.548 |
+| all  | 1,745,642 | 167,858 |        1.000 |      1.000 |
+| DEL  |   182,811 |  75,841 |        0.105 |      0.452 |
+| INS  | 1,562,831 |  92,017 |        0.895 |      0.548 |
 
 ``` r
 ## numbers of cliques
@@ -89,8 +89,8 @@ locs %>% group_by(clique) %>% summarize(sites=n()) %>% ungroup %>% mutate(prop=s
 
 | clique |   sites |  prop |
 | :----- | ------: | ----: |
-| FALSE  |  16,381 | 0.098 |
-| TRUE   | 150,578 | 0.902 |
+| FALSE  |  16,975 | 0.101 |
+| TRUE   | 150,883 | 0.899 |
 
 ``` r
 ## numbers of cliques by type
@@ -101,10 +101,10 @@ locs %>% group_by(type, clique) %>% summarize(sites=n()) %>%
 
 | type | clique |  sites | prop.type |
 | :--- | :----- | -----: | --------: |
-| DEL  | FALSE  |  5,162 |     0.068 |
-| DEL  | TRUE   | 70,358 |     0.932 |
-| INS  | FALSE  | 11,219 |     0.123 |
-| INS  | TRUE   | 80,220 |     0.877 |
+| DEL  | FALSE  |  5,327 |     0.070 |
+| DEL  | TRUE   | 70,514 |     0.930 |
+| INS  | FALSE  | 11,648 |     0.127 |
+| INS  | TRUE   | 80,369 |     0.873 |
 
 ## Size
 
@@ -136,9 +136,9 @@ locs %>% mutate(type='all') %>% rbind(locs) %>%
     ## # A tibble: 3 x 5
     ##   type  min.size max.size size.lt1kbp size.lt500
     ## * <chr>    <int>    <int>       <dbl>      <dbl>
-    ## 1 all         50   125187       0.944      0.897
-    ## 2 DEL         50   114201       0.945      0.908
-    ## 3 INS         50   125187       0.943      0.888
+    ## 1 all         30   125187       0.944      0.898
+    ## 2 DEL         31   114201       0.945      0.909
+    ## 3 INS         30   125187       0.943      0.889
 
 ## Overlap with simple repeats, satellites or low-complexity regions
 
@@ -203,9 +203,9 @@ locs %>% mutate(type='all') %>% rbind(locs) %>%
 
 | type | rep.sr.lc.sat.50 | rep.sr.lc.50 | rep.sr.50 | rep.lc.50 | rep.sat.50 |
 | :--- | ---------------: | -----------: | --------: | --------: | ---------: |
-| all  |            0.840 |        0.839 |     0.838 |     0.016 |      0.016 |
-| DEL  |            0.830 |        0.829 |     0.829 |     0.015 |      0.018 |
-| INS  |            0.847 |        0.847 |     0.846 |     0.016 |      0.015 |
+| all  |            0.840 |        0.840 |     0.839 |     0.016 |      0.016 |
+| DEL  |            0.831 |        0.830 |     0.829 |     0.015 |      0.018 |
+| INS  |            0.848 |        0.848 |     0.847 |     0.016 |      0.014 |
 
 *sr*: simple repeat; *lc*: low-complexity; *sat*: satellite DNA. *.50*
 means that at least 50% of the SV region overlaps repeats.
@@ -227,9 +227,9 @@ locs %>% mutate(type='all') %>% rbind(locs) %>%
 
 | type | rep.sr.lc.sat.50 | rep.sr.lc.50 | rep.sr.50 | rep.lc.50 | rep.sat.50 |
 | :--- | ---------------: | -----------: | --------: | --------: | ---------: |
-| all  |            0.976 |        0.976 |     0.976 |     0.015 |      0.007 |
-| DEL  |            0.987 |        0.987 |     0.987 |     0.008 |      0.009 |
-| INS  |            0.971 |        0.971 |     0.970 |     0.018 |      0.007 |
+| all  |            0.977 |        0.977 |     0.976 |     0.016 |      0.007 |
+| DEL  |            0.987 |        0.987 |     0.987 |     0.009 |      0.008 |
+| INS  |            0.972 |        0.972 |     0.971 |     0.019 |      0.007 |
 
 Yes, almost all are within simple repeats. What are the ones that are
 not?
@@ -256,16 +256,16 @@ locs.nc %>%
 
 | coord                                                                                                              | svsite         | type | size | loc.n | size.min | size.max | rep.dist | rep.sr.lc.sat |
 | :----------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | ----: | -------: | -------: | -------: | ------------: |
-| [chr16:14894534-14894534](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr16%3A14894534%2D14894534)   | sv\_530096\_0  | INS  |  131 |     4 |      117 |      131 |     3838 |     0.0000000 |
-| [chr22:37529117-37529117](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr22%3A37529117%2D37529117)   | sv\_100952\_0  | INS  |  290 |   237 |      280 |      306 |      919 |     0.0000000 |
-| [chr17:43270206-43271985](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43270206%2D43271985)   | sv\_448934\_0  | DEL  | 1779 |     3 |     1779 |     2125 |        0 |     0.0983146 |
 | [chr11:64237124-64237124](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr11%3A64237124%2D64237124)   | sv\_859480\_0  | INS  |  144 |    66 |      121 |      144 |        0 |     0.0000000 |
-| [chr2:116950767-116950767](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr2%3A116950767%2D116950767) | sv\_1797411\_0 | INS  |  105 |     7 |       86 |      105 |       15 |     0.0000000 |
+| [chr2:105485095-105485095](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr2%3A105485095%2D105485095) | sv\_1794130\_0 | INS  |  162 |    27 |      139 |      170 |     1034 |     0.0000000 |
 | [chr17:43251137-43251546](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43251137%2D43251546)   | sv\_447044\_0  | DEL  |  409 |     4 |      407 |      430 |        0 |     0.4073171 |
 | [chr17:43268211-43268917](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43268211%2D43268917)   | sv\_448845\_0  | DEL  |  706 |     3 |      573 |      712 |     1089 |     0.0000000 |
-| [chr9:70801717-70801717](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr9%3A70801717%2D70801717)     | sv\_1022302\_0 | INS  |  297 |   292 |      271 |      331 |     1315 |     0.0000000 |
+| [chr9:20225563-20225563](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr9%3A20225563%2D20225563)     | sv\_1009694\_0 | INS  |  311 |    11 |      249 |      311 |      358 |     0.0000000 |
 | [chr17:43254597-43254971](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr17%3A43254597%2D43254971)   | sv\_447396\_0  | DEL  |  374 |     3 |      327 |      374 |      402 |     0.0000000 |
-| [chr5:25540972-25540972](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr5%3A25540972%2D25540972)     | sv\_1483244\_0 | INS  |  101 |    32 |       97 |      117 |      544 |     0.0000000 |
+| [chr5:376063-376063](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr5%3A376063%2D376063)             | sv\_1434972\_0 | INS  |   81 |    22 |       69 |       81 |     1667 |     0.0000000 |
+| [chr8:2269687-2269687](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr8%3A2269687%2D2269687)         | sv\_1101781\_0 | INS  |   83 |     8 |       80 |       90 |       20 |     0.0000000 |
+| [chrX:135723989-135723989](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A135723989%2D135723989) | sv\_74677\_0   | INS  |  104 |     8 |      103 |      128 |       12 |     0.0000000 |
+| [chrX:46497428-46497428](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chrX%3A46497428%2D46497428)     | sv\_42546\_0   | INS  |   96 |    28 |       94 |      105 |     2426 |     0.0000000 |
 
 Either very close to repeats, or in segmental duplication or
 transposons, or slightly below the 80% threshold used to define matching
@@ -297,8 +297,8 @@ rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
 
 | impact              |    sv | gene |
 | :------------------ | ----: | ---: |
-| cds                 |  1561 |  408 |
-| cds.prom.utr.intron | 77940 | 7740 |
+| cds                 |  1563 |  408 |
+| cds.prom.utr.intron | 78364 | 7740 |
 
 ## Allele frequency
 
@@ -306,11 +306,13 @@ rbind(ol.gene %>% filter(cds) %>% mutate(impact='cds'),
 ggp$af = locs %>% as.data.frame %>%
   ggplot(aes(x=af, fill=type)) +
   geom_histogram(position='dodge') +
-  scale_fill_brewer(palette='Set1', name='SV type') + 
+  scale_fill_brewer(palette='Set1', name='SV type') +
+  scale_y_log10() + 
   theme_bw() +
   xlab('allele frequency') +
   ylab('number of SV loci') +
-  theme(legend.position=c(.99, .99), legend.justification=c(1,1))
+  theme(legend.position=c(.99, .99), legend.justification=c(1,1)) +
+  guides(fill=guide_legend(direction='horizontal'))
 ggp$af
 ```
 
@@ -348,7 +350,7 @@ locs %>% filter(loc.n>1) %>%
 
 | af.fc.3 | af01.af2lt01 | af01.af2lt01.fc3 | major.al |
 | ------: | -----------: | ---------------: | -------: |
-|   14720 |         7346 |             5936 |    37667 |
+|   15031 |         7514 |             6063 |    38541 |
 
   - *af.fc.3*: SV sites where the most frequent allele is at least 3
     times more frequent than the seoncd most frequent allele.
@@ -476,11 +478,11 @@ plotSVs <-function(svs.cl, label.svs=TRUE){
 ex.sv = locs %>% filter(type=='INS', clique, loc.n==5, size>100) %>%
   arrange(desc(af.top.fc)) %>% head(1) %>% .$svsite
 
-ggpf = c(ggp[c("af", "size", "loc.al")], subset(svs, svsite==ex.sv) %>% plotSVs)
+ggpf = c(ggp["loc.al"], subset(svs, svsite==ex.sv) %>% plotSVs, ggp[c("af", "size")])
 names(ggpf) = 1:length(ggpf)
 
 grid.arrange(grobs=plot_list(ggpf),
-             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE))
+             layout_matrix=matrix(c(1,2,3,4,4,4,5,5,5), nrow=3, byrow=TRUE))
 ```
 
 ![](summary-sv-stats-mesa_files/figure-gfm/fig-1.png)<!-- -->
@@ -495,7 +497,7 @@ grid.arrange(grobs=plot_list(ggp, c("loc.cl", "af.top")),
 ``` r
 pdf('figs/fig-sv-mesa-stats.pdf', 10, 8)
 grid.arrange(grobs=plot_list(ggpf),
-             layout_matrix=matrix(c(1,1,1,2,2,2,3,4,5), nrow=3, byrow=TRUE),
+             layout_matrix=matrix(c(1,2,3,4,4,4,5,5,5), nrow=3, byrow=TRUE),
              widths=c(2,3,1))
 dev.off()
 ```
