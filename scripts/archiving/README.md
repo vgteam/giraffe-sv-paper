@@ -32,10 +32,10 @@ Run each script in turn locally:
 ./archive_code_and_containers.sh
 ```
 
-After running all the scripts, you will want to add the data to IPFS to get a hash to pin and publish, and for integrity chacking (as no integrity checking is done by the scripts):
+After running all the scripts, you will want to add the data to IPFS to get a hash to pin and publish, and for integrity chacking (as no integrity checking is done by the scripts). Note that it must be added through a symlink in your IPFS root, like this:
 
 ```
-ipfs add -r --nocopy /nanopore/cgl/data/giraffe
+ipfs add -r --nocopy /public/home/anovak/projects/gg/data/cgl-data/giraffe
 ```
 
 You will also went to publish the Zenodo deposition you uploaded the software archive to, so it becomes visible under its assigned DOI.
