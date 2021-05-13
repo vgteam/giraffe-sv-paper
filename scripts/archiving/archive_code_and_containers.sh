@@ -223,6 +223,7 @@ SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
 
 if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
     export FILEPATH="${SOFTWARE_ZIP_FILE}"
+    sleep 10
     # Upload the completed zip file onto the Zenodo deposition specified by the environment
     python3 -c 'import requests; 
 import os;
