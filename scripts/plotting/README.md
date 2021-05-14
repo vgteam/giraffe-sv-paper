@@ -1,7 +1,7 @@
 # Plotting Scripts
 
 These scripts create roc plots, qq plots, and a bar plot comparing speed and runtime. 
-They are meant to be run on stats files produced by the speed and accuracy scripts in the   mapping directory.
+They are meant to be run on stats files produced by the speed and accuracy scripts in the mapping directory.
 
 ## Running the scripts
 
@@ -24,7 +24,7 @@ The roc and qq plotting scripts are run on the stats file as:
 ./plot-roc.R stats.tsv plot.svg
 ```
 
-The `plot-rocs.sh` script will run `plot-roc.R` using the stats filed generated from the `_accuracy` scripts in the `mapping` directory. It will produce separate roc plots for each sequencing technology for single and paired end reads.
+The `plot-rocs.sh` script will run `plot-roc.R` using the stats filed generated from the `*_accuracy` scripts in the `mapping` directory. It will produce separate roc plots for each sequencing technology for single and paired end reads.
 
 ### Speed, Runtime, and Memory Plots
 Bar plots of speed, runtime, and memory can be run using `plot_real_speed.py`. This script requires tsv files formatted: 
