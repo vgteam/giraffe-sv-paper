@@ -47,7 +47,7 @@ freq.s = freq.df %>% group_by(exp, svsite) %>%
 
 ggp$range = ggplot(freq.s, aes(winsor(af.max-af.min, .5), fill=exp)) +
   geom_histogram(position='dodge') + theme_bw() +
-  xlab('frequency range across populations/clusters') +
+  xlab('frequency range across super populations') +
   scale_fill_brewer(palette='Set1') +
   scale_x_continuous(breaks=seq(0,.5,.1), labels=c(seq(0,.4,.1), '0.5+')) + 
   theme(legend.title=element_blank(),
@@ -85,7 +85,7 @@ ggp$olbar = bar.df %>% group_by(af.dev) %>%
   scale_fill_brewer(palette='Set1', name='') + 
   scale_color_brewer(palette='Set1', name='') +
   theme(strip.text.y=element_text(angle=0)) + 
-  xlab('population/cluster') +
+  xlab('super population') +
   ylab('number of SV site')
 ggp$olbar
 
@@ -119,7 +119,7 @@ ggp$devtype = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>%
   scale_x_continuous(breaks=seq(.1, 1, .1), limits=c(.1, 1)) + 
   theme_bw() +
   xlab('frequency deviation from the mean (winsorized at 1)') +
-  ylab('SV site in a population/cluster')
+  ylab('SV site in a super population')
 ggp$devtype
 
 ggp$devsize = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>% 
@@ -129,7 +129,7 @@ ggp$devsize = freq.df %>% group_by(exp) %>%  filter(abs(af.med-af)>.1) %>%
   scale_x_log10() + 
   theme_bw() +
   xlab('SV size (bp)') +
-  ylab('SV site in a population/cluster')
+  ylab('SV site in a super population')
 ggp$devsize
 ```
 
@@ -193,6 +193,7 @@ dev.off()
 freq.df %>%
   filter(exp=='observed', abs(af.med-af)>.1) %>%
   ungroup %>% 
-  select(-exp) %>% 
-  write.table(file='pops-freq-1kgp-med1.tsv', sep='\t', row.names=FALSE, quote=FALSE)
+  select(-exp) %>%
+  merge(svs) %>%
+  write.table(file='vggiraffe-sv-superpop-af-diff-med10.csv', sep=',', row.names=FALSE, quote=FALSE)
 ```

@@ -1,16 +1,6 @@
 Examples of SV sites
 ================
 
-  - [Read population stats for each SV
-    allele](#read-population-stats-for-each-sv-allele)
-  - [Deletions in clique formation](#deletions-in-clique-formation)
-  - [Deletions not in clique
-    formation](#deletions-not-in-clique-formation)
-  - [Insertions in clique formation](#insertions-in-clique-formation)
-  - [Insertions not in clique
-    formation](#insertions-not-in-clique-formation)
-  - [For figures](#for-figures)
-
 ``` r
 library(sveval)
 library(GenomicRanges)
@@ -109,7 +99,7 @@ locs = svs %>% as.data.frame %>% arrange(desc(af), desc(size)) %>%
             loc.n=n(),
             size.min=min(size), size.max=max(size), size=size[1],
             .groups='drop') %>%
-  filter(size>=50)
+  filter(size.max>=50)
 ```
 
 ## Deletions in clique formation
@@ -119,7 +109,7 @@ locs %>% filter(type=='DEL', clique) %>% .$loc.n %>% summary
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ##    1.00    1.00    1.00    1.22    1.00   18.00
+    ##   1.000   1.000   1.000   1.223   1.000  18.000
 
 ``` r
 ## locus with 3 deletions
@@ -180,7 +170,7 @@ locs %>% filter(type=='DEL', !clique) %>% .$loc.n %>% summary
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ##     3.0     4.0     6.0    18.4    10.0  1876.0
+    ##    3.00    4.00    6.00   18.13   10.00 1876.00
 
 ``` r
 ## locus with 3 deletions
@@ -237,7 +227,7 @@ locs %>% filter(type=='INS', clique) %>% .$loc.n %>% summary
 ```
 
     ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-    ##    1.000    1.000    1.000    3.198    1.000 1923.000
+    ##    1.000    1.000    1.000    3.205    1.000 1923.000
 
 ``` r
 ## locus with 3 insertions
@@ -306,7 +296,7 @@ locs %>% filter(type=='INS', !clique) %>% .$loc.n %>% summary
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ##     3.0     7.0    18.0   109.2    68.0  4075.0
+    ##     3.0     7.0    18.0   112.1    69.0  4659.0
 
 ``` r
 ## locus with 3 insertions

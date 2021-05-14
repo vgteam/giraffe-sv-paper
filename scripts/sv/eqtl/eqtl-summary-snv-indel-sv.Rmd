@@ -437,8 +437,22 @@ dev.off()
 ## Save genes with only SV-eQTLs 
 
 ```{r tab}
+genc.s = subset(genc, gene %in% eqtl.df$gene)
+                
+eqtl.df %>% filter(FDR<=.01, pop=='EUR + YRI') %>%
+  merge(svs, all.x=TRUE) %>%
+  mutate(seqnames=ifelse(is.na(seqnames), gsub('(.*):.*:.*:.*', '\\1', svid), seqnames),
+         start=ifelse(is.na(start), as.numeric(gsub('.*:(.*):.*:.*', '\\1', svid)), start),
+         end=ifelse(is.na(end), start+nchar(gsub('.*:.*:(.*):.*', '\\1', svid)), end),
+         id=svid) %>%
+  select(-gene_type) %>% merge(genc.s) %>% 
+  select(seqnames, start, end, id, type, size, 
+         gene, gene_name, gene_type, beta, pvalue, FDR) %>%
+  arrange(FDR) %>% 
+  write.table(file='eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
+
 merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
   arrange(gene_type, gene_name, pop) %>%
   select(gene_type, gene_name, gene, pop, beta, FDR, svid, type, size, seqnames, start, end) %>% 
-  write.table(file='eqtl-sv-only-genes.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-geuvadis-eqtl-svonly.csv', sep=',', quote=FALSE, row.names=FALSE)
 ```

@@ -1,13 +1,15 @@
 ## Genotyping evaluation
 
 The genotyping evaluation used the HGSVC and GIAB dataset as in [https://github.com/vgteam/sv-genotyping-paper]. 
-We evaluated the performance across different graphs (new combined SV graph vs HGSVC or GIAB graphs), read depth (20x vs 40x), read mapper (*map* vs *giraffe*).
+We evaluated the performance across different graphs (new combined SV graph vs HGSVC or GIAB graphs), read depth (20x vs 40x), read mapper (*map* vs *giraffe*), tools (vg vs.
 The [sv-evaluation.md report](sv-evaluation.md) contains commands to make the figures used in the manuscript.
 Compile with:
 
 ```
 Rscript -e "rmarkdown::render('sv-evaluation.Rmd')"
 ```
+
+[GraphTyper2](https://github.com/DecodeGenetics/graphtyper) was run using the [`graphtyper_kubernetes`](graphtyper_kubernetes) script.
 
 ## Genotype evaluation using trios
 

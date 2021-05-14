@@ -86,8 +86,8 @@ mesa = read.table('svs.mesa2k.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 ## also saves sum/max/min across all alleles
 mesa.s = mesa %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
-  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size=size[1], .groups='drop') %>%
-  filter(size>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
+  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size.max=max(size), size=size[1], .groups='drop') %>%
+  filter(size.max>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
 ```
 
 ### SVs genotyped in 2,504 samples from 1000 Genomes Project
@@ -101,8 +101,8 @@ kgp = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 ## also saves sum/max/min across all alleles
 kgp.s = kgp %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
-  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size=size[1], .groups='drop') %>%
-  filter(size>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
+  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size.max=max(size), size=size[1], .groups='drop') %>%
+  filter(size.max>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
 ```
 
 ## Frequency distributions

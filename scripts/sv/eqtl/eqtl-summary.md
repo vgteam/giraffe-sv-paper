@@ -70,18 +70,18 @@ genef %>% select(gene_family, genes.fam, genes.fam.tested) %>% unique %>% as.dat
   filter(genes.fam.tested>100) %>% sample_n(10) %>% kable
 ```
 
-| gene\_family                                  | genes.fam | genes.fam.tested |
-| :-------------------------------------------- | --------: | ---------------: |
-| G protein-coupled receptors                   |      1330 |              276 |
-| BTB domain containing                         |       134 |              124 |
-| Solute carriers                               |       433 |              318 |
-| Ankyrin repeat domain containing              |       244 |              199 |
-| Glycosyltransferases                          |       211 |              157 |
-| Small nucleolar RNA protein coding host genes |       146 |              140 |
-| MicroRNA host genes                           |       918 |              784 |
-| Protein phosphatase 1 regulatory subunits     |       181 |              159 |
-| Helicases                                     |       109 |              104 |
-| EF-hand domain containing                     |       232 |              176 |
+| gene\_family                                         | genes.fam | genes.fam.tested |
+| :--------------------------------------------------- | --------: | ---------------: |
+| Armadillo like helical domain containing             |       331 |              307 |
+| Antisense RNAs                                       |      1440 |              554 |
+| Ion channels by channel type                         |       218 |              136 |
+| Helicases                                            |       109 |              104 |
+| G protein-coupled receptors                          |      1330 |              276 |
+| Tetratricopeptide repeat domain containing           |       114 |              109 |
+| Ion channels by gating mechanism                     |       236 |              134 |
+| Ribosomal proteins                                   |       168 |              164 |
+| Seven-beta-strand methyltransferase motif containing |       125 |              117 |
+| Homeoboxes                                           |       336 |              116 |
 
 ## QC: p-value distribution and QQ plots
 
@@ -687,12 +687,12 @@ kable(tab, format.args=list(big.mark=','), format='latex') %>% cat(file='eqtl-su
 ``` r
 eqtl.df %>% filter(FDR<=.01) %>% 
   select(seqnames, start, end, svid, type, size, pop,
-         gene, gene_name, gene_type, statistic, beta, pvalue, FDR) %>%
+         gene, gene_name, gene_type, beta, pvalue, FDR) %>%
   arrange(FDR) %>% 
-  write.table(file='eqtl-svs.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-sv-eqtl-geuvadis.FDR01.csv', sep=',', quote=FALSE, row.names=FALSE)
 
 ## enriched families
 eqtl.fam.df %>% filter(qv.hyper<=.01, pop=='EUR + YRI', egenes>1) %>%
   arrange(qv.hyper, desc(prop)) %>% ungroup %>% select(-pop) %>%
-    write.table(file='eqtl-enriched-gene-families.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+    write.table(file='vggiraffe-geuvadis-sveqtl-gene-families.csv', sep=',', quote=TRUE, row.names=FALSE)
 ```

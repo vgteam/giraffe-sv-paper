@@ -177,6 +177,10 @@ for URL in "${ALL_GIT_URLS[@]}" ; do
 done
 
 for VG_COMMIT in $(printf "%s\n" "${VG_COMMITS[@]}" | sort | uniq) ; do
+    if [[ "${VG_COMMIT}" == "file" ]] ; then
+        # Not sure how this go in
+        continue
+    fi
     echo "vg commit: ${VG_COMMIT}"
     archive_ref vg https://github.com/vgteam/vg.git "${VG_COMMIT}"
 done
@@ -219,7 +223,6 @@ SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
 
 if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
     export FILEPATH="${SOFTWARE_ZIP_FILE}"
-    # Upload the completed zip file onto the Zenodo deposition specified by the environment
     python3 -c 'import requests; 
 import os;
 deposition=os.environ["ZENODO_DEPOSITION"]; 
@@ -230,5 +233,5 @@ bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition
 requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
 fi
 
-chmod -R g+rw "${DEST_DIR}"
-chmod  g+rw "${SOFTWARE_ZIP_FILE}"
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
+chmod  g+rw "${SOFTWARE_ZIP_FILE}" 2>/dev/null || true

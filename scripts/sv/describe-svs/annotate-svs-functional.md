@@ -43,8 +43,8 @@ kgp = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 ## also saves sum/max/min across all alleles
 kgp.s = kgp %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
-  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size=size[1], .groups='drop') %>%
-  filter(size>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
+  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size.max=max(size), size=size[1], .groups='drop') %>%
+  filter(size.max>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
 ```
 
 ## Coding SVs
@@ -61,7 +61,7 @@ kgp.cds$gene = ol.cds$gene
 length(kgp.cds)
 ```
 
-    ## [1] 1599
+    ## [1] 1603
 
 ## SVs with different frequency across populations
 
@@ -77,7 +77,7 @@ kgp.ps = subset(kgp.s, svsite %in% pop.spec$svsite)
 length(subsetByOverlaps(kgp.ps, subset(genc, gene_type=='protein_coding')))
 ```
 
-    ## [1] 10617
+    ## [1] 10640
 
 ### Overlap with gene annotation and enrichment
 
@@ -129,16 +129,16 @@ ps.enr %>% arrange(impact) %>% kable
 
 | exp                 | impact     |     n |      prop |
 | :------------------ | :--------- | ----: | --------: |
-| control             | UTR        |   216 | 0.0055089 |
-| population patterns | UTR        |   260 | 0.0064532 |
-| control             | coding     |   325 | 0.0082889 |
-| population patterns | coding     |   276 | 0.0068503 |
-| control             | promoter   |  1918 | 0.0489173 |
-| population patterns | promoter   |  2004 | 0.0497394 |
-| control             | intergenic | 13962 | 0.3560917 |
-| population patterns | intergenic | 15434 | 0.3830727 |
-| control             | intronic   | 22788 | 0.5811931 |
-| population patterns | intronic   | 22316 | 0.5538843 |
+| control             | UTR        |   209 | 0.0053262 |
+| population patterns | UTR        |   261 | 0.0064774 |
+| control             | coding     |   341 | 0.0086901 |
+| population patterns | coding     |   276 | 0.0068497 |
+| control             | promoter   |  1913 | 0.0487513 |
+| population patterns | promoter   |  2007 | 0.0498089 |
+| control             | intergenic | 14052 | 0.3581040 |
+| population patterns | intergenic | 15387 | 0.3818683 |
+| control             | intronic   | 22725 | 0.5791284 |
+| population patterns | intronic   | 22363 | 0.5549958 |
 
 ``` r
 ggp$ps = ggplot(ps.enr, aes(x=exp, y=prop, fill=exp)) +
@@ -276,24 +276,24 @@ eqtl.enr %>% arrange(impact, direction) %>% kable
 
 | direction | impact             |     n |      prop |
 | :-------- | :----------------- | ----: | --------: |
-| positive  | coding             |     1 | 0.0007692 |
-| negative  | coding             |    11 | 0.0110664 |
-| control   | coding             |     8 | 0.0001194 |
-| positive  | UTR                |     7 | 0.0053846 |
-| negative  | UTR                |     9 | 0.0090543 |
-| control   | UTR                |     7 | 0.0001045 |
-| positive  | promoter           |    23 | 0.0176923 |
-| negative  | promoter           |    17 | 0.0171026 |
-| control   | promoter           |    42 | 0.0006270 |
-| positive  | regulatory element |    96 | 0.0738462 |
-| negative  | regulatory element |    82 | 0.0824950 |
-| control   | regulatory element |  4569 | 0.0682093 |
-| positive  | intronic           |   134 | 0.1030769 |
-| negative  | intronic           |   150 | 0.1509054 |
-| control   | intronic           |  1273 | 0.0190043 |
-| positive  | intergenic         |  1039 | 0.7992308 |
-| negative  | intergenic         |   725 | 0.7293763 |
-| control   | intergenic         | 61086 | 0.9119355 |
+| positive  | coding             |     1 | 0.0007680 |
+| negative  | coding             |    11 | 0.0110442 |
+| control   | coding             |     8 | 0.0001188 |
+| positive  | UTR                |     7 | 0.0053763 |
+| negative  | UTR                |     9 | 0.0090361 |
+| control   | UTR                |     7 | 0.0001039 |
+| positive  | promoter           |    23 | 0.0176651 |
+| negative  | promoter           |    17 | 0.0170683 |
+| control   | promoter           |    42 | 0.0006237 |
+| positive  | regulatory element |    96 | 0.0737327 |
+| negative  | regulatory element |    82 | 0.0823293 |
+| control   | regulatory element |  4589 | 0.0681437 |
+| positive  | intronic           |   134 | 0.1029186 |
+| negative  | intronic           |   151 | 0.1516064 |
+| control   | intronic           |  1276 | 0.0189478 |
+| positive  | intergenic         |  1041 | 0.7995392 |
+| negative  | intergenic         |   726 | 0.7289157 |
+| control   | intergenic         | 61421 | 0.9120621 |
 
 ``` r
 ggp$eqtl = ggplot(eqtl.enr, aes(x=direction, y=prop, fill=direction)) +
@@ -349,7 +349,7 @@ kgp.eqtl$sr[ol.df$queryHits] = ol.df$ol.prop
 mean(kgp.eqtl$sr>=.5)
 ```
 
-    ## [1] 0.580786
+    ## [1] 0.5827455
 
 ## Example: population-specific, novel and coding
 
@@ -725,12 +725,12 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact     |        beta |       FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :--------- | ----------: | --------: |
-| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | HLA-DRB1  | promoter   | \-0.0127496 | 0.0000000 |
 | [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic |   0.0114140 | 0.0000000 |
-| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic | \-0.0121004 | 0.0000000 |
-| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic | \-0.0071474 | 0.0000066 |
 | [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic |   0.0072149 | 0.0006883 |
 | [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic | \-0.0126850 | 0.0000000 |
+| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | HLA-DRB1  | promoter   | \-0.0127496 | 0.0000000 |
+| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic | \-0.0121004 | 0.0000000 |
+| [chr6:32591521-32591646](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32591521%2D32591646) | sv\_1415450\_0 | DEL  |  125 | 0.2681709 | NA        | intergenic | \-0.0071474 | 0.0000066 |
 
 | coord                                                                                                            | svid          | type | size |        af | gene.name  | impact   |        beta | FDR |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :--------- | :------- | ----------: | --: |
@@ -742,9 +742,9 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact     |        beta |       FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :--------- | ----------: | --------: |
+| [chr6:28176184-28176184](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A28176184%2D28176184) | sv\_1412617\_0 | INS  | 2035 | 0.6074281 | ZNF603P   | promoter   |   0.0252268 | 0.0000000 |
 | [chr6:28176184-28176184](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A28176184%2D28176184) | sv\_1412617\_0 | INS  | 2035 | 0.6074281 | NA        | intergenic |   0.0121249 | 0.0000000 |
 | [chr6:28176184-28176184](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A28176184%2D28176184) | sv\_1412617\_0 | INS  | 2035 | 0.6074281 | NA        | intergenic | \-0.0033234 | 0.0014482 |
-| [chr6:28176184-28176184](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A28176184%2D28176184) | sv\_1412617\_0 | INS  | 2035 | 0.6074281 | ZNF603P   | promoter   |   0.0252268 | 0.0000000 |
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact |        beta | FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :----- | ----------: | --: |
@@ -752,23 +752,23 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact     |        beta |       FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :--------- | ----------: | --------: |
+| [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic | \-0.0049862 | 0.0007031 |
 | [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic | \-0.0090780 | 0.0000000 |
 | [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic | \-0.0116976 | 0.0000000 |
-| [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic | \-0.0049862 | 0.0007031 |
+| [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic |   0.0067679 | 0.0000476 |
 | [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic |   0.0102694 | 0.0000000 |
 | [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic | \-0.0065397 | 0.0000004 |
 | [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | HLA-DRB6  | promoter   |   0.0100997 | 0.0000000 |
-| [chr6:32561647-32561822](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561647%2D32561822) | sv\_1415209\_0 | DEL  |  175 | 0.3238818 | NA        | intergenic |   0.0067679 | 0.0000476 |
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact     |        beta |       FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :--------- | ----------: | --------: |
-| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0091467 | 0.0000000 |
-| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0066105 | 0.0000003 |
-| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | HLA-DRB6  | promoter   |   0.0100299 | 0.0000000 |
 | [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic |   0.0067820 | 0.0000564 |
 | [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic |   0.0103424 | 0.0000000 |
 | [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0117505 | 0.0000000 |
 | [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0050920 | 0.0005153 |
+| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0091467 | 0.0000000 |
+| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | NA        | intergenic | \-0.0066105 | 0.0000003 |
+| [chr6:32561151-32561312](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32561151%2D32561312) | sv\_1415208\_0 | DEL  |  161 | 0.3246805 | HLA-DRB6  | promoter   |   0.0100299 | 0.0000000 |
 
 | coord                                                                                                              | svid           | type | size |        af | gene.name | impact   |      beta | FDR |
 | :----------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :------- | --------: | --: |
@@ -784,10 +784,10 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic | \-0.0098238 | 0.0000001 |
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | HLA-DRB1  | promoter   | \-0.0070256 | 0.0000000 |
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic | \-0.0086526 | 0.0000000 |
+| [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic | \-0.0050516 | 0.0027840 |
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic |   0.0083044 | 0.0000000 |
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic |   0.0062567 | 0.0011916 |
 | [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic |   0.0106010 | 0.0000000 |
-| [chr6:32590726-32590726](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32590726%2D32590726) | sv\_1415449\_0 | INS  | 1111 | 0.3256789 | NA        | intergenic | \-0.0050516 | 0.0027840 |
 
 | coord                                                                                                            | svid          | type | size |       af | gene.name | impact   |     beta |   FDR |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | -------: | :-------- | :------- | -------: | ----: |
@@ -799,8 +799,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact             |      beta |   FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :----------------- | --------: | ----: |
-| [chr6:32556012-32562117](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32556012%2D32562117) | sv\_1415199\_0 | DEL  | 6105 | 0.2895367 | HLA-DRB6  | promoter           | 0.0104212 | 2e-07 |
 | [chr6:32556012-32562117](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32556012%2D32562117) | sv\_1415199\_0 | DEL  | 6105 | 0.2895367 | NA        | regulatory element | 0.0119759 | 0e+00 |
+| [chr6:32556012-32562117](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A32556012%2D32562117) | sv\_1415199\_0 | DEL  | 6105 | 0.2895367 | HLA-DRB6  | promoter           | 0.0104212 | 2e-07 |
 
 | coord                                                                                                            | svid          | type | size |        af | gene.name  | impact   |   beta |   FDR |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :--------- | :------- | -----: | ----: |
@@ -812,8 +812,8 @@ tmp = lapply(1:min(20, nrow(ex.df)), function(ii){
 
 | coord                                                                                                          | svid           | type | size |        af | gene.name | impact             |      beta |     FDR |
 | :------------------------------------------------------------------------------------------------------------- | :------------- | :--- | ---: | --------: | :-------- | :----------------- | --------: | ------: |
-| [chr6:29722750-29722856](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A29722750%2D29722856) | sv\_1412651\_0 | DEL  |  106 | 0.2036741 | HLA-F     | UTR                | 0.0057798 | 3.6e-06 |
 | [chr6:29722750-29722856](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A29722750%2D29722856) | sv\_1412651\_0 | DEL  |  106 | 0.2036741 | NA        | regulatory element | 0.0060078 | 2.1e-06 |
+| [chr6:29722750-29722856](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr6%3A29722750%2D29722856) | sv\_1412651\_0 | DEL  |  106 | 0.2036741 | HLA-F     | UTR                | 0.0057798 | 3.6e-06 |
 
 | coord                                                                                                            | svid          | type | size |        af | gene.name  | impact   |      beta |      FDR |
 | :--------------------------------------------------------------------------------------------------------------- | :------------ | :--- | ---: | --------: | :--------- | :------- | --------: | -------: |

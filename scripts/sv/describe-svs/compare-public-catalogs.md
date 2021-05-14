@@ -122,8 +122,8 @@ mesa = read.table('svs.mesa2k.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 ## also saves sum/max/min across all alleles
 mesa.s = mesa %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
-  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size=size[1], .groups='drop') %>%
-  filter(size>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
+  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size.max=max(size), size=size[1], .groups='drop') %>%
+  filter(size.max>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
 ```
 
 ### SVs genotyped in 2,504 samples from 1000 Genomes Project
@@ -137,8 +137,8 @@ kgp = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
 ## also saves sum/max/min across all alleles
 kgp.s = kgp %>% arrange(desc(af), desc(size)) %>%
   group_by(seqnames, svsite, type, clique) %>%
-  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size=size[1], .groups='drop') %>%
-  filter(size>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
+  summarize(start=start[1], end=end[1], ac=ac[1], af=af[1], size.max=max(size), size=size[1], .groups='drop') %>%
+  filter(size.max>=50) %>% makeGRangesFromDataFrame(keep.extra.columns=TRUE)
 ```
 
 ## Frequency distributions
@@ -188,10 +188,10 @@ rbind(
 
 | set                                     | prop.vgsite | prop.cat |
 | :-------------------------------------- | ----------: | -------: |
-| vg-MESA vs 1000GP                       |       0.068 |    0.160 |
+| vg-MESA vs 1000GP                       |       0.067 |    0.160 |
 | vg-MESA freq\>=5% vs 1000GP freq\>=5%   |       0.084 |    0.779 |
 | vg-1000GP vs 1000GP                     |       0.068 |    0.160 |
-| vg-1000GP freq\>=5% vs 1000GP freq\>=5% |       0.088 |    0.805 |
+| vg-1000GP freq\>=5% vs 1000GP freq\>=5% |       0.087 |    0.805 |
 
 ``` r
 ol.gr = suppressWarnings(svOverlap(mesa.s, kgp3))
@@ -256,7 +256,7 @@ rbind(
 | vg-MESA vs gnomAD-SV                       |       0.327 |    0.088 |
 | vg-MESA freq\>=5% vs gnomAD-SV freq\>=5%   |       0.146 |    0.567 |
 | vg-1000GP vs gnomAD-SV                     |       0.330 |    0.087 |
-| vg-1000GP freq\>=5% vs gnomAD-SV freq\>=5% |       0.149 |    0.577 |
+| vg-1000GP freq\>=5% vs gnomAD-SV freq\>=5% |       0.148 |    0.577 |
 
 ``` r
 ol.gr = suppressWarnings(svOverlap(mesa.s, gnomad))
@@ -549,7 +549,7 @@ kable(tab, digits=3)
 
 | set                    | prop.novel | prop.cat.covered | prop.af05.cat.covered |
 | :--------------------- | ---------: | ---------------: | --------------------: |
-| vg-MESA vs 1000GP      |      0.932 |            0.160 |                 0.844 |
+| vg-MESA vs 1000GP      |      0.933 |            0.160 |                 0.844 |
 | vg-1000GP vs 1000GP    |      0.932 |            0.160 |                 0.844 |
 | vg-MESA vs gnomAD-SV   |      0.673 |            0.088 |                 0.628 |
 | vg-1000GP vs gnomAD-SV |      0.670 |            0.087 |                 0.627 |
