@@ -193,6 +193,7 @@ dev.off()
 freq.df %>%
   filter(exp=='observed', abs(af.med-af)>.1) %>%
   ungroup %>% 
-  select(-exp) %>% 
-  write.table(file='pops-freq-1kgp-med1.tsv', sep='\t', row.names=FALSE, quote=FALSE)
+  select(-exp) %>%
+  merge(svs) %>%
+  write.table(file='vggiraffe-sv-superpop-af-diff-med10.csv', sep=',', row.names=FALSE, quote=FALSE)
 ```

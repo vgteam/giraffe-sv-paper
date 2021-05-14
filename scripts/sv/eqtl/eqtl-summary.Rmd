@@ -384,12 +384,12 @@ kable(tab, format.args=list(big.mark=','), format='latex') %>% cat(file='eqtl-su
 ```{r save}
 eqtl.df %>% filter(FDR<=.01) %>% 
   select(seqnames, start, end, svid, type, size, pop,
-         gene, gene_name, gene_type, statistic, beta, pvalue, FDR) %>%
+         gene, gene_name, gene_type, beta, pvalue, FDR) %>%
   arrange(FDR) %>% 
-  write.table(file='eqtl-svs.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-sv-eqtl-geuvadis.FDR01.csv', sep=',', quote=FALSE, row.names=FALSE)
 
 ## enriched families
 eqtl.fam.df %>% filter(qv.hyper<=.01, pop=='EUR + YRI', egenes>1) %>%
   arrange(qv.hyper, desc(prop)) %>% ungroup %>% select(-pop) %>%
-    write.table(file='eqtl-enriched-gene-families.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+    write.table(file='vggiraffe-geuvadis-sveqtl-gene-families.csv', sep=',', quote=TRUE, row.names=FALSE)
 ```

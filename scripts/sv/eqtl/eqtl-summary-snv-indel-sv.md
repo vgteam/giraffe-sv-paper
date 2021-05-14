@@ -283,14 +283,14 @@ summary(lead.perm.df$prop.sv)
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ## 0.03007 0.04545 0.04895 0.04878 0.05245 0.06993
+    ## 0.02937 0.04545 0.04895 0.04885 0.05245 0.07063
 
 ``` r
 pv.perm = (1+sum(nb.lead.sv/nb.lead.all <= lead.perm.df$prop.sv)) / (1+nrow(lead.perm.df))
 pv.perm
 ```
 
-    ## [1] 0.02349765
+    ## [1] 0.0219978
 
 Out of curiosity how many SVs are tested or in eQTLs compared to
 SNV-indels?
@@ -325,7 +325,7 @@ eqtl.g %>% filter(nb.sv>0, nb.snv.indel>0) %>% summarize(pop.sv=sum(nb.sv)/sum(n
   - Only 0.34% of the eQTLs were SVs.
   - Only 0.7% of the eQTLs with both SNV/indel-eQTLs and SV-eQTLs were
     SVs.
-  - But 5.94% of the lead-eQTLs were SVs (permutation pvalue: 0.0235)
+  - But 5.94% of the lead-eQTLs were SVs (permutation pvalue: 0.022)
 
 ### Examples of lead SV-eQTLs
 
@@ -535,10 +535,10 @@ sig.df = eqtl.ge.perm %>% merge(eqtl.ge) %>%
 sig.df %>% filter(qv<.05) %>% kable
 ```
 
-| ge               | type      |    pv |       fc |        qv |
-| :--------------- | :-------- | ----: | -------: | --------: |
-| (84.1,1.14e+04\] | SNV-indel | 5e-04 | 1.721587 | 0.0099990 |
-| (84.1,1.14e+04\] | SV        | 2e-04 | 4.037736 | 0.0079992 |
+| ge               | type      |        pv |       fc |        qv |
+| :--------------- | :-------- | --------: | -------: | --------: |
+| (84.1,1.14e+04\] | SNV-indel | 0.0007999 | 1.726225 | 0.0159984 |
+| (84.1,1.14e+04\] | SV        | 0.0001000 | 4.000000 | 0.0039996 |
 
 ``` r
 ## graph
@@ -666,8 +666,22 @@ dev.off()
 ## Save genes with only SV-eQTLs
 
 ``` r
+genc.s = subset(genc, gene %in% eqtl.df$gene)
+                
+eqtl.df %>% filter(FDR<=.01, pop=='EUR + YRI') %>%
+  merge(svs, all.x=TRUE) %>%
+  mutate(seqnames=ifelse(is.na(seqnames), gsub('(.*):.*:.*:.*', '\\1', svid), seqnames),
+         start=ifelse(is.na(start), as.numeric(gsub('.*:(.*):.*:.*', '\\1', svid)), start),
+         end=ifelse(is.na(end), start+nchar(gsub('.*:.*:(.*):.*', '\\1', svid)), end),
+         id=svid) %>%
+  select(-gene_type) %>% merge(genc.s) %>% 
+  select(seqnames, start, end, id, type, size, 
+         gene, gene_name, gene_type, beta, pvalue, FDR) %>%
+  arrange(FDR) %>% 
+  write.table(file='eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
+
 merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
   arrange(gene_type, gene_name, pop) %>%
   select(gene_type, gene_name, gene, pop, beta, FDR, svid, type, size, seqnames, start, end) %>% 
-  write.table(file='eqtl-sv-only-genes.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-geuvadis-eqtl-svonly.csv', sep=',', quote=FALSE, row.names=FALSE)
 ```
