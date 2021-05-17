@@ -62,7 +62,7 @@ These matched sets come in several versions. The "raw" set, with no additional e
 The available graphs are as follows:
 * [The human 1000 Genomes Project Liftover No Seg Dupes (1000GPlons) graph](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/for-NA19239/1000gplons/hs38d1/)
     * With simulation samples removed, as used for mapping, in the files named "`1000GPlons_hs38d1_filter.*`".
-    * Without those samples removed, as used for simulation, in the files named "`1kg_hs37d5.*`".
+    * Without those samples removed, as used for simulation, in the files named "`1000GPlons_hs38d1.*`".
 * [The human HGSVC graph](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/for-NA19240/hgsvc/hs38d1/), in the files named "`HGSVC_hs38d1.*`". The simulation samples were not removed from this graph.
 * [The linear human reference version 38 graph (a negative control for the HGSVC graph)](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/generic/primary/hs38d1/), in the files named "`primaryhs38d1.*`".
 * [The yeast graph used as a mapping target](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/generic/cactus/yeast_subset/), in the files named "`yeast_subset.*`".
@@ -71,21 +71,21 @@ The available graphs are as follows:
 
 Additionally, the simulated reads used in the mapping experiments are available. These reads are available in vg’s Graph Alignment/Map (GAM) format, annotated with their true positions along named paths, and can be converted to interleaved FASTQ with the command `vg view -aiX file.gam`, or to JSON with the command `vg view -aj file.gam`. All files contain interleaved, paired reads.
 * For the 1000GPlons graph, reads simulated to resemble sample NA19239 as sequenced by different Illumina sequencing technologies are available:
-   * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19239/1000gplons/hs38d1/hiseq2500/out_sim_gbwt/sim.gam)
-   * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/1000gplons/hs38d1/hs37d5/hiseqxten/out_sim_gbwt/sim.gam)
-   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/1000gplons/hs38d1/hs37d5/novaseq6000/out_sim_gbwt/sim.gam)
+   * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19239/1000gplons/hs38d1/hiseq2500/out_sim_gbwt/sim.gam)
+   * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19239/1000gplons/hs38d1/hiseqxten/out_sim_gbwt/sim.gam)
+   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19239/1000gplons/hs38d1/novaseq6000/out_sim_gbwt/sim.gam)
 * For the HGSVC graph, reads simulated to resemble sample NA19240 as sequenced by different Illumina sequencing technologies are available:
-   * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/hiseq2500/out_sim_gbwt/sim.gam)
-   * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/hiseqxten/out_sim_gbwt/sim.gam)
-   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/for-NA19240/hgsvc/grch38/novaseq6000/out_sim_gbwt/sim.gam)
+   * [For HiSeq2500](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19240/hgsvc/grch38/hiseq2500/out_sim_gbwt/sim.gam)
+   * [For HiSeq X Ten](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19240/hgsvc/grch38/hiseqxten/out_sim_gbwt/sim.gam)
+   * [For NovaSeq 6000](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/for-NA19240/hgsvc/grch38/novaseq6000/out_sim_gbwt/sim.gam)
 * For the yeast graph, reads simulated to resemble different yeast strains as sequenced by a single Illumina sequencing technology are available:
-   * [For strain DBVPG6044](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-DBVPG6044.gam)
-   * [For strain DBVPG6765](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-DBVPG6765.gam)
-   * [For strain N44](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-N44.gam)
-   * [For strain UWOPS034614](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-UWOPS034614.gam)
-   * [For strain UWOPS919171](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-UWOPS919171.gam)
-   * [For strain Y12](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-Y12.gam)
-   * [For strain YPS138](https://cgl.gi.ucsc.edu/data/giraffe/reads/sim/yeast/sim-YPS138.gam)
+   * [For strain DBVPG6044](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-DBVPG6044.gam)
+   * [For strain DBVPG6765](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-DBVPG6765.gam)
+   * [For strain N44](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-N44.gam)
+   * [For strain UWOPS034614](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-UWOPS034614.gam)
+   * [For strain UWOPS919171](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-UWOPS919171.gam)
+   * [For strain Y12](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-Y12.gam)
+   * [For strain YPS138](https://cgl.gi.ucsc.edu/data/giraffe/mapping/reads/sim/yeast/sim-YPS138.gam)
 
 ## Structural variant genotyping
 
