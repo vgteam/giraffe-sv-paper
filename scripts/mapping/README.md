@@ -10,6 +10,8 @@ These scripts expect to write to the `s3://vg-k8s` bucket. You will need to have
 
 The yeast graph experiment script expect to read files from the mount point `/public/groups/cgl/users/daheller/yeast_graph`. You will need to provide this mount point, with the relevant files from the data archive, or else edit the script to reference a different local path for these files. 
 
+The folder [hisat2/](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/mapping/hisat2) contains scripts for creating indexes, mapping reads and evaluating alignments for HISAT2. 
+
 ## Running the scripts
 
 All the Kubernetes scripts can be run at the same time:
