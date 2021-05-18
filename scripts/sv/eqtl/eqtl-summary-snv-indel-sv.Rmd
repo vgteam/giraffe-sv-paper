@@ -449,7 +449,7 @@ eqtl.df %>% filter(FDR<=.01, pop=='EUR + YRI') %>%
   select(seqnames, start, end, id, type, size, 
          gene, gene_name, gene_type, beta, pvalue, FDR) %>%
   arrange(FDR) %>% 
-  write.table(file='eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-geuvadis-eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
 
 merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
   arrange(gene_type, gene_name, pop) %>%

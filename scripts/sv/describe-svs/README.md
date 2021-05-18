@@ -20,7 +20,6 @@ The `.md` files are markdown reports that show the code and the resulting graphs
 - [Download and prepare public SV catalogs](prepare-public-catalogs.md)
 - [Compare SVs and frequencies to public SV catalogs](compare-public-catalogs.md)
 - [Annotate interesting SVs with functional information](annotate-svs-functional.md)
-- [Format supplementary tables](format-supp-tabs.md)
 
 # To compile the reports
 

@@ -4,6 +4,7 @@ Frequency in populations from the 1000 Genomes Project
 ``` r
 library(dplyr)
 library(ggplot2)
+library(tidyr)
 library(gridExtra)
 library(knitr)
 winsor <- function(x, u){
@@ -276,4 +277,40 @@ freq.df %>%
   select(-exp) %>%
   merge(svs) %>%
   write.table(file='vggiraffe-sv-superpop-af-diff-med10.csv', sep=',', row.names=FALSE, quote=FALSE)
+```
+
+## Save SVs sites with frequency estimates across super populations
+
+``` r
+## SVs grouped by site ('svsite' and 'clique' columns)
+svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
+
+## stats for each SV locus
+## use the most frequent allele (and then the largest) for ac/af/size
+## also saves sum/max/min across all alleles
+locs = svs %>% arrange(desc(af), desc(size)) %>%
+  group_by(seqnames, svsite, type, clique) %>%
+  summarize(start=start[1], end=end[1],
+            svid=svid[1],
+            ref=ref[1], alt=alt[1],
+            ac.tot=sum(ac), ac=ac[1],
+            af.tot=sum(af), af.top2=tail(head(af, 2), 1), af=af[1],
+            af.top.fc=ifelse(af.top2==0, 10, af/af.top2),
+            loc.n=n(),
+            size.min=min(size), size.max=max(size), size=size[1],
+            .groups='drop') %>%
+  filter(size.max>=50)
+
+
+outf = gzfile('vggiraffe-sv-2504kgp-svsites.tsv.gz', 'w')
+freq.df %>%
+  filter(exp=='observed') %>%
+  select(svsite, Superpopulation, af) %>%
+  pivot_wider(id_cols=svsite, names_from=Superpopulation, values_from=af, names_prefix='af.') %>%
+  merge(locs) %>%
+  select(seqnames, start, end, svsite, type, size, clique, af.tot, af, af.top2, af.top.fc,
+         everything(), -svid, -ac, -ac.tot, -loc.n, -size.min, -size.max) %>%
+  arrange(seqnames, start) %>% 
+  write.table(file=outf, row.names=FALSE, quote=FALSE, sep='\t')
+close(outf)
 ```

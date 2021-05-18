@@ -283,7 +283,7 @@ summary(lead.perm.df$prop.sv)
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ## 0.02937 0.04545 0.04895 0.04885 0.05245 0.07063
+    ## 0.03147 0.04545 0.04895 0.04876 0.05175 0.07203
 
 ``` r
 pv.perm = (1+sum(nb.lead.sv/nb.lead.all <= lead.perm.df$prop.sv)) / (1+nrow(lead.perm.df))
@@ -535,10 +535,10 @@ sig.df = eqtl.ge.perm %>% merge(eqtl.ge) %>%
 sig.df %>% filter(qv<.05) %>% kable
 ```
 
-| ge               | type      |        pv |       fc |        qv |
-| :--------------- | :-------- | --------: | -------: | --------: |
-| (84.1,1.14e+04\] | SNV-indel | 0.0007999 | 1.726225 | 0.0159984 |
-| (84.1,1.14e+04\] | SV        | 0.0001000 | 4.000000 | 0.0039996 |
+| ge               | type      |    pv |       fc |        qv |
+| :--------------- | :-------- | ----: | -------: | --------: |
+| (84.1,1.14e+04\] | SNV-indel | 3e-04 | 1.726650 | 0.0059994 |
+| (84.1,1.14e+04\] | SV        | 1e-04 | 4.037736 | 0.0039996 |
 
 ``` r
 ## graph
@@ -678,7 +678,7 @@ eqtl.df %>% filter(FDR<=.01, pop=='EUR + YRI') %>%
   select(seqnames, start, end, id, type, size, 
          gene, gene_name, gene_type, beta, pvalue, FDR) %>%
   arrange(FDR) %>% 
-  write.table(file='eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
+  write.table(file='vggiraffe-geuvadis-eqtl-snv-indel-svs.csv', sep=',', quote=FALSE, row.names=FALSE)
 
 merge(svs, eqtl.sv.only) %>% select(-gene_type) %>% merge(genc) %>%
   arrange(gene_type, gene_name, pop) %>%

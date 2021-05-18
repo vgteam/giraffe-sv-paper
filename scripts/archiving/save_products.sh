@@ -37,6 +37,28 @@ download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.f
 download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.dist "${PRODUCTS_DIR}/HGSVC_hs38d1.dist"
 download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg "${PRODUCTS_DIR}/HGSVC_hs38d1.xg"
 
+## SV-related files
+SVFILES="vggiraffe-sv-eqtl-geuvadis.FDR01.csv
+vggiraffe-geuvadis-sveqtl-gene-families.csv
+vggiraffe-geuvadis-eqtl-svonly.csv
+vggiraffe-geuvadis-eqtl-snv-indel-svs.csv.gz
+vggiraffe-sv-superpop-af-diff-med10.csv.gz
+vggiraffe-sv-2504kgp-pcgenes.tsv.gz
+vggiraffe-sv-mesa-svsites.vcf.gz
+vggiraffe-sv-mesa-svsites.vcf.gz.tbi
+vggiraffe-sv-2504kgp-svsites.vcf.gz
+vggiraffe-sv-2504kgp-svsites.vcf.gz.tbi
+vggiraffe-sv-2504kgp-svsites.gt.vcf.gz
+vggiraffe-sv-2504kgp-svsites.gt.vcf.gz.tbi
+vggiraffe-sv-2504kgp-raw.vcf.gz
+vggiraffe-sv-2504kgp-raw.vcf.gz.tbi
+vggiraffe-sv-relkgp-raw.vcf.gz
+vggiraffe-sv-relkgp-raw.vcf.gz.tbi"
+for ff in $SVFILES
+    download s3://vg-k8s/users/jmonlong/manu-giraffe-sv/products/$ff "${PRODUCTS_DIR}/${ff}"
+done
+
+
 # Put the README in place
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 # Fix the links to the archive data to be relative

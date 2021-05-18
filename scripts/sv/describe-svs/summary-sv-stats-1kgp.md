@@ -446,3 +446,17 @@ outf = gzfile('locs.2504kgp.svsite80al.tsv.gz', 'w')
 write.table(locs, file=outf, row.names=FALSE, quote=FALSE, sep='\t')
 close(outf)
 ```
+
+## Save TSV with SV sites around protein-coding genes
+
+``` r
+ol.gene = findOverlaps(locs.gr, genc.pc) %>% as.data.frame %>%
+  mutate(gene=genc.pc$gene_name[subjectHits], type=genc.pc$type[subjectHits])
+svs.pc = locs[ol.gene$queryHits,] %>% select(seqnames, start, end, svsite, type, size)
+svs.pc$gene.name = ol.gene$gene
+svs.pc$impact = ol.gene$type
+
+outf = gzfile('vggiraffe-sv-2504kgp-pcgenes.tsv.gz', 'w')
+write.table(svs.pc, file=outf, row.names=FALSE, quote=FALSE, sep='\t')
+close(outf)
+```

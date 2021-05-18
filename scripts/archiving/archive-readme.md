@@ -89,18 +89,23 @@ Additionally, the simulated reads used in the mapping experiments are available.
 
 ## Structural variant genotyping
 
+Files in the `calling` folder.
+
 During the evaluation of the SV genotyping accuracy we reproduced analysis from Hickey et al. on the HGSVC graph and the GIAB graph (although now using GIAB v0.6). The indexes, including new Giraffe indexes, for these pangenomes are available:
    * [For the HGSVC graph](https://cgl.gi.ucsc.edu/data/giraffe/calling/hgsvc/)
    * [For the GIAB graph](https://cgl.gi.ucsc.edu/data/giraffe/calling/giab/)
 
 There are also [indexes for the pangenome containing the combined SV catalogs](https://cgl.gi.ucsc.edu/data/giraffe/calling/combined-sv-graph/).
 
-There is [a summary of the structural variants genotyped across 2,000 samples from the MESA cohort and their frequencies](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-mesa-svsites.csv.gz)
+There is a summary of the structural variants genotyped across 2,000 samples from the MESA cohort and their frequencies
+   * [Information about each SV site, including frequencies of the most expressed and second most expressed alleles](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-mesa-svsites.tsv.gz)
+   * [Information about each SV allele, grouped by SV site](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-mesa-all-bysvsites.tsv.gz)
 
 The structural variants found in the high-coverage 1000 Genomes Project dataset are:
-   * [SV-eQTLs using the subset of samples with RNA-seq information from the GEUVADIS dataset](calling/vggiraffe-sv-eqtl-geuvadis.FDR01.csv)
-   * [SVs with strong inter-super-population frequency patterns (more than 10% shift in allele frequency compared to the median frequency across all super-populations)](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-superpop-af-diff-med10.csv.gz)
-   * [SVs overlapping coding, untranslated, promoter or introns of protein-coding genes](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-pcgenes.csv.gz)
-   * [Information about each SV site, including frequencies of the most expressed and second most expressed alleles, and frequency in the 5 super-populations](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-svsites.csv.gz)
+   * [Information about each SV site, including frequencies of the most expressed and second most expressed alleles, and frequency in the 5 super-populations](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-svsites.tsv.gz)
+   * [Information about each SV allele, grouped by SV site](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-all-bysvsites.tsv.gz)
    * [The allele counts for each of the 2,504 unrelated samples across SV sites](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-svsite-ac.tsv.gz)
+   * [The genotype quality for each of the 2,504 unrelated samples across SV sites](https://cgl.gi.ucsc.edu/data/giraffe/calling/vggiraffe-sv-2504kgp-svsite-gq.tsv.gz)
 
+Of note, other files are provided in the `products` folder. 
+These include files like VCF files and files related to eQTLs.

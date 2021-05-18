@@ -7,5 +7,21 @@ This directory contains reusable work products for the manuscript *Pangenomics e
     * `HGSVC_hs38d1.dist`: Distance index
     * `HGSVC_hs38d1.xg`: Graph in xg format
 
+## Structural variant products
+
+* VCF at the SV site level. Alleles were combined if matching (>=80% reciprocal overlap or sequence similarity). The allele was counted across all alleles at each site for each sample.
+	* `vggiraffe-sv-mesa-svsites.vcf.gz` and `vggiraffe-sv-mesa-svsites.vcf.gz.tbi`: VCF and index for the 2,000 MESA samples. No genotypes, just SV site definition and allele frequency estimate.
+	* `vggiraffe-sv-2504kgp-svsites.vcf.gz` and `vggiraffe-sv-2504kgp-svsites.vcf.gz.tbi`: VCF and index for the 2,504 unrelated individuals in the 1000 Genomes Project. No genotypes, just SV site definition and allele frequency estimate (including for each of the super populations EUR/AFR/EAS/SAS/AMR).
+	* `vggiraffe-sv-2504kgp-svsites.gt.vcf.gz` and `vggiraffe-sv-2504kgp-svsites.gt.vcf.gz.tbi`: VCF and index for the 2,504 unrelated individuals in the 1000 Genomes Project. Includes allele counts, genotypes and genotype qualities, in addition to INFO such as allele frequency in all samples or for each of the super populations EUR/AFR/EAS/SAS/AMR.
+* Raw VCFs: VCF containing all the information from `vg call` (inc. GL) but at the allele level, i.e. >1M alleles. 
+	* `vggiraffe-sv-2504kgp-raw.vcf.gz` and `vggiraffe-sv-2504kgp-raw.vcf.gz.tbi` VCF and index for the 2,504 unrelated individuals of the 1000 Genomes Project.
+	* `vggiraffe-sv-relkgp-raw.vcf.gz` and `vggiraffe-sv-relkgp-raw.vcf.gz.tbi` VCF and index for the related individuals of the 1000 Genomes Project.
+* eQTLs from the Geuvadis data
+	* `vggiraffe-sv-eqtl-geuvadis.FDR01.csv`: SV-eQTLs when analyzing SVs in all the samples or separately EUR and YRI samples.
+	* `vggiraffe-geuvadis-sveqtl-gene-families.csv`: Gene families significantly enriched in SV-eQTLs.
+	* `vggiraffe-geuvadis-eqtl-snv-indel-svs.csv.gz`: eQTLs when jointly analyzing SNV/indel/SV in all the samples.
+	* `vggiraffe-geuvadis-eqtl-svonly.csv`: SV-eQTLs in genes with no SNV/indel eQTLs.
+* `vggiraffe-sv-superpop-af-diff-med10.csv.gz`: SVs with population signatures in the 1000 Genomes Project dataset (>10% difference with the median frequency across all super population)
+* `vggiraffe-sv-2504kgp-pcgenes.tsv.gz`: SVs around protein-coding genes (promoter, UTR, intron or exon) in the 1000 Genomes Project dataset
 
 
