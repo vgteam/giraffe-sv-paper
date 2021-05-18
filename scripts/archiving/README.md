@@ -39,3 +39,10 @@ ipfs add -r --nocopy /public/home/anovak/projects/gg/data/cgl-data/giraffe
 ```
 
 You will also went to publish the Zenodo deposition you uploaded the software archive to, so it becomes visible under its assigned DOI.
+
+You may also want to sync the archive data to archival storage, e.g.:
+
+```
+aws s3 sync --dryrun /nanopore/cgl/data/giraffe s3://ucsc-cgl-archive/pis/bpaten/papers/pangenomics-genotyping-common-structural-variants
+aws s3 sync /nanopore/cgl/data/giraffe s3://ucsc-cgl-archive/pis/bpaten/papers/pangenomics-genotyping-common-structural-variants
+```
