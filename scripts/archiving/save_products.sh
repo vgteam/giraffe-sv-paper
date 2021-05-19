@@ -64,20 +64,26 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 # Fix the links to the archive data to be relative
 cat "${SCRIPT_DIR}/products-readme.md" | sed 's_https://cgl.gi.ucsc.edu/data/giraffe/__g' > "${PRODUCTS_DIR}/README.md"
 
-for PRODUCT_FILENAME in $(ls "${PRODUCTS_DIR}") ; do
-    # Upload each product to Zenodo
-    if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
-        export FILEPATH="${PRODUCTS_DIR}/${PRODUCT_FILENAME}"
-        # Upload the product file onto the Zenodo deposition specified by the environment
-        python3 -c 'import requests; 
+# Zip all the products together. Use zip because incremental update of touched
+# files is efficient.
+# If we don't do this, Zendodo weirdly decides to hang up on us while we are
+# uploading anything that takes us over like 20GB, despite the notional 50 GB
+# limit.
+PRODUCTS_ZIP_FILE="${PRODUCTS_DIR}.zip"
+PRODUCTS_ZIP_ABSPATH="$(realpath "${PRODUCTS_ZIP_FILE}")"
+(cd "${DEST_DIR}" && zip -ur "${PRODUCTS_ZIP_ABSPATH}" "$(basename "${PRODUCTS_DIR}")")
+
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
+
+if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
+    export FILEPATH="${PRODUCTS_ZIP_FILE}"
+    python3 -c 'import requests; 
 import os;
 deposition=os.environ["ZENODO_DEPOSITION"]; 
 filepath=os.environ["FILEPATH"]; 
 filename=os.path.basename(filepath); 
 params={"access_token": os.environ["ZENODO_TOKEN"]}; 
 bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition}", params=params).json()["links"]["bucket"]; 
-requests.put(f"{bucket}/products/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
-    fi
-done
+requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
+fi
 
-chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true

@@ -215,11 +215,15 @@ cp "${SCRIPT_DIR}/software-readme.md" "${DEST_DIR}/README.md"
 
 rm -Rf "${WORK_DIR}"
 
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
+
 # Zip all the software together. Use zip because incremental update of touched
 # files is efficient.
 SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
 SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
 (cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
+
+chmod  g+rw "${SOFTWARE_ZIP_FILE}" 2>/dev/null || true
 
 if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
     export FILEPATH="${SOFTWARE_ZIP_FILE}"
@@ -233,5 +237,3 @@ bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition
 requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
 fi
 
-chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
-chmod  g+rw "${SOFTWARE_ZIP_FILE}" 2>/dev/null || true
