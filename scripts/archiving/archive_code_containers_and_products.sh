@@ -147,7 +147,7 @@ for FILENAME in $(find "${SCRIPT_DIR}/..") ; do
         # Skip directories
         continue
     fi
-    if [[ "${FILENAME}" == *archive_code_and_containers.sh ]] ; then
+    if [[ "${FILENAME}" == *archive_code_containers_and_products.sh ]] ; then
         # Skip ourselves
         continue
     fi
