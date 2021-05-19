@@ -24,4 +24,6 @@ This directory contains reusable work products for the manuscript *Pangenomics e
 * `vggiraffe-sv-superpop-af-diff-med10.csv.gz`: SVs with population signatures in the 1000 Genomes Project dataset (>10% difference with the median frequency across all super population)
 * `vggiraffe-sv-2504kgp-pcgenes.tsv.gz`: SVs around protein-coding genes (promoter, UTR, intron or exon) in the 1000 Genomes Project dataset
 
+More details are provided about the information in each of these files in [`https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/eqtl/files-README.md`](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/eqtl/files-README.md) and [`https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/describe-svs/files-README.md`](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/describe-svs/files-README.md).
+
 

@@ -40,3 +40,7 @@ Rscript -e "rmarkdown::render('prepare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('annotate-svs-functional.Rmd')"
 ```
+
+## Description of eQTL files
+
+The files used in this analysis are described in more details in [`files-README.md`](files-README.md).

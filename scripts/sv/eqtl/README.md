@@ -37,3 +37,7 @@ To compile the reports:
 Rscript -e "rmarkdown::render('eqtl-summary.Rmd')"
 Rscript -e "rmarkdown::render('eqtl-summary-snv-indel-sv.Rmd')"
 ```
+
+## Description of eQTL files
+
+The files used in this analysis are described in more details in [`files-README.md`](files-README.md).
