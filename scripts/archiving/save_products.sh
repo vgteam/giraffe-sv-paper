@@ -2,7 +2,7 @@
 
 # save_products.sh: Save work products that ought to be re-usable
 
-set -x
+set -ex
 
 DEST_DIR=/nanopore/cgl/data/giraffe
 
