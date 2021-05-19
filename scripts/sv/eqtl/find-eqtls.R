@@ -55,6 +55,11 @@ mean(ge$Gene_Symbol %in% genc.g$gene_id)
 mean(ge$gene_id_short %in% genc.g$gene_id_short)
 com.genes = intersect(ge$gene_id_short, genc.g$gene_id_short)
 
+## median gene expression used for the enrichment in highly expressed genes
+gene.median.exp = apply(ge, 1, median)
+tibble(gene=names(gene.median.exp), median.ge=gene.median.exp) %>%
+  write.table(file='geuvadis.median.ge.tsv', sep='\t', row.names=FALSE, quote=FALSE)
+
 ##
 ## SV genotypes
 ##
@@ -72,6 +77,8 @@ ge = as.matrix(ge[, com.samples])
 ac.mat = ac.mat[, com.samples]
 info.mat = info.mat[, com.samples]
 
+write.table(rownames(ge), file='eqtl-genes.txt', row.names=FALSE, col.names=FALSE, quote=FALSE)
+
 ##
 ## Matrix-eQTL
 ##
@@ -85,19 +92,23 @@ genepos = tibble(geneid=genc.g$gene_id_short, chr=as.character(seqnames(genc.g))
   arrange(chr, s1, s2) %>% as.data.frame
 
 save(varspos, genepos, ac.mat, info.mat, ge, file='eqtl-test.RData')
+## load('eqtl-test.RData')
 
+## quantile normalization
 quantnorm <- function(x){
   rks = rank(x, ties.method = "average")
   qnorm(rks / (length(rks)+1))
 }
 
+## proportion of samples with minor alleles
 nonmajor <- function(ac){
   ac.mode = unique(ac)
   ac.mode = ac.mode[which.max(tabulate(match(ac, ac.mode)))]
   mean(ac-ac.mode>0)
 }
 
-run_matrixeqtl <- function(ge.norm='none', samples=NULL){
+## run eQTL discovery with MatrixEQTL
+run_matrixeqtl <- function(ge.norm='none', samples=NULL, min.nonref.prop=0.05){
   ## allele counts, gene expression and covariates
   vars = SlicedData$new();
   vars$fileSliceSize = 5000
@@ -107,7 +118,9 @@ run_matrixeqtl <- function(ge.norm='none', samples=NULL){
   }
   ## remove SVs with not enough allele count variance
   nonmaj.prop = apply(ac, 1, nonmajor)
-  ac = ac[which(nonmaj.prop>=.05),]
+  ## at least 2 individuals with non-ref genotypes to mitigate effect by single outliers
+  min.nonref.prop = ifelse(min.nonref.prop<2/ncol(ac), 2/ncol(ac), min.nonref.prop)
+  ac = ac[which(nonmaj.prop>=min.nonref.prop),]
   vars$CreateFromMatrix(ac)
   vars$ResliceCombined()
   gene = SlicedData$new();
@@ -148,28 +161,35 @@ run_matrixeqtl <- function(ge.norm='none', samples=NULL){
   return(me.o)
 }
 
-me.lin.nonorm.all = run_matrixeqtl()
-me.lin.nonorm.eur = run_matrixeqtl(samples=setdiff(colnames(ac.mat), yri.samples))
-me.lin.nonorm.yri = run_matrixeqtl(samples=intersect(colnames(ac.mat), yri.samples))
-me.lin.quant.all = run_matrixeqtl(ge.norm='quantile')
-me.lin.quant.eur = run_matrixeqtl(ge.norm='quantile', samples=setdiff(colnames(ac.mat), yri.samples))
-me.lin.quant.yri = run_matrixeqtl(ge.norm='quantile', samples=intersect(colnames(ac.mat), yri.samples))
+me.lin.norm.all = run_matrixeqtl(ge.norm='normal', min.nonref.prop=.01)
+me.lin.norm.eur = run_matrixeqtl(ge.norm='normal', samples=setdiff(colnames(ac.mat), yri.samples), min.nonref.prop=.01)
+me.lin.norm.yri = run_matrixeqtl(ge.norm='normal', samples=intersect(colnames(ac.mat), yri.samples), min.nonref.prop=.01)
+me.lin.quant.all = run_matrixeqtl(ge.norm='quantile', min.nonref.prop=.01)
+me.lin.quant.eur = run_matrixeqtl(ge.norm='quantile', samples=setdiff(colnames(ac.mat), yri.samples), min.nonref.prop=.01)
+me.lin.quant.yri = run_matrixeqtl(ge.norm='quantile', samples=intersect(colnames(ac.mat), yri.samples), min.nonref.prop=.01)
 
-ll = list(me.lin.nonorm.all, me.lin.nonorm.eur, me.lin.nonorm.yri,
+ll = list(me.lin.norm.all, me.lin.norm.eur, me.lin.norm.yri,
           me.lin.quant.all, me.lin.quant.eur, me.lin.quant.yri)
-names(ll) = c('me.lin.nonorm.all', 'me.lin.nonorm.eur', 'me.lin.nonorm.yri',
+names(ll) = c('me.lin.norm.all', 'me.lin.norm.eur', 'me.lin.norm.yri',
               'me.lin.quant.all', 'me.lin.quant.eur', 'me.lin.quant.yri')
-save(ll, file='eqtl-test-results.RData')
 
-## Data for examples
+save(ll, file='eqtl-test-results-maf01.RData')
+
+##
+## Examples
+##
+
+load('eqtl-test-results-maf01.RData')
 
 eqtl.df = rbind(
-  ll$me.lin.nonorm.all$cis$eqtls %>% mutate(pop='all'),
-  ll$me.lin.nonorm.eur$cis$eqtls %>% mutate(pop='eur'),
-  ll$me.lin.nonorm.yri$cis$eqtls %>% mutate(pop='yri')) %>%
+  ll$me.lin.norm.all$cis$eqtls %>% mutate(pop='all'),
+  ll$me.lin.norm.eur$cis$eqtls %>% mutate(pop='eur'),
+  ll$me.lin.norm.yri$cis$eqtls %>% mutate(pop='yri')) %>%
   mutate(snps=as.character(snps), gene=as.character(gene))
 
-## ex: sample of 100 eqtls in eur+yri
+set.seed(123)
+
+## ex: eqtl in eur+yri
 ex.all = eqtl.df %>% filter(FDR<=.01, pop=='all') %>%
   sample_n(100)
 
