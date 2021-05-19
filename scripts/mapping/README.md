@@ -1,4 +1,4 @@
-# Graph Indexing Scripts
+# Graph Mapping Scripts
 
 These run Giraffe and competing mappers, so that speed and accuracy can be assessed.
 
