@@ -18,6 +18,25 @@ ggp = list()
 ## Read frequencies
 
 ``` r
+ac = as.matrix(read.table('2504kgp.svsite80al.ac.tsv.gz', as.is=TRUE))
+samps.df = read.table('1kgp-info.tsv', as.is=TRUE, header=TRUE)
+colnames(samps.df)[1] = 'sample'
+samps.df = samps.df %>% filter(sample %in% colnames(ac)) %>% mutate(sample.n=sample(sample))
+
+freq.sp = lapply(unique(samps.df$Superpopulation), function(sp){
+    samps = samps.df %>% filter(Superpopulation==sp) %>% .$sample
+    ac.tot = rowSums(ac[, samps])
+    tibble(svsite=rownames(ac), Superpopulation=sp, af=ac.tot/(2*length(samps)))
+}) %>% bind_rows
+
+outf = gzfile('2504kgp.svsite80al.superpopfreq.tsv.gz', 'w')
+write.table(freq.sp, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+```
+
+The code block above was pre-computed and the file used now:
+
+``` r
 ## frequencies in different super-populations for each SV site
 freq.df = read.table('2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, header=TRUE)
 ```
@@ -25,6 +44,25 @@ freq.df = read.table('2504kgp.svsite80al.superpopfreq.tsv.gz', as.is=TRUE, heade
 ## Read null frequencies
 
 To compute an expected distribution, sample labels were permuted.
+
+``` r
+ac = as.matrix(read.table('2504kgp.svsite80al.ac.tsv.gz', as.is=TRUE))
+samps.df = read.table('1kgp-info.tsv', as.is=TRUE, header=TRUE)
+colnames(samps.df)[1] = 'sample'
+samps.df = samps.df %>% filter(sample %in% colnames(ac)) %>% mutate(sample.n=sample(sample))
+
+freq.sp.null = lapply(unique(samps.df$Superpopulation), function(sp){
+    samps = samps.df %>% filter(Superpopulation==sp) %>% .$sample.n
+    ac.tot = rowSums(ac[, samps])
+    tibble(svsite=rownames(ac), Superpopulation=sp, af=ac.tot/(2*length(samps)))
+}) %>% bind_rows
+
+outf = gzfile('2504kgp.svsite80al.superpopfreq.null.tsv.gz', 'w')
+write.table(freq.sp.null, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+```
+
+The code block above was pre-computed and the file used now:
 
 ``` r
 freq.null = read.table('2504kgp.svsite80al.superpopfreq.null.tsv.gz', as.is=TRUE, header=TRUE)

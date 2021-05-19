@@ -18,7 +18,38 @@ pal <- function(n){
 ggp = list()
 ```
 
-## Read PC results
+## Pre-computed PCA
+
+Because it takes about 30 mins and the genotypes cannot be shared for
+MESA, the principal components were pre-computed on Terra from the
+allele counts using the following commands:
+
+``` r
+## allele counts
+ac = as.matrix(read.table('mesa2k.svsite80al.ac.tsv.gz', as.is=TRUE))
+## subset on autosomes
+svs = read.table('svs.mesa2k.svsite80al.tsv.gz', header=TRUE, as.is=TRUE)
+site.chr = unique(svs[, c('svsite', 'seqnames')])                       
+auto.sites = subset(site.chr, seqnames %in% paste0('chr', 1:22))$svsite
+ac = ac[auto.sites, ]
+## PCA
+pca.o = prcomp(t(ac))
+
+## save results
+pca.o$x = pca.o$x[,1:20]
+pca.o$rotation = pca.o$rotation[,1:4]
+saveRDS(pca.o, file='mesa2k.svsite80al.ac.pcs.rds')
+
+## save results as TSVs
+pc.df = tibble(sample=rownames(pca.o$x)) %>% cbind(pca.o$x[,1:20])
+outf = gzfile('mesa2k-pcs-svs-topmed.tsv.gz', 'w')
+write.table(pc.m, file=outf, sep='\t', row.names=FALSE, quote=FALSE)
+close(outf)
+pc.sdev.df = tibble(pc=1:length(pca.o$sdev), sdev=pca.o$sdev)
+write.table(pc.sdev.df, file='mesa2k.svsite80al.ac.pcs.sdev.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+```
+
+## Read pre-computed principal components
 
 ``` r
 ## PCs derived from SV genotypes or TOPMed SNVs/indels

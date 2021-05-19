@@ -14,13 +14,6 @@ winsor <- function(x, u){
 ggp = list()
 ```
 
-## Read frequencies
-
-``` r
-## frequencies in different clusters (hc) for each SV site
-freq.df = read.table('mesa2k.svsite80al.hcfreq.tsv.gz', as.is=TRUE, header=TRUE)
-```
-
 ## Read PC results and reproduce clusters
 
 For visualization
@@ -37,7 +30,7 @@ pc.df %>% group_by(hc) %>% summarize(n=n())
 
     ## # A tibble: 6 x 2
     ##   hc        n
-    ##   <fct> <int>
+    ## * <fct> <int>
     ## 1 1       751
     ## 2 2       373
     ## 3 3       378
@@ -70,6 +63,48 @@ ggp$pc13
 ```
 
 ![](pops-freq-mesa_files/figure-gfm/pcs-2.png)<!-- -->
+
+## Pre-compute frequencies in each cluster on Terra
+
+Because is uses the genotype of the individuals in the MESA cohort, this
+step was run on Terra. The resulting frequencies are saved in a file
+used later in this report.
+
+``` r
+ac = as.matrix(read.table('mesa2k.svsite80al.ac.tsv.gz', as.is=TRUE))
+freq.hc = lapply(unique(pc.df$hc), function(hcc){
+    samps = pc.df %>% filter(hc==hcc) %>% .$sample
+    ac.tot = rowSums(ac[, samps])
+    tibble(svsite=rownames(ac), hc=hcc, af=ac.tot/(2*length(samps)))
+}) %>% bind_rows
+
+outf = gzfile('mesa2k.svsite80al.hcfreq.tsv.gz', 'w')
+write.table(freq.hc, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+```
+
+Same for the “null” frequencies when permuting the labels:
+
+``` r
+set.seed(123)
+pc.df$sample.null = sample(pc.df$sample)
+freq.hc.n = lapply(unique(pc.df$hc), function(hcc){
+    samps = pc.df %>% filter(hc==hcc) %>% .$sample.null
+    ac.tot = rowSums(ac[, samps])
+    tibble(svsite=rownames(ac), hc=hcc, af=ac.tot/(2*length(samps)))
+}) %>% bind_rows
+
+outf = gzfile('mesa2k.svsite80al.hcfreq.null.tsv.gz', 'w')
+write.table(freq.hc.n, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+```
+
+## Read frequencies
+
+``` r
+## frequencies in different clusters (hc) for each SV site
+freq.df = read.table('mesa2k.svsite80al.hcfreq.tsv.gz', as.is=TRUE, header=TRUE)
+```
 
 ## Read null frequencies
 

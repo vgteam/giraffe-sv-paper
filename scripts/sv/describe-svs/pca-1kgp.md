@@ -19,7 +19,37 @@ pal <- function(n){
 ggp = list()
 ```
 
-## Read PC results
+## Pre-computed PCA
+
+Because it takes about 30 mins, the principal components were
+pre-computed from the allele counts using the following commands:
+
+``` r
+## allele counts for each SV site
+ac = as.matrix(read.table('2504kgp.svsite80al.ac.tsv.gz'))
+## find which SV sites are in autosomes
+svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
+site.chr = unique(svs[, c('svsite', 'seqnames')])
+unique(site.chr$seqnames)
+auto.sites = subset(site.chr, seqnames %in% paste0('chr', 1:22))$svsite
+## subset allele count to autosomes
+ac = ac[auto.sites, ]
+## remove no variants or singletons
+ac.var = apply(ac, 1, function(x){
+  tt = table(x)
+  sum(tt>1)>1 | length(tt)>2
+})
+ac = ac[which(ac.var),]
+## PCA
+pca.o = prcomp(t(ac), scale=TRUE) ## ~30 mins
+
+## save PCs
+pca.o$rotation = pca.o$rotation[,1:4]
+pca.o$x = pca.o$x[,1:20]
+saveRDS(pca.o, file='2504kgp.svsite80al.ac.pcs.rds')
+```
+
+## Read pre-computed principal components
 
 ``` r
 ## PCs derived from SV genotypes
@@ -66,9 +96,9 @@ sample_n(samps.df, 3)
 ```
 
     ##    sample Population Sex Superpopulation
-    ## 1 HG03370        ESN   1             AFR
-    ## 2 HG01600        KHV   2             EAS
-    ## 3 HG02188        CDX   2             EAS
+    ## 1 HG00525        CHS   2             EAS
+    ## 2 HG02679        GWD   2             AFR
+    ## 3 HG02077        KHV   1             EAS
 
 ``` r
 samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
@@ -76,7 +106,7 @@ samps.df %>% group_by(Superpopulation) %>% summarize(n=n(), .groups='drop')
 
     ## # A tibble: 5 x 2
     ##   Superpopulation     n
-    ##   <chr>           <int>
+    ## * <chr>           <int>
     ## 1 AFR               893
     ## 2 AMR               490
     ## 3 EAS               585

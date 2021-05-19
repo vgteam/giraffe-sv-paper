@@ -24,7 +24,36 @@ pal <- function(n){
 ggp = list()
 ```
 
-## Read PC results
+## Pre-computed PCA
+
+Because it takes about 30 mins, the principal components were pre-computed from the allele counts using the following commands:
+
+```{r, eval=FALSE}
+## allele counts for each SV site
+ac = as.matrix(read.table('2504kgp.svsite80al.ac.tsv.gz'))
+## find which SV sites are in autosomes
+svs = read.table('svs.2504kgp.svsite80al.tsv.gz', as.is=TRUE, header=TRUE)
+site.chr = unique(svs[, c('svsite', 'seqnames')])
+unique(site.chr$seqnames)
+auto.sites = subset(site.chr, seqnames %in% paste0('chr', 1:22))$svsite
+## subset allele count to autosomes
+ac = ac[auto.sites, ]
+## remove no variants or singletons
+ac.var = apply(ac, 1, function(x){
+  tt = table(x)
+  sum(tt>1)>1 | length(tt)>2
+})
+ac = ac[which(ac.var),]
+## PCA
+pca.o = prcomp(t(ac), scale=TRUE) ## ~30 mins
+
+## save PCs
+pca.o$rotation = pca.o$rotation[,1:4]
+pca.o$x = pca.o$x[,1:20]
+saveRDS(pca.o, file='2504kgp.svsite80al.ac.pcs.rds')
+```
+
+## Read pre-computed principal components
 
 ```{r}
 ## PCs derived from SV genotypes

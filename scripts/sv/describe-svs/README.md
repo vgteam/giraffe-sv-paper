@@ -39,5 +39,4 @@ Rscript -e "rmarkdown::render('pops-freq-1kgp.Rmd')"
 Rscript -e "rmarkdown::render('prepare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('compare-public-catalogs.Rmd')"
 Rscript -e "rmarkdown::render('annotate-svs-functional.Rmd')"
-Rscript -e "rmarkdown::render('format-supp-tabs.Rmd')"
 ```
