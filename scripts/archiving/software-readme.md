@@ -1,6 +1,6 @@
 # Giraffe Paper Data Archive
 
-This archive contains the software developed for the manuscript *Pangenomics enables genotyping common structural variants in 5,202 diverse genomes*. It is organized as follows:
+This archive contains the software developed for the manuscript *Pangenomics enables genotyping known structural variants in 5,202 diverse genomes*. It is organized as follows:
 
 * `code`: Contains source code
     * `giraffe-sv-paper`: Contains scripts used to manage the paper workflows and define the analyses, from [the repository here](https://github.com/vgteam/giraffe-sv-paper)
