@@ -21,3 +21,7 @@ Once the SVs were genotyped in the MESA cohort of 1000GP dataset, we explored th
 See [describe-svs](describe-svs/README.md).
 This is where most figures and numbers described in the SV section of the manuscript come from and can be reproduced.
 
+## eQTL analysis
+
+The SVs were tested for association with gene expression changes using RNA-seq data from Geuvadis on a subset of the 1000GP sampels.
+See [eqtl](eqtl/README.md).
