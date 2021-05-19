@@ -1,4 +1,4 @@
-# Graph Construction Scripts
+# Archiving Scripts
 
 These save code and data, and upload them to Zenodo.
 
@@ -38,4 +38,13 @@ After running all the scripts, you will want to add the data to IPFS to get a ha
 ipfs add -r --nocopy /public/home/anovak/projects/gg/data/cgl-data/giraffe
 ```
 
-You will also went to publish the Zenodo deposition you uploaded the software archive to, so it becomes visible under its assigned DOI.
+We expect to be using IPFS 0.8.0; if you want to reproduce the published hash you will need that version.
+
+You will also want to publish the Zenodo deposition you uploaded the software archive to, so it becomes visible under its assigned DOI.
+
+You may also want to sync the archive data to archival storage, e.g.:
+
+```
+aws s3 sync --dryrun /nanopore/cgl/data/giraffe s3://ucsc-cgl-archive/pis/bpaten/papers/pangenomics-genotyping-common-structural-variants
+aws s3 sync /nanopore/cgl/data/giraffe s3://ucsc-cgl-archive/pis/bpaten/papers/pangenomics-genotyping-common-structural-variants
+```
