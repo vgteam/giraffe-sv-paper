@@ -35,9 +35,8 @@ The archive is laid out as follows:
                 * `S288C`: Yeast primary reference graph
                 * `hs38d1`: Human primary reference graph
 * `products`: Contains output files recommended for re-use, if any, organized according to [its own README](https://cgl.gi.ucsc.edu/data/giraffe/products/README.md)
-* `products.zip`: Compressed archive of all products from `products`
 * `software`: Contains [code](#code) used in the manuscript, organized according to [its own README](https://cgl.gi.ucsc.edu/data/giraffe/software/README.md)
-* `software.zip`: Compressed archive of all software from `software`
+* `archive.zip`: Compressed archive of all products and software
 
 ## Code
 All files should be readable by vg v1.32.0, with commit SHA1 hash 095c529f8c70521ca60cf0435bac1b0b4ffd1f6d. The tool is available on Github at https://github.com/vgteam/vg/releases/tag/v1.32.0. A [fully static binary for GNU/Linux 3.2.0](https://cgl.gi.ucsc.edu/data/giraffe/software/code/vg/v1.32.0/vg) and a [gzip-compressed source tar file](https://cgl.gi.ucsc.edu/data/giraffe/software/code/vg/v1.32.0/vg-v1.32.0.tar.gz) are available.
