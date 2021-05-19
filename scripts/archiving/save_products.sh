@@ -54,7 +54,7 @@ vggiraffe-sv-2504kgp-raw.vcf.gz
 vggiraffe-sv-2504kgp-raw.vcf.gz.tbi
 vggiraffe-sv-relkgp-raw.vcf.gz
 vggiraffe-sv-relkgp-raw.vcf.gz.tbi"
-for ff in $SVFILES
+for ff in $SVFILES ; do
     download s3://vg-k8s/users/jmonlong/manu-giraffe-sv/products/$ff "${PRODUCTS_DIR}/${ff}"
 done
 
