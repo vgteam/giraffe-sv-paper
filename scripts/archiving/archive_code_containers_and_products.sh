@@ -275,7 +275,7 @@ cat "${SCRIPT_DIR}/products-readme.md" | sed 's_https://cgl.gi.ucsc.edu/data/gir
 # files is efficient. Do it all at once because Zenodo seems to refuse the second zip otherwise.
 COMBINED_ZIP_FILE="archive.zip"
 COMBINED_ZIP_ABSPATH="$(realpath "${COMBINED_ZIP_FILE}")"
-(cd "${BASE_DEST_DIR}" && zip -ur "${COMBINED_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")" "$(basename "${PRODUCTS_DIR}")")
+(cd "${BASE_DEST_DIR}" && zip --temp-path "$(pwd)" -ur "${COMBINED_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")" "$(basename "${PRODUCTS_DIR}")")
 
 chmod  g+rw "${COMBINED_ZIP_FILE}" 2>/dev/null || true
 
