@@ -20,7 +20,7 @@ The scripts expect to be run in roughly this order:
 
 ## Finding Files Used
 
-If you do not have access to UCSC's internal AWS systems, you will probably not be able to access many of the files the scripts use at their given paths. Public archived copies of the data should be available via [UCSC](https://cglgenomics.ucsc.edu/giraffe-data/) and via [Zenodo with preregistered DOI 10.5281/zenodo.4721495](https://doi.org/10.5281/zenodo.4721495).
+If you do not have access to UCSC's internal AWS systems, you will probably not be able to access many of the files the scripts use at their given paths. Public archived copies of the data should be available via [UCSC](https://cglgenomics.ucsc.edu/giraffe-data/) and via [Zenodo with preregistered DOI 10.5281/zenodo.4721495](https://doi.org/10.5281/zenodo.4774364).
 
 ## Replication Considerations
 

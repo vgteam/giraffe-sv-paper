@@ -98,6 +98,26 @@ function bundle_all {
     chmod 644 "${BUNDLE_FILE}"
 }
 
+function web_download() {
+    if [ ! -e "${2}" ] ; then
+        wget "${1}" -O "${2}"
+    fi
+}
+
+function download() {
+    if [ ! -e "${2}" ] ; then
+        aws s3 cp --no-progress "${1}" "${2}"
+    fi
+}
+
+function download_if_exists() {
+    if [ ! -e "${2}" ] ; then
+        aws s3 cp --no-progress "${1}" "${2}" || true
+    fi
+}
+
+PRODUCTS_DIR="${BASE_DEST_DIR}/products"
+
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 ALL_DOCKERS=()
@@ -127,7 +147,7 @@ for FILENAME in $(find "${SCRIPT_DIR}/..") ; do
         # Skip directories
         continue
     fi
-    if [[ "${FILENAME}" == *archive_code_and_containers.sh ]] ; then
+    if [[ "${FILENAME}" == *archive_code_containers_and_products.sh ]] ; then
         # Skip ourselves
         continue
     fi
@@ -215,14 +235,52 @@ cp "${SCRIPT_DIR}/software-readme.md" "${DEST_DIR}/README.md"
 
 rm -Rf "${WORK_DIR}"
 
-# Zip all the software together. Use zip because incremental update of touched
-# files is efficient.
-SOFTWARE_ZIP_FILE="${DEST_DIR}.zip"
-SOFTWARE_ZIP_ABSPATH="$(realpath "${SOFTWARE_ZIP_FILE}")"
-(cd "${BASE_DEST_DIR}" && zip -ur "${SOFTWARE_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")")
+chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
+
+# TODO: add lines here to actually save the product files:
+#web_download https://google-storage.gov/whatever.dat "${PRODUCTS_DIR}/whatever.dat"
+# Also document each in products-readme.md
+
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.full.gbwt "${PRODUCTS_DIR}/HGSVC_hs38d1.full.gbwt"
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.dist "${PRODUCTS_DIR}/HGSVC_hs38d1.dist"
+download s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1.xg "${PRODUCTS_DIR}/HGSVC_hs38d1.xg"
+
+## SV-related files
+SVFILES="vggiraffe-sv-eqtl-geuvadis.FDR01.csv
+vggiraffe-geuvadis-sveqtl-gene-families.csv
+vggiraffe-geuvadis-eqtl-svonly.csv
+vggiraffe-geuvadis-eqtl-snv-indel-svs.csv.gz
+vggiraffe-sv-superpop-af-diff-med10.csv.gz
+vggiraffe-sv-2504kgp-pcgenes.tsv.gz
+vggiraffe-sv-mesa-svsites.vcf.gz
+vggiraffe-sv-mesa-svsites.vcf.gz.tbi
+vggiraffe-sv-2504kgp-svsites.vcf.gz
+vggiraffe-sv-2504kgp-svsites.vcf.gz.tbi
+vggiraffe-sv-2504kgp-svsites.gt.vcf.gz
+vggiraffe-sv-2504kgp-svsites.gt.vcf.gz.tbi
+vggiraffe-sv-2504kgp-raw.vcf.gz
+vggiraffe-sv-2504kgp-raw.vcf.gz.tbi
+vggiraffe-sv-relkgp-raw.vcf.gz
+vggiraffe-sv-relkgp-raw.vcf.gz.tbi"
+for ff in $SVFILES ; do
+    download s3://vg-k8s/users/jmonlong/manu-giraffe-sv/products/$ff "${PRODUCTS_DIR}/${ff}"
+done
+
+
+# Put the README in place
+# Fix the links to the archive data to be relative
+cat "${SCRIPT_DIR}/products-readme.md" | sed 's_https://cgl.gi.ucsc.edu/data/giraffe/__g' > "${PRODUCTS_DIR}/README.md"
+
+# Zip all the software and products together. Use zip because incremental update of touched
+# files is efficient. Do it all at once because Zenodo seems to refuse the second zip otherwise.
+COMBINED_ZIP_FILE="${BASE_DEST_DIR}/archive.zip"
+COMBINED_ZIP_ABSPATH="$(realpath "${COMBINED_ZIP_FILE}")"
+(cd "${BASE_DEST_DIR}" && zip --temp-path "$(pwd)" -ur "${COMBINED_ZIP_ABSPATH}" "$(basename "${DEST_DIR}")" "$(basename "${PRODUCTS_DIR}")")
+
+chmod  g+rw "${COMBINED_ZIP_FILE}" 2>/dev/null || true
 
 if [[ ! -z "${ZENODO_DEPOSITION}" && ! -z "${ZENODO_TOKEN}" ]] ; then
-    export FILEPATH="${SOFTWARE_ZIP_FILE}"
+    export FILEPATH="${COMBINED_ZIP_FILE}"
     python3 -c 'import requests; 
 import os;
 deposition=os.environ["ZENODO_DEPOSITION"]; 
@@ -233,5 +291,3 @@ bucket=requests.get(f"https://www.zenodo.org/api/deposit/depositions/{deposition
 requests.put(f"{bucket}/{filename}", data=open(filepath, "rb"), params=params).raise_for_status();'
 fi
 
-chmod -R g+rw "${DEST_DIR}" 2>/dev/null || true
-chmod  g+rw "${SOFTWARE_ZIP_FILE}" 2>/dev/null || true

@@ -28,8 +28,7 @@ Run each script in turn locally:
 ```
 ./save_construction_inputs.sh
 ./save_mapping_inputs.sh
-./save_products.sh
-./archive_code_and_containers.sh
+./archive_code_containers_and_products.sh
 ```
 
 After running all the scripts, you will want to add the data to IPFS to get a hash to pin and publish, and for integrity chacking (as no integrity checking is done by the scripts). Note that it must be added through a symlink in your IPFS root, like this:
