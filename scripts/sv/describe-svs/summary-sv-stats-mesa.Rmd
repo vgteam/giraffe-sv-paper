@@ -231,7 +231,7 @@ ggp$af = locs %>% as.data.frame %>%
   scale_y_log10() + 
   theme_bw() +
   xlab('allele frequency') +
-  ylab('number of SV loci') +
+  ylab('number of SV sites') +
   theme(legend.position=c(.99, .99), legend.justification=c(1,1)) +
   guides(fill=guide_legend(direction='horizontal'))
 ggp$af
@@ -247,7 +247,7 @@ ggp$af.top = locs %>% filter(loc.n>1) %>%
   theme_bw() +
   scale_y_continuous(breaks=1:10, labels=c(1:9, '10+')) +
   ylab('frequency fold-change between\ntop 2 most frequent alleles') +
-  xlab('number of SVs in locus') +
+  xlab('number of alleles in the SV site') +
   theme(legend.title=element_blank()) + 
   geom_hline(yintercept=3, linetype=2) +
   geom_label(aes(label=n), y=6, data=locs.s.3, size=3)
@@ -279,8 +279,8 @@ ggp$loc.al = locs %>% mutate(loc.n=cut(loc.n, breaks=c(0:5,100,Inf), labels=c(1:
   theme_bw() +
   ylim(0,1) + 
   scale_color_brewer(palette='Set1', name='SV type') + 
-  ylab('cumulative proportion of SV loci') +
-  xlab('number of SVs in locus') +
+  ylab('cumulative proportion of SV sites') +
+  xlab('number of alleles in the SV site') +
   theme(legend.title=element_blank()) + 
   theme(legend.position=c(.99, .01), legend.justification=c(1,0))
 ggp$loc.al
@@ -294,8 +294,8 @@ ggp$loc.cl = locs %>% mutate(loc.n=cut(loc.n, breaks=c(0:5,100,Inf), labels=c(1:
   theme_bw() +
   ylim(0,1) + 
   scale_color_brewer(palette='Set1', name='SV type') + 
-  ylab('proportion of SV loci with\nalleles in clique formation') +
-  xlab('number of SVs in locus') +
+  ylab('proportion of SV sites with\nalleles in clique formation') +
+  xlab('number of alleles in the SV site') +
   theme(legend.title=element_blank()) + 
   theme(legend.position=c(.99, .99), legend.justification=c(1,1))
 ggp$loc.cl
