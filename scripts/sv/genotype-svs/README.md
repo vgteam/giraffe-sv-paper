@@ -13,6 +13,10 @@ Rscript -e "rmarkdown::render('sv-evaluation.Rmd')"
 
 ## Genotype evaluation using trios
 
+The [sv-trio-evaluation.md report](sv-trio-evaluation.md) contains evaluation statistics derived from the trios: Mendelian error, transmission rates of heterozygote variants.
+
+Compile with:
+
 ```
 Rscript -e "rmarkdown::render('sv-trio-evaluation.Rmd')"
 ```

@@ -47,23 +47,7 @@ me = c('1_0_0', '2_0_0', ## false "de novo"
        '0_2_2', '0_2_0', '0_2_1', '0_0_2', '0_1_2') ## no allele when at least one parent was hom
 
 ## minimum GQ thresholds to compute the Mendelian error on
-gq.ths = c(0:2, seq(4, 10, 2), seq(15, 30, 5), 40, 50, 75, seq(100, 300, 50))
-```
-
-## Number of variants for each GQ threshold
-
-The Mendelian error will be computed for different GQ threshold.
-We want to know how many variants each threshold represent.
-
-```{r eval=FALSE}
-gq.max.tot = tibble(svsite=rownames(ac.mat), gq.max=apply(gq.mat, 1, max))
-gq.max.tot = merge(gq.max.tot, svs)
-
-gq.n = lapply(gq.ths, function(gq.th){
-  gq.max.tot %>% group_by(type) %>% summarize(n=sum(gq.max>=gq.th), .groups='drop') %>% mutate(gq.th=gq.th)
-}) %>% bind_rows
-
-write.table(gq.n, file='relkgp-gq-nb-variants.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+gq.ths = c(0:2, seq(4, 10, 2), seq(15, 30, 5), 40, 50, 75, 100)
 ```
 
 ## Analyze variants in each trio
@@ -75,29 +59,57 @@ trios = ped %>% filter(Paternal.ID %in% colnames(ac.mat),
                        Maternal.ID %in% colnames(ac.mat))
 
 ## loop over each trio
-me.df = mclapply(1:nrow(trios), function(ii){
+trio.o = mclapply(1:nrow(trios), function(ii){
   trio1 = trios[ii,]
   ## allele counts for the offspring_father_mother
   ac = ac.mat[,c(trio1$Individual.ID, trio1$Paternal.ID, trio1$Maternal.ID)]
   ac.v = apply(ac, 1, paste, collapse='_')
-  ## maximum genotype quality at each site
+  ## minimum genotype quality at each site
   gq = gq.mat[,c(trio1$Individual.ID, trio1$Paternal.ID, trio1$Maternal.ID)]
-  gq.max = apply(gq, 1, max)
+  gq = apply(gq, 1, function(x) min(x[x!=-1]))
   ## mendelian error stats for different minimum GQ thresholds
   me.all = tibble(sample=trio1$Individual.ID, svsite=rownames(ac),
-                  ac=ac.v, gq.max=gq.max) %>%
-    mutate(error=ac%in%me) %>% merge(svs)
+                  ac=ac.v, gq=gq) %>%
+    mutate(error=ac%in%me, ac.par=gsub('._(._.)', '\\1', ac),
+           ac.os=gsub('(.)_._.', '\\1', ac)) %>% merge(svs)
   me.s = lapply(gq.ths, function(gq.th){
-    me.all %>% filter(gq.max<0 | gq.max>=gq.th) %>%
+    me.all %>% filter(gq>=gq.th) %>%
       group_by(type) %>% mutate(tot=n()) %>% filter(error) %>% 
       group_by(sample, type, ac, tot) %>% summarize(prop=n()/tot[1], .groups='drop') %>%
       arrange(desc(prop)) %>% mutate(gq.th=gq.th)
   }) %>% bind_rows
+  ## transmission of het alleles. 50%
+  tr.s = lapply(gq.ths, function(gq.th){
+    me.all %>% filter(gq>=gq.th) %>% group_by(sample, type) %>% 
+      summarize(nt1=sum(ac=='0_1_0'), p1=sum(ac.par=='1_0'),
+                nt2=sum(ac=='0_0_1'), p2=sum(ac.par=='0_1'),
+                .groups='drop') %>%
+      mutate(gq.th=gq.th)
+  }) %>% bind_rows
+  ## number of variants in offspring for each GQ threshold
+  nb.s = lapply(gq.ths, function(gq.th){
+    me.all %>% filter(gq>=gq.th, ac.os!='0') %>% group_by(sample, type) %>% 
+      summarize(n=n(), .groups='drop') %>%
+      mutate(gq.th=gq.th)
+  }) %>% bind_rows
   ## return results
-  return(me.s)
-}, mc.cores=12) %>% bind_rows
+  return(list(me=me.s, tr=tr.s, nb=nb.s))
+}, mc.cores=12)
 
-write.table(me.df, file='relkgp-mendelian-error.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+me.df = bind_rows(lapply(trio.o, function(e)e$me))
+outf = gzfile('relkgp-mendelian-error.tsv.gz', 'w')
+write.table(me.df, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+
+tr.df = bind_rows(lapply(trio.o, function(e)e$tr))
+outf = gzfile('relkgp-transmission-rate.tsv.gz', 'w')
+write.table(tr.df, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+
+gq.n = bind_rows(lapply(trio.o, function(e)e$nb))
+outf = gzfile('relkgp-gq-nb-variants.tsv.gz', 'w')
+write.table(gq.n, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
 ```
 
 ## Load pre-computed results
@@ -107,7 +119,8 @@ We then load the results:
 
 ```{r}
 me.df = read.table('relkgp-mendelian-error.tsv.gz', as.is=TRUE, header=TRUE)
-gq.n = read.table('relkgp-gq-nb-variants.tsv', as.is=TRUE, header=TRUE)
+tr.df = read.table('relkgp-transmission-rate.tsv.gz', as.is=TRUE, header=TRUE)
+gq.n = read.table('relkgp-gq-nb-variants.tsv.gz', as.is=TRUE, header=TRUE)
 ```
 
 ## Mendelian error for each genotype quality threshold
@@ -118,10 +131,10 @@ ggp$me = me.df %>% group_by(sample, type, gq.th) %>% summarize(prop=sum(prop)) %
                                       prop.l=max(prop)) %>% 
   ggplot(aes(x=factor(gq.th), y=prop.m, colour=type)) +
   theme_bw() +
-  geom_pointrange(aes(ymin=prop.l, ymax=prop.u), position=position_dodge(1)) + 
-  geom_point(position=position_dodge(1), alpha=.8) +
+  geom_linerange(aes(ymin=prop.l, ymax=prop.u), size=1, position=position_dodge(1)) + 
+  geom_point(position=position_dodge(1), size=2) +
   scale_colour_brewer(palette="Set1") + 
-  ylab('Mendelian error') + xlab('minimum genotype quality') +
+  ylab('Mendelian error') + xlab('Minimum genotype quality') +
   theme(legend.position=c(.99, .99), legend.justification=c(1,1),
         legend.title=element_blank())
 ggp$me
@@ -151,30 +164,56 @@ These are likely not real *de novo* variants because we are genotyping known var
 It's not that surprising that rare false positives would be enriched in this configuration.
 Of note, a false negative in the parents could also create this error.
 
+## Transmission rate
+
+```{r tr.gq}
+ggp$tr = tr.df %>% group_by(sample, type, gq.th) %>% summarize(prop=1-sum(nt1+nt2)/sum(p1+p2)) %>%
+  group_by(type, gq.th) %>% summarize(prop.m=median(prop), prop.u=min(prop),
+                                      prop.l=max(prop)) %>% 
+  ggplot(aes(x=factor(gq.th), y=prop.m, colour=type)) +
+  theme_bw() +
+  geom_hline(yintercept=.5, linetype=2) +
+  geom_linerange(aes(ymin=prop.l, ymax=prop.u), size=1, position=position_dodge(1)) + 
+  geom_point(position=position_dodge(1), size=2) +
+  scale_colour_brewer(palette="Set1") +
+  ylim(0,1) + 
+  ylab('Transmission rate') + xlab('Minimum genotype quality') +
+  theme(legend.position=c(.99, .99), legend.justification=c(1,1),
+        legend.title=element_blank())
+ggp$tr
+
+tr.df %>% group_by(sample, type, gq.th) %>% summarize(prop=1-sum(nt1+nt2)/sum(p1+p2)) %>%
+  group_by(type, gq.th) %>% summarize(prop=median(prop)) %>% 
+  pivot_wider(names_from=type, values_from=prop) %>% 
+  kable
+```
+
 ## Total number of variants for each GQ threshold
 
-```{r}
-ggp$sv.gq = gq.n %>% group_by(type) %>% mutate(prop=n/n[gq.th==0]) %>%
+```{r sv.gq}
+ggp$sv.gq = gq.n %>% group_by(type, sample) %>% mutate(prop=n/n[gq.th==0]) %>%
+  group_by(type, gq.th) %>% summarize(prop=mean(prop)) %>% 
   ggplot(aes(factor(gq.th), y=prop, colour=type)) +
-  geom_line(aes(group=type)) +
+  geom_line(aes(group=type), size=1) +
   geom_point(size=2, alpha=.8) +
   theme_bw() +
   scale_colour_brewer(palette="Set1") + 
-  ylab('proportion of SVs') + xlab('minimum genotype quality') +
-  scale_y_continuous(breaks=seq(0,1,.1)) + 
+  ylab('Proportion of SVs') + xlab('Minimum genotype quality') +
+  scale_y_continuous(breaks=seq(0,1,.2)) + 
   theme(legend.position=c(.99, .99), legend.justification=c(1,1),
         legend.title=element_blank())
 ggp$sv.gq
 
-gq.n %>% group_by(type) %>% mutate(prop=n/n[gq.th==0]) %>%
+gq.n %>% group_by(type, sample) %>% mutate(prop=n/n[gq.th==0]) %>%
+  group_by(type, gq.th) %>% summarize(prop=mean(prop)) %>%
   arrange(type, gq.th) %>%
-  pivot_wider(names_from=type, values_from=c(n,prop)) %>% 
+  pivot_wider(names_from=type, values_from=c(prop)) %>% 
   kable
 ```
 
 ## Figures
 
-```{r fig}
+```{r fig, fig.height=10}
 ## adds a legend title: a), b), etc
 plot_list <- function(ggp.l, gg.names=NULL){
   if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
@@ -182,9 +221,11 @@ plot_list <- function(ggp.l, gg.names=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
+ggp$tr = ggp$tr + guides(color=FALSE)
+ggp$sv.gq = ggp$sv.gq + guides(color=FALSE)
 grid.arrange(grobs=plot_list(ggp))
 
-pdf('fig-sv-trio-eval.pdf', 7, 6)
+pdf('fig-sv-trio-eval.pdf', 7, 7)
 grid.arrange(grobs=plot_list(ggp))
 dev.off()
 ```

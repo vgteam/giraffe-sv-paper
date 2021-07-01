@@ -41,23 +41,7 @@ me = c('1_0_0', '2_0_0', ## false "de novo"
        '0_2_2', '0_2_0', '0_2_1', '0_0_2', '0_1_2') ## no allele when at least one parent was hom
 
 ## minimum GQ thresholds to compute the Mendelian error on
-gq.ths = c(0:2, seq(4, 10, 2), seq(15, 30, 5), 40, 50, 75, seq(100, 300, 50))
-```
-
-## Number of variants for each GQ threshold
-
-The Mendelian error will be computed for different GQ threshold. We want
-to know how many variants each threshold represent.
-
-``` r
-gq.max.tot = tibble(svsite=rownames(ac.mat), gq.max=apply(gq.mat, 1, max))
-gq.max.tot = merge(gq.max.tot, svs)
-
-gq.n = lapply(gq.ths, function(gq.th){
-  gq.max.tot %>% group_by(type) %>% summarize(n=sum(gq.max>=gq.th), .groups='drop') %>% mutate(gq.th=gq.th)
-}) %>% bind_rows
-
-write.table(gq.n, file='relkgp-gq-nb-variants.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+gq.ths = c(0:2, seq(4, 10, 2), seq(15, 30, 5), 40, 50, 75, 100)
 ```
 
 ## Analyze variants in each trio
@@ -69,29 +53,57 @@ trios = ped %>% filter(Paternal.ID %in% colnames(ac.mat),
                        Maternal.ID %in% colnames(ac.mat))
 
 ## loop over each trio
-me.df = mclapply(1:nrow(trios), function(ii){
+trio.o = mclapply(1:nrow(trios), function(ii){
   trio1 = trios[ii,]
   ## allele counts for the offspring_father_mother
   ac = ac.mat[,c(trio1$Individual.ID, trio1$Paternal.ID, trio1$Maternal.ID)]
   ac.v = apply(ac, 1, paste, collapse='_')
-  ## maximum genotype quality at each site
+  ## minimum genotype quality at each site
   gq = gq.mat[,c(trio1$Individual.ID, trio1$Paternal.ID, trio1$Maternal.ID)]
-  gq.max = apply(gq, 1, max)
+  gq = apply(gq, 1, function(x) min(x[x!=-1]))
   ## mendelian error stats for different minimum GQ thresholds
   me.all = tibble(sample=trio1$Individual.ID, svsite=rownames(ac),
-                  ac=ac.v, gq.max=gq.max) %>%
-    mutate(error=ac%in%me) %>% merge(svs)
+                  ac=ac.v, gq=gq) %>%
+    mutate(error=ac%in%me, ac.par=gsub('._(._.)', '\\1', ac),
+           ac.os=gsub('(.)_._.', '\\1', ac)) %>% merge(svs)
   me.s = lapply(gq.ths, function(gq.th){
-    me.all %>% filter(gq.max<0 | gq.max>=gq.th) %>%
+    me.all %>% filter(gq>=gq.th) %>%
       group_by(type) %>% mutate(tot=n()) %>% filter(error) %>% 
       group_by(sample, type, ac, tot) %>% summarize(prop=n()/tot[1], .groups='drop') %>%
       arrange(desc(prop)) %>% mutate(gq.th=gq.th)
   }) %>% bind_rows
+  ## transmission of het alleles. 50%
+  tr.s = lapply(gq.ths, function(gq.th){
+    me.all %>% filter(gq>=gq.th) %>% group_by(sample, type) %>% 
+      summarize(nt1=sum(ac=='0_1_0'), p1=sum(ac.par=='1_0'),
+                nt2=sum(ac=='0_0_1'), p2=sum(ac.par=='0_1'),
+                .groups='drop') %>%
+      mutate(gq.th=gq.th)
+  }) %>% bind_rows
+  ## number of variants in offspring for each GQ threshold
+  nb.s = lapply(gq.ths, function(gq.th){
+    me.all %>% filter(gq>=gq.th, ac.os!='0') %>% group_by(sample, type) %>% 
+      summarize(n=n(), .groups='drop') %>%
+      mutate(gq.th=gq.th)
+  }) %>% bind_rows
   ## return results
-  return(me.s)
-}, mc.cores=12) %>% bind_rows
+  return(list(me=me.s, tr=tr.s, nb=nb.s))
+}, mc.cores=12)
 
-write.table(me.df, file='relkgp-mendelian-error.tsv', sep='\t', quote=FALSE, row.names=FALSE)
+me.df = bind_rows(lapply(trio.o, function(e)e$me))
+outf = gzfile('relkgp-mendelian-error.tsv.gz', 'w')
+write.table(me.df, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+
+tr.df = bind_rows(lapply(trio.o, function(e)e$tr))
+outf = gzfile('relkgp-transmission-rate.tsv.gz', 'w')
+write.table(tr.df, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
+
+gq.n = bind_rows(lapply(trio.o, function(e)e$nb))
+outf = gzfile('relkgp-gq-nb-variants.tsv.gz', 'w')
+write.table(gq.n, file=outf, sep='\t', quote=FALSE, row.names=FALSE)
+close(outf)
 ```
 
 ## Load pre-computed results
@@ -101,7 +113,8 @@ load the results:
 
 ``` r
 me.df = read.table('relkgp-mendelian-error.tsv.gz', as.is=TRUE, header=TRUE)
-gq.n = read.table('relkgp-gq-nb-variants.tsv', as.is=TRUE, header=TRUE)
+tr.df = read.table('relkgp-transmission-rate.tsv.gz', as.is=TRUE, header=TRUE)
+gq.n = read.table('relkgp-gq-nb-variants.tsv.gz', as.is=TRUE, header=TRUE)
 ```
 
 ## Mendelian error for each genotype quality threshold
@@ -112,10 +125,10 @@ ggp$me = me.df %>% group_by(sample, type, gq.th) %>% summarize(prop=sum(prop)) %
                                       prop.l=max(prop)) %>% 
   ggplot(aes(x=factor(gq.th), y=prop.m, colour=type)) +
   theme_bw() +
-  geom_pointrange(aes(ymin=prop.l, ymax=prop.u), position=position_dodge(1)) + 
-  geom_point(position=position_dodge(1), alpha=.8) +
+  geom_linerange(aes(ymin=prop.l, ymax=prop.u), size=1, position=position_dodge(1)) + 
+  geom_point(position=position_dodge(1), size=2) +
   scale_colour_brewer(palette="Set1") + 
-  ylab('Mendelian error') + xlab('minimum genotype quality') +
+  ylab('Mendelian error') + xlab('Minimum genotype quality') +
   theme(legend.position=c(.99, .99), legend.justification=c(1,1),
         legend.title=element_blank())
 ggp$me
@@ -133,23 +146,20 @@ me.df %>% group_by(sample, gq.th, type) %>% summarize(prop=sum(prop)) %>%
 | gq.th |       DEL |       INS |
 | ----: | --------: | --------: |
 |     0 | 0.0523099 | 0.0474160 |
-|     1 | 0.0257107 | 0.0300483 |
-|     2 | 0.0243828 | 0.0284474 |
-|     4 | 0.0211534 | 0.0235920 |
-|     6 | 0.0195146 | 0.0214538 |
-|     8 | 0.0178872 | 0.0193847 |
-|    10 | 0.0164086 | 0.0178791 |
-|    15 | 0.0136586 | 0.0151009 |
-|    20 | 0.0110237 | 0.0120355 |
-|    25 | 0.0078604 | 0.0080290 |
-|    30 | 0.0060612 | 0.0062629 |
-|    40 | 0.0046188 | 0.0048885 |
-|    50 | 0.0031845 | 0.0033450 |
-|    75 | 0.0014254 | 0.0014965 |
-|   100 | 0.0007927 | 0.0008761 |
-|   150 | 0.0003241 | 0.0003705 |
-|   200 | 0.0001674 | 0.0001874 |
-|   250 | 0.0000900 | 0.0000977 |
+|     1 | 0.0224063 | 0.0269124 |
+|     2 | 0.0211356 | 0.0249870 |
+|     4 | 0.0178175 | 0.0188407 |
+|     6 | 0.0163653 | 0.0166184 |
+|     8 | 0.0148200 | 0.0142871 |
+|    10 | 0.0135030 | 0.0126983 |
+|    15 | 0.0110712 | 0.0099283 |
+|    20 | 0.0088318 | 0.0074040 |
+|    25 | 0.0063127 | 0.0046903 |
+|    30 | 0.0048362 | 0.0035137 |
+|    40 | 0.0035991 | 0.0025780 |
+|    50 | 0.0024315 | 0.0017434 |
+|    75 | 0.0010262 | 0.0008191 |
+|   100 | 0.0005026 | 0.0004692 |
 
 Range spanned by all samples. Point: median Mendelian error across
 samples.
@@ -181,52 +191,96 @@ them in those samples. It’s not that surprising that rare false
 positives would be enriched in this configuration. Of note, a false
 negative in the parents could also create this error.
 
+## Transmission rate
+
+``` r
+ggp$tr = tr.df %>% group_by(sample, type, gq.th) %>% summarize(prop=1-sum(nt1+nt2)/sum(p1+p2)) %>%
+  group_by(type, gq.th) %>% summarize(prop.m=median(prop), prop.u=min(prop),
+                                      prop.l=max(prop)) %>% 
+  ggplot(aes(x=factor(gq.th), y=prop.m, colour=type)) +
+  theme_bw() +
+  geom_hline(yintercept=.5, linetype=2) +
+  geom_linerange(aes(ymin=prop.l, ymax=prop.u), size=1, position=position_dodge(1)) + 
+  geom_point(position=position_dodge(1), size=2) +
+  scale_colour_brewer(palette="Set1") +
+  ylim(0,1) + 
+  ylab('Transmission rate') + xlab('Minimum genotype quality') +
+  theme(legend.position=c(.99, .99), legend.justification=c(1,1),
+        legend.title=element_blank())
+ggp$tr
+```
+
+![](sv-trio-evaluation_files/figure-gfm/tr.gq-1.png)<!-- -->
+
+``` r
+tr.df %>% group_by(sample, type, gq.th) %>% summarize(prop=1-sum(nt1+nt2)/sum(p1+p2)) %>%
+  group_by(type, gq.th) %>% summarize(prop=median(prop)) %>% 
+  pivot_wider(names_from=type, values_from=prop) %>% 
+  kable
+```
+
+| gq.th |       DEL |       INS |
+| ----: | --------: | --------: |
+|     0 | 0.3973296 | 0.4348114 |
+|     1 | 0.4185781 | 0.4574167 |
+|     2 | 0.4203377 | 0.4592304 |
+|     4 | 0.4228796 | 0.4632646 |
+|     6 | 0.4260492 | 0.4666815 |
+|     8 | 0.4276523 | 0.4673955 |
+|    10 | 0.4289237 | 0.4674510 |
+|    15 | 0.4304986 | 0.4666898 |
+|    20 | 0.4349393 | 0.4701311 |
+|    25 | 0.4466917 | 0.4858340 |
+|    30 | 0.4574950 | 0.4938066 |
+|    40 | 0.4612941 | 0.4932924 |
+|    50 | 0.4661905 | 0.4950998 |
+|    75 | 0.4716520 | 0.4944120 |
+|   100 | 0.4667694 | 0.4861361 |
+
 ## Total number of variants for each GQ threshold
 
 ``` r
-ggp$sv.gq = gq.n %>% group_by(type) %>% mutate(prop=n/n[gq.th==0]) %>%
+ggp$sv.gq = gq.n %>% group_by(type, sample) %>% mutate(prop=n/n[gq.th==0]) %>%
+  group_by(type, gq.th) %>% summarize(prop=mean(prop)) %>% 
   ggplot(aes(factor(gq.th), y=prop, colour=type)) +
-  geom_line(aes(group=type)) +
+  geom_line(aes(group=type), size=1) +
   geom_point(size=2, alpha=.8) +
   theme_bw() +
   scale_colour_brewer(palette="Set1") + 
-  ylab('proportion of SVs') + xlab('minimum genotype quality') +
-  scale_y_continuous(breaks=seq(0,1,.1)) + 
+  ylab('Proportion of SVs') + xlab('Minimum genotype quality') +
+  scale_y_continuous(breaks=seq(0,1,.2)) + 
   theme(legend.position=c(.99, .99), legend.justification=c(1,1),
         legend.title=element_blank())
 ggp$sv.gq
 ```
 
-![](sv-trio-evaluation_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](sv-trio-evaluation_files/figure-gfm/sv.gq-1.png)<!-- -->
 
 ``` r
-gq.n %>% group_by(type) %>% mutate(prop=n/n[gq.th==0]) %>%
+gq.n %>% group_by(type, sample) %>% mutate(prop=n/n[gq.th==0]) %>%
+  group_by(type, gq.th) %>% summarize(prop=mean(prop)) %>%
   arrange(type, gq.th) %>%
-  pivot_wider(names_from=type, values_from=c(n,prop)) %>% 
+  pivot_wider(names_from=type, values_from=c(prop)) %>% 
   kable
 ```
 
-| gq.th | n\_DEL | n\_INS | prop\_DEL | prop\_INS |
-| ----: | -----: | -----: | --------: | --------: |
-|     0 |  87293 | 101989 | 1.0000000 | 1.0000000 |
-|     1 |  69843 |  77917 | 0.8000985 | 0.7639745 |
-|     2 |  69075 |  76846 | 0.7913006 | 0.7534734 |
-|     4 |  67349 |  74497 | 0.7715281 | 0.7304415 |
-|     6 |  65832 |  72698 | 0.7541498 | 0.7128024 |
-|     8 |  64562 |  71448 | 0.7396011 | 0.7005461 |
-|    10 |  63765 |  70577 | 0.7304709 | 0.6920060 |
-|    15 |  62082 |  68710 | 0.7111910 | 0.6737001 |
-|    20 |  59283 |  65216 | 0.6791266 | 0.6394415 |
-|    25 |  52955 |  56926 | 0.6066351 | 0.5581582 |
-|    30 |  45721 |  49791 | 0.5237648 | 0.4881997 |
-|    40 |  41768 |  47238 | 0.4784805 | 0.4631676 |
-|    50 |  37895 |  43777 | 0.4341127 | 0.4292326 |
-|    75 |  30030 |  36211 | 0.3440138 | 0.3550481 |
-|   100 |  25568 |  31851 | 0.2928986 | 0.3122984 |
-|   150 |  19931 |  24551 | 0.2283230 | 0.2407220 |
-|   200 |  16565 |  20246 | 0.1897632 | 0.1985116 |
-|   250 |  13964 |  16874 | 0.1599670 | 0.1654492 |
-|   300 |      0 |      0 | 0.0000000 | 0.0000000 |
+| gq.th |       DEL |       INS |
+| ----: | --------: | --------: |
+|     0 | 1.0000000 | 1.0000000 |
+|     1 | 0.6911222 | 0.7472080 |
+|     2 | 0.6671537 | 0.7190536 |
+|     4 | 0.6111523 | 0.6362052 |
+|     6 | 0.5849228 | 0.6035542 |
+|     8 | 0.5563813 | 0.5638378 |
+|    10 | 0.5289474 | 0.5286740 |
+|    15 | 0.4751996 | 0.4570475 |
+|    20 | 0.4194023 | 0.3880225 |
+|    25 | 0.3640906 | 0.3303878 |
+|    30 | 0.3274556 | 0.2972566 |
+|    40 | 0.2770445 | 0.2492014 |
+|    50 | 0.2137829 | 0.1960758 |
+|    75 | 0.1182280 | 0.1184594 |
+|   100 | 0.0834867 | 0.0866172 |
 
 ## Figures
 
@@ -238,13 +292,15 @@ plot_list <- function(ggp.l, gg.names=NULL){
   lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
 }
 
+ggp$tr = ggp$tr + guides(color=FALSE)
+ggp$sv.gq = ggp$sv.gq + guides(color=FALSE)
 grid.arrange(grobs=plot_list(ggp))
 ```
 
 ![](sv-trio-evaluation_files/figure-gfm/fig-1.png)<!-- -->
 
 ``` r
-pdf('fig-sv-trio-eval.pdf', 7, 6)
+pdf('fig-sv-trio-eval.pdf', 7, 7)
 grid.arrange(grobs=plot_list(ggp))
 dev.off()
 ```
