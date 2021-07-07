@@ -172,17 +172,21 @@ contributes the most to the Mendelian error?
 ``` r
 me.df %>% filter(gq.th==0) %>% 
   group_by(ac, type) %>% summarize(prop=mean(prop)) %>%
-  arrange(desc(prop)) %>% head %>% kable
+  arrange(desc(prop)) %>% group_by(type) %>% do(head(.,5)) %>% kable
 ```
 
 | ac      | type |      prop |
 | :------ | :--- | --------: |
 | 1\_0\_0 | DEL  | 0.0255409 |
-| 1\_0\_0 | INS  | 0.0224647 |
 | 0\_2\_0 | DEL  | 0.0052011 |
 | 0\_0\_2 | DEL  | 0.0049499 |
-| 1\_2\_2 | INS  | 0.0045391 |
 | 2\_0\_0 | DEL  | 0.0042598 |
+| 1\_2\_2 | DEL  | 0.0021315 |
+| 1\_0\_0 | INS  | 0.0224647 |
+| 1\_2\_2 | INS  | 0.0045391 |
+| 0\_2\_0 | INS  | 0.0037815 |
+| 0\_0\_2 | INS  | 0.0036952 |
+| 2\_0\_0 | INS  | 0.0030867 |
 
 The most common error is `1_0_0` which means heterozygous in the
 offspring but absent from the parents. These are likely not real *de
