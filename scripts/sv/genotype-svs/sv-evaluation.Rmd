@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10)
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(gridExtra)
+library(ggpubr)
 library(knitr)
 library(sveval)
 library(RColorBrewer)
@@ -70,6 +72,56 @@ ggp$map = pr.df %>%
   theme_bw() + 
   guides(fill=guide_legend(keyheight=1))
 ggp$map
+
+ggp$map.prec = pr.df %>%
+  mutate(exp=paste(method, exp, sample),
+         exp=factor(exp,
+                    levels=c('hgsvc_graph_map hgsvc HG00514',
+                             'hgsvc_graph hgsvc HG00514',
+                             'giab_graph_map giab6_hg37 HG002',
+                                    'giab_graph giab6_hg37 HG002'),
+                    labels=c('HGSVC graph - vg map',
+                             'HGSVC graph - vg giraffe',
+                             'GIAB graph - vg map',
+                             'GIAB graph - vg giraffe')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=precision, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='SV graph - mapper') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$map.prec
+
+ggp$map.rec = pr.df %>%
+  mutate(exp=paste(method, exp, sample),
+         exp=factor(exp,
+                    levels=c('hgsvc_graph_map hgsvc HG00514',
+                             'hgsvc_graph hgsvc HG00514',
+                             'giab_graph_map giab6_hg37 HG002',
+                                    'giab_graph giab6_hg37 HG002'),
+                    labels=c('HGSVC graph - vg map',
+                             'HGSVC graph - vg giraffe',
+                             'GIAB graph - vg map',
+                             'GIAB graph - vg giraffe')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=recall, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='SV graph - mapper') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$map.rec
 ```
 
 ## Individual graph vs combined graph
@@ -103,6 +155,62 @@ ggp$graphs = pr.df %>%
   scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
   guides(fill=guide_legend(keyheight=2))
 ggp$graphs
+
+ggp$graphs.prec = pr.df %>%
+  mutate(exp=paste(method, exp),
+         exp=factor(exp,
+                    levels=c('hgsvc_graph hgsvc',
+                             'hsvlr_graph hgsvc',
+                             'giab_graph giab6_hg37',
+                             'hsvlr_graph giab6_hg38'),
+                    labels=c('graph: HGSVC\ntruthset: HGSVC',
+                             'graph: HGSVC+SVPOP+GIAB\ntruthset: HGSVC',
+                             'graph: GIAB\ntruthset: GIAB',
+                             'graph: HGSVC+SVPOP+GIAB\ntruthset GIAB')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  group_by(exp, type, qual, method, region, eval) %>%
+  select(TP, TP.baseline, FN, FP) %>% summarize_all(sum) %>%
+  prf %>% 
+  ggplot(aes(x=region, y=precision, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='SV graph / truthset') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  theme_bw() + 
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  guides(fill=guide_legend(keyheight=2))
+ggp$graphs.prec
+
+ggp$graphs.rec = pr.df %>%
+  mutate(exp=paste(method, exp),
+         exp=factor(exp,
+                    levels=c('hgsvc_graph hgsvc',
+                             'hsvlr_graph hgsvc',
+                             'giab_graph giab6_hg37',
+                             'hsvlr_graph giab6_hg38'),
+                    labels=c('graph: HGSVC\ntruthset: HGSVC',
+                             'graph: HGSVC+SVPOP+GIAB\ntruthset: HGSVC',
+                             'graph: GIAB\ntruthset: GIAB',
+                             'graph: HGSVC+SVPOP+GIAB\ntruthset GIAB')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  group_by(exp, type, qual, method, region, eval) %>%
+  select(TP, TP.baseline, FN, FP) %>% summarize_all(sum) %>%
+  prf %>% 
+  ggplot(aes(x=region, y=recall, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='SV graph / truthset') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  theme_bw() + 
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  guides(fill=guide_legend(keyheight=2))
+ggp$graphs.rec
 ```
 
 ## 20x vs 40x 
@@ -129,6 +237,48 @@ ggp$depth = pr.df %>%
   theme_bw() + 
   guides(fill=guide_legend(keyheight=1))
 ggp$depth
+
+ggp$depth.prec = pr.df %>%
+  mutate(exp=paste(method, exp, sample),
+         exp=factor(exp,
+                    levels=c('hsvlr_graph hgsvc HG00514',
+                             'hsvlr_graph_40x hgsvc HG00514_40x'),
+                    labels=c('20x',
+                             '40x')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=precision, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='depth') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$depth.prec
+
+ggp$depth.rec = pr.df %>%
+  mutate(exp=paste(method, exp, sample),
+         exp=factor(exp,
+                    levels=c('hsvlr_graph hgsvc HG00514',
+                             'hsvlr_graph_40x hgsvc HG00514_40x'),
+                    labels=c('20x',
+                             '40x')),
+         type=factor(type, levels=c('Total', 'INS', 'DEL', 'INV')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=recall, fill=exp, alpha=eval, group=exp)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(.~type, scales='free', space='free') +
+  scale_fill_brewer(palette='Paired', name='depth') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.1), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$depth.rec
 ```
 
 ## Comparison with GraphTyper
@@ -179,13 +329,95 @@ ggp$graphtyper = qual.bestf1.vggt %>%
   theme_bw() + 
   guides(fill=guide_legend(keyheight=1))
 ggp$graphtyper
+
+ggp$graphtyper.prec = qual.bestf1.vggt %>%
+  mutate(exp=factor(exp,
+                    levels=c('hgsvc', 'hgsvcsim', 'giab5'),
+                    labels=c('HGSVC graph', 'HGSVC graph\n(simulated reads)', 'GIAB graph')),
+         method=factor(method, levels=c('vg', 'graphtyper_nodup', 'graphtyper'),
+                       labels=c('vg', 'GraphTyper', 'GraphTyper (all calls)')),
+         type=factor(type, levels=c('INS', 'DEL')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=precision, fill=method, alpha=eval, group=method)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(type~exp, scales='free', space='free') +
+  scale_fill_manual(values=gt.pal, name='method') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$graphtyper.prec
+
+ggp$graphtyper.rec = qual.bestf1.vggt %>%
+  mutate(exp=factor(exp,
+                    levels=c('hgsvc', 'hgsvcsim', 'giab5'),
+                    labels=c('HGSVC graph', 'HGSVC graph\n(simulated reads)', 'GIAB graph')),
+         method=factor(method, levels=c('vg', 'graphtyper_nodup', 'graphtyper'),
+                       labels=c('vg', 'GraphTyper', 'GraphTyper (all calls)')),
+         type=factor(type, levels=c('INS', 'DEL')),
+         region=factor(region, levels=c('all','highconf'), labels=c('all', 'high-confidence')),
+         eval=factor(eval, levels=c('call','geno'), labels=c('presence', 'genotype'))) %>%
+  filter(!is.na(exp)) %>% 
+  ggplot(aes(x=region, y=recall, fill=method, alpha=eval, group=method)) +
+  geom_bar(stat='identity', position=position_dodge(), color='black') +
+  facet_grid(type~exp, scales='free', space='free') +
+  scale_fill_manual(values=gt.pal, name='method') +
+  scale_alpha_manual(name='SV evaluation', values=c(.5,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits=0:1) + 
+  theme_bw() + 
+  guides(fill=guide_legend(keyheight=1))
+ggp$graphtyper.rec
 ```
 
 ## Figures
 
 ```{r fig}
-pdf('fig-sveval.pdf', 7, 4)
-ggp
+## adds a legend title: a), b), etc
+plot_list <- function(ggp.l, gg.names=NULL){
+  if(is.null(names(ggp.l))) names(ggp.l) = paste0('g', 1:length(ggp.l))
+  if(is.null(gg.names)) gg.names = names(ggp.l)
+  lapply(1:length(gg.names), function(ii) ggp.l[[gg.names[ii]]] + ggtitle(paste0('(', LETTERS[ii], ')')))
+}
+
+## depth comparison
+ggp$depth = ggp$depth + guides(fill='legend', alpha='legend')
+ggp$depth.prec = ggp$depth.prec + guides(fill=FALSE, alpha=FALSE)
+ggp$depth.rec = ggp$depth.rec + guides(fill=FALSE, alpha=FALSE)
+grid.arrange(grobs=plot_list(ggp, c('depth', 'depth.prec', 'depth.rec')),
+             layout_matrix=matrix(c(1,1,2,3), nrow=2, byrow=TRUE),
+             heights=c(10,11))
+
+## graphtyper
+ggp$graphtyper = ggp$graphtyper + guides(fill='legend', alpha='legend')
+ggp$graphtyper.prec = ggp$graphtyper.prec + guides(fill=FALSE, alpha=FALSE)
+ggp$graphtyper.rec = ggp$graphtyper.rec + guides(fill=FALSE, alpha=FALSE)
+grid.arrange(grobs=plot_list(ggp, c('graphtyper', 'graphtyper.prec', 'graphtyper.rec')),
+             layout_matrix=matrix(c(1,1,2,3), nrow=2, byrow=TRUE),
+             heights=c(10,11))
+
+pdf('fig-sveval.pdf', 10, 8)
+grid.arrange(grobs=plot_list(ggp, c('depth', 'depth.prec', 'depth.rec')),
+             layout_matrix=matrix(c(1,1,2,3), nrow=2, byrow=TRUE),
+             heights=c(10,11))
+grid.arrange(grobs=plot_list(ggp, c('graphtyper', 'graphtyper.prec', 'graphtyper.rec')),
+             layout_matrix=matrix(c(1,1,2,3), nrow=2, byrow=TRUE),
+             heights=c(10,11))
+dev.off()
+
+lg = as_ggplot(get_legend(ggp$graphs))
+lg2 = as_ggplot(get_legend(ggp$map))
+
+pdf('fig-sveval-ind.pdf', 6,4)
+lg
+ggp$graphs + guides(fill=FALSE, alpha=FALSE)
+ggp$graphs.prec + guides(fill=FALSE, alpha=FALSE)
+ggp$graphs.rec + guides(fill=FALSE, alpha=FALSE)
+lg2
+ggp$map + guides(fill=FALSE, alpha=FALSE)
+ggp$map.prec + guides(fill=FALSE, alpha=FALSE)
+ggp$map.rec + guides(fill=FALSE, alpha=FALSE)
 dev.off()
 ```
 
