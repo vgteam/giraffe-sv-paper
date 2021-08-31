@@ -266,6 +266,13 @@ for ff in $SVFILES ; do
     download s3://vg-k8s/users/jmonlong/manu-giraffe-sv/products/$ff "${PRODUCTS_DIR}/${ff}"
 done
 
+## DeepVariant-related files
+DEEPVARFILES="model.ckpt-25600.index
+model.ckpt-25600.meta
+model.ckpt-25600.data-00000-of-00001"
+for dvf in $DEEPVARFILES ; do
+    web_download https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/deepvariant_models/$dvf "${PRODUCTS_DIR}/${dvf}"
+done
 
 # Put the README in place
 # Fix the links to the archive data to be relative
