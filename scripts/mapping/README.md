@@ -12,6 +12,8 @@ The yeast graph experiment script expect to read files from the mount point `/pu
 
 The folder [hisat2/](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/mapping/hisat2) contains scripts for creating indexes, mapping reads and evaluating alignments for HISAT2. 
 
+The folder [real_read_experiments/](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/mapping/real_read_experiments) contains scripts for running linear and graph mappers against HG002 and HG003 real readsets.
+
 ## Running the scripts
 
 All the Kubernetes scripts can be run at the same time:
