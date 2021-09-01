@@ -14,7 +14,7 @@ The archive is laid out as follows:
 * `mapping`: Files related to [mapping experiments with Giraffe and other mappers](#read-mapping)
     * `reads`: Reads for mapping
         * `real`: Real reads for mapping or training the read simulator
-            * `NA19239` and `NA19240`: Real reads from those human samples
+            * `NA19239`, `NA19240`, `HG002` and `HG003`: Real reads from those human samples
             * `yeast`: Real reads from yeast for the yeast experiments
         * `sim`: Simulated reads for mapping accuracy analysis
             * `for-NA19239` and `for-NA19230`: Reads simulated to match each sample's haplotypes
@@ -69,6 +69,12 @@ The available graphs are as follows:
 * [The yeast graph used as a mapping target](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/generic/cactus/yeast_subset/), in the files named "`yeast_subset.*`".
 * [The graph used to simulate yeast reads](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/generic/cactus/yeast_all/), in the files named "`yeast_all.*`".
 * [The linear yeast *Saccharomyces cerevisiae* S288c reference graph (a negative control for the yeast graph)](https://cgl.gi.ucsc.edu/data/giraffe/mapping/graphs/generic/primary/S288C/), in the files named "`primaryS288C.*`".
+
+For experiments that rely on surjecting GAM files into BAM files during graph alignment, the following sequence dictionaries are provided:
+* [No Seg Dupes Reference FASTA Sequence Dictionary](https://cgl.gi.ucsc.edu/data/giraffe/mapping/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.no_segdup.dict)
+   * Used for alignments to graph files named "`1000GPlons_hs38d1_filter.*`" or "`1000GPlons_hs38d1.*`". 
+* [Full Reference FASTA Sequence Dictionary](https://cgl.gi.ucsc.edu/data/giraffe/mapping/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.dict)
+   * Used for alignments to linear graph files named "`primaryhs38d1.*`".
 
 Additionally, the simulated reads used in the mapping experiments are available. These reads are available in vg’s Graph Alignment/Map (GAM) format, annotated with their true positions along named paths, and can be converted to interleaved FASTQ with the command `vg view -aiX file.gam`, or to JSON with the command `vg view -aj file.gam`. All files contain interleaved, paired reads.
 * For the 1000GPlons graph, reads simulated to resemble sample NA19239 as sequenced by different Illumina sequencing technologies are available:

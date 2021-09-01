@@ -26,4 +26,7 @@ This archive contains reusable work products for the manuscript *Pangenomics ena
 
 More details are provided about the information in each of these files in [`https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/eqtl/files-README.md`](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/eqtl/files-README.md) and [`https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/describe-svs/files-README.md`](https://github.com/vgteam/giraffe-sv-paper/tree/master/scripts/sv/describe-svs/files-README.md).
 
+## DeepVariant products
+
+* `model.ckpt-25600*`: DeepVariant model files used for trained deepvariant runs.
 

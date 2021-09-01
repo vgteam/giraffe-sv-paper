@@ -18,6 +18,12 @@ function download_if_exists() {
     fi
 }
 
+function wget_download() {
+    if [ ! -e "${2}" ] ; then
+        wget "${1}" -O "${2}"
+    fi
+}
+
 for SPECIES in human yeast ; do
     case "${SPECIES}" in
     yeast)
@@ -41,7 +47,8 @@ for SPECIES in human yeast ; do
         READSETS=()
         # Most graphs have all the indexes except GCSA/LCP and nontrivial snarls (not really used)
         EXTS=(vg xg trivial.snarls gbwt dist)
-    
+        # Some graphs have accompanied reference dictionaries for surjection 
+        SEQDICTS=()
         case ${GRAPH} in
         1000gplons-unfiltered)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1
@@ -73,12 +80,14 @@ for SPECIES in human yeast ; do
             # We set up for map
             EXTS+=(gcsa gcsa.lcp)
             GBWTS=(paths cover)
+            SEQDICTS=("https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.dict")
             ;;
         1000gplons)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v3/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
             DEST_BASE=${DEST_DIR}/mapping/graphs/for-NA19239/1000gplons/hs38d1/1000GPlons_hs38d1_filter
             # Grab all the other sampled GBWTs too
             GBWTS+=("sampled.1" "sampled.2" "sampled.4" "sampled.8" "sampled.16" "sampled.32" "sampled.128")
+            SEQDICTS=("https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.no_segdup.dict")
             ;;
         hgsvc)
             GRAPH_BASE=s3://vg-k8s/profiling/graphs/v2/for-NA19240/hgsvc/hs38d1/HGSVC_hs38d1
@@ -105,6 +114,11 @@ for SPECIES in human yeast ; do
             DEST_BASE=${DEST_DIR}/mapping/graphs/generic/cactus/yeast_subset/yeast_subset
             ;;
         esac
+        
+        for SEQ in "${SEQDICTS[@]}" ; do
+            base_filename=$(basename ${SEQ})
+            wget_download ${SEQ} ${DEST_DIR}/mapping/${base_filename}
+        done
         
         for EXT in "${EXTS[@]}" ; do
             # Copy the graph and all generic indexes
